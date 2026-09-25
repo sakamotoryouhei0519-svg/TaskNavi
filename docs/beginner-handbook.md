@@ -120,3 +120,4 @@
 - そのあと `TaskDialog` と `WbsPanel` を読む
 - 最後にカンバン・ガント・カレンダーを確認する
 - 変更後は `mvn test`（CI と同じ）で壊していないか確認する
+- **操作ごとの読むファイル一覧**: [study-checklist.md](./study-checklist.md)（1操作ずつ追う用）
