@@ -1,10 +1,6 @@
 package org.example;
 
-import jakarta.mail.Authenticator;
-import jakarta.mail.Message;
-import jakarta.mail.PasswordAuthentication;
-import jakarta.mail.Session;
-import jakarta.mail.Transport;
+import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 
@@ -21,6 +17,8 @@ public class EmailUtil {
 
     private static final String SENDER_EMAIL_ENV = "TASKNAVI_EMAIL";
     private static final String SENDER_PASSWORD_ENV = "TASKNAVI_EMAIL_PASSWORD";
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(EmailUtil.class);
 
     /**
      * 認証コードを送信する。
@@ -57,26 +55,22 @@ public class EmailUtil {
 
         try {
             Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(senderEmail, "TaskNavi サポート"));
+            message.setFrom(new InternetAddress(senderEmail, AppMessages.get("email.sender.name")));
             message.setRecipient(Message.RecipientType.TO, new InternetAddress(toEmail));
-            message.setSubject("【TaskNavi】本人確認用の認証コード");
+            message.setSubject(AppMessages.get("email.subject.auth.code"));
 
-            String body = "TaskNaviをご利用いただきありがとうございます。<br><br>"
-                    + "認証コード: <strong>" + authCode + "</strong><br><br>"
-                    + "このコードを画面に入力して手続きを完了してください。";
+            String body = AppMessages.format("email.body.auth.code.html", "", authCode);
 
             if (htmlEnabled) {
                 message.setContent(body, "text/html; charset=UTF-8");
             } else {
-                message.setText("TaskNaviをご利用いただきありがとうございます。\n\n"
-                        + "認証コード: " + authCode + "\n\n"
-                        + "このコードを画面に入力して手続きを完了してください。");
+                message.setText(AppMessages.format("email.body.auth.code.text", "", authCode));
             }
 
             Transport.send(message);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("メール送信エラー", e);
             return false;
         }
     }

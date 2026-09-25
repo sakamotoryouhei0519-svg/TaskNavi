@@ -5,9 +5,9 @@ import javax.swing.border.AbstractBorder;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 import java.awt.*;
 import java.util.prefs.Preferences;
-import java.awt.BasicStroke;
 
 /**
  * 【アプリケーションテーマ設定クラス】
@@ -28,12 +28,12 @@ public class AppTheme {
     }
 
     private static final Theme LIGHT_THEME = new Theme() {
-        @Override public Color primary() { return new Color(37, 99, 235); }
-        @Override public Color primaryDark() { return new Color(30, 64, 175); }
-        @Override public Color background() { return new Color(241, 245, 249); }
+        @Override public Color primary() { return new Color(59, 130, 246); }
+        @Override public Color primaryDark() { return new Color(37, 99, 235); }
+        @Override public Color background() { return new Color(248, 250, 252); }
         @Override public Color panel() { return Color.WHITE; }
         @Override public Color textPrimary() { return new Color(30, 41, 59); }
-        @Override public Color textMuted() { return new Color(148, 163, 184); }
+        @Override public Color textMuted() { return new Color(71, 85, 105); }
         @Override public Color borderColor() { return new Color(148, 163, 184); }
         @Override public Color textFieldBackground() { return Color.WHITE; }
         @Override public Color textFieldForeground() { return textPrimary(); }
@@ -43,11 +43,11 @@ public class AppTheme {
         @Override public Color primary() { return new Color(96, 165, 250); }
         @Override public Color primaryDark() { return new Color(59, 130, 246); }
         @Override public Color background() { return new Color(15, 23, 42); }
-        @Override public Color panel() { return new Color(30, 41, 59); }
-        @Override public Color textPrimary() { return new Color(226, 232, 240); }
-        @Override public Color textMuted() { return new Color(148, 163, 184); }
-        @Override public Color borderColor() { return new Color(148, 163, 184); }
-        @Override public Color textFieldBackground() { return new Color(15, 23, 42); }
+        @Override public Color panel() { return new Color(31, 41, 55); }
+        @Override public Color textPrimary() { return new Color(248, 250, 252); }
+        @Override public Color textMuted() { return new Color(203, 213, 225); }
+        @Override public Color borderColor() { return new Color(100, 116, 139); }
+        @Override public Color textFieldBackground() { return new Color(17, 24, 39); }
         @Override public Color textFieldForeground() { return textPrimary(); }
     };
 
@@ -108,50 +108,80 @@ public class AppTheme {
         if (theme == null) throw new IllegalArgumentException("theme must not be null");
         currentTheme = theme;
         refreshThemeColors();
+        applySwingDefaults();
         saveThemePreference();
     }
 
     public static void setDarkMode(boolean darkMode) { setTheme(darkMode ? DARK_THEME : LIGHT_THEME); }
 
-    public static Color getPriorityColor(String priority) {
+    public static Color getPriorityColor(String priorityLabel) {
+        Priority priority = Priority.fromString(priorityLabel);
         if (isDarkMode()) {
-            if ("高".equals(priority)) return new Color(248, 113, 113);
-            if ("低".equals(priority)) return new Color(148, 163, 184);
-            return new Color(96, 165, 250);
+            if (priority == Priority.HIGH) return new Color(248, 113, 113);
+            if (priority == Priority.LOW) return new Color(148, 163, 184);
+            return new Color(96, 165, 250); // MEDIUM
         }
-        if ("高".equals(priority)) return PRIORITY_HIGH;
-        if ("低".equals(priority)) return PRIORITY_LOW;
+        if (priority == Priority.HIGH) return PRIORITY_HIGH;
+        if (priority == Priority.LOW) return PRIORITY_LOW;
         return PRIORITY_MEDIUM;
     }
 
     public static Color getStatusColor(String status) {
+        TaskStatus s = TaskStatus.fromString(status);
         if (isDarkMode()) {
-            if ("未着手".equals(status)) return new Color(148, 163, 184);
-            if ("完了".equals(status)) return new Color(34, 197, 94);
+            if (s == TaskStatus.NOT_STARTED) return new Color(148, 163, 184);
+            if (s == TaskStatus.COMPLETED) return new Color(34, 197, 94);
             return new Color(59, 130, 246);
         }
-        if ("未着手".equals(status)) return STATUS_NOT_STARTED;
-        if ("完了".equals(status)) return STATUS_COMPLETED;
+        if (s == TaskStatus.NOT_STARTED) return STATUS_NOT_STARTED;
+        if (s == TaskStatus.COMPLETED) return STATUS_COMPLETED;
         return STATUS_IN_PROGRESS;
     }
 
     public static Color getStatusSoftColor(String status) {
-        if ("未着手".equals(status)) return STATUS_NOT_STARTED_SOFT;
-        if ("完了".equals(status)) return STATUS_COMPLETED_SOFT;
+        TaskStatus s = TaskStatus.fromString(status);
+        if (s == TaskStatus.NOT_STARTED) return STATUS_NOT_STARTED_SOFT;
+        if (s == TaskStatus.COMPLETED) return STATUS_COMPLETED_SOFT;
         return STATUS_IN_PROGRESS_SOFT;
     }
 
     public static Color getPrioritySoftColor(String priority) {
-        if ("高".equals(priority)) return PRIORITY_HIGH_SOFT;
-        if ("低".equals(priority)) return PRIORITY_LOW_SOFT;
+        Priority p = Priority.fromString(priority);
+        if (p == Priority.HIGH) return PRIORITY_HIGH_SOFT;
+        if (p == Priority.LOW) return PRIORITY_LOW_SOFT;
         return PRIORITY_MEDIUM_SOFT;
     }
 
-    public static final Font FONT_MAIN = new Font("SansSerif", Font.PLAIN, 12);
-    public static final Font FONT_SMALL = new Font("SansSerif", Font.PLAIN, 11);
-    public static final Font FONT_BOLD = new Font("SansSerif", Font.BOLD, 12);
+    public static final Font FONT_MAIN = new Font("SansSerif", Font.PLAIN, 13);
+    public static final Font FONT_SMALL = new Font("SansSerif", Font.PLAIN, 12);
+    public static final Font FONT_BOLD = new Font("SansSerif", Font.BOLD, 13);
     public static final Font FONT_TITLE = new Font("SansSerif", Font.BOLD, 22);
-    public static final Font FONT_HEADER = new Font("SansSerif", Font.BOLD, 14);
+    public static final Font FONT_HEADER = new Font("SansSerif", Font.BOLD, 15);
+
+    static {
+        applySwingDefaults();
+    }
+
+    /** 新しく開くダイアログも、現在のテーマで十分なコントラストを持たせます。 */
+    private static void applySwingDefaults() {
+        UIManager.put("Panel.background", PANEL_BG);
+        UIManager.put("Label.foreground", TEXT_PRIMARY);
+        UIManager.put("Button.foreground", TEXT_PRIMARY);
+        UIManager.put("OptionPane.background", PANEL_BG);
+        UIManager.put("OptionPane.messageForeground", TEXT_PRIMARY);
+        UIManager.put("TextField.background", currentTheme.textFieldBackground());
+        UIManager.put("TextField.foreground", currentTheme.textFieldForeground());
+        UIManager.put("TextField.caretForeground", TEXT_PRIMARY);
+        UIManager.put("ComboBox.background", PANEL_BG);
+        UIManager.put("ComboBox.foreground", TEXT_PRIMARY);
+        UIManager.put("List.background", PANEL_BG);
+        UIManager.put("List.foreground", TEXT_PRIMARY);
+        UIManager.put("Table.background", PANEL_BG);
+        UIManager.put("Table.foreground", TEXT_PRIMARY);
+        UIManager.put("Label.font", FONT_MAIN);
+        UIManager.put("Button.font", FONT_MAIN);
+        UIManager.put("OptionPane.messageFont", FONT_MAIN);
+    }
 
     public static Border createRoundedBorder(Color borderColor, int radius, int top, int left, int bottom, int right) {
         return new RoundedBorder(borderColor, radius, top, left, bottom, right);
@@ -217,9 +247,19 @@ public class AppTheme {
         field.putClientProperty("app.styled.textfield", Boolean.TRUE);
     }
 
-    static class RoundedFillButton extends JButton {
+    /** 読みやすい矢印と十分なコントラストを持つコンボボックスを適用します。 */
+    public static void styleComboBox(JComboBox<?> combo) {
+        combo.setFont(FONT_MAIN);
+        combo.setBackground(currentTheme.textFieldBackground());
+        combo.setForeground(TEXT_PRIMARY);
+        combo.setBorder(createRoundedBorder(BORDER_COLOR, 7, 1, 1, 1, 1));
+        combo.setUI(new ThemedComboBoxUI());
+        combo.putClientProperty("app.styled.combobox", Boolean.TRUE);
+    }
+
+    public static class RoundedFillButton extends JButton {
         private final int radius;
-        RoundedFillButton(String text, int radius) {
+        public RoundedFillButton(String text, int radius) {
             super(text);
             this.radius = radius;
             setContentAreaFilled(false);
@@ -237,6 +277,37 @@ public class AppTheme {
                 g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, radius, radius);
             } finally { g2.dispose(); }
             super.paintComponent(g);
+        }
+    }
+
+    private static final class ThemedComboBoxUI extends BasicComboBoxUI {
+        @Override
+        protected JButton createArrowButton() {
+            JButton button = new JButton() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    try {
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2.setColor(BORDER_COLOR);
+                        g2.drawLine(0, 4, 0, getHeight() - 5);
+                        g2.setColor(TEXT_PRIMARY);
+                        g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                        int centerX = getWidth() / 2;
+                        int centerY = getHeight() / 2 - 1;
+                        g2.drawLine(centerX - 4, centerY - 2, centerX, centerY + 2);
+                        g2.drawLine(centerX, centerY + 2, centerX + 4, centerY - 2);
+                    } finally {
+                        g2.dispose();
+                    }
+                }
+            };
+            button.setBorderPainted(false);
+            button.setContentAreaFilled(false);
+            button.setFocusPainted(false);
+            button.setOpaque(false);
+            button.setPreferredSize(new Dimension(30, 0));
+            return button;
         }
     }
 

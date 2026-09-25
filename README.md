@@ -47,12 +47,13 @@ TaskNavi は、使いやすさだけでなく、実運用で必要になる「�
 ### 2.1 システム構成の概要
 TaskNavi は、以下の層で構成されています。
 
-- UI 層: Swing の JFrame / JPanel / JTree / JTable 風コンポーネント
+- UI 層: Swing の JFrame / JPanel（WBS / カンバン / ガント / カレンダー）
 - アプリ制御層: Main, MainFrame, LoginFrame など
-- ドメイン層: Task
+- サービス層: TaskService, AuthService, TaskEventBus
+- ドメイン層: Task, Priority, TaskStatus, UserRole
 - データアクセス層: TaskDao, UserDao
-- DB 層: DatabaseUtil, Database
-- ユーティリティ層: CsvUtil, EmailUtil, VerificationManager, SampleDataUtil
+- DB 層: Database（Flyway）, DatabaseUtil
+- ユーティリティ層: CsvUtil, EmailUtil, VerificationManager, AppMessages, SampleDataUtil
 
 ### 2.2 Java ファイル一覧と役割
 
@@ -62,9 +63,10 @@ TaskNavi は、以下の層で構成されています。
 | src/main/java/org/example/LoginFrame.java | LoginFrame | ログイン画面。ユーザー認証の入口 |
 | src/main/java/org/example/RegisterFrame.java | RegisterFrame | 新規ユーザー登録画面 |
 | src/main/java/org/example/ResetPasswordFrame.java | ResetPasswordFrame | パスワード再設定画面 |
-| src/main/java/org/example/MainFrame.java | MainFrame | メイン画面。WBS / カンバン / ガントをタブで切替 |
+| src/main/java/org/example/MainFrame.java | MainFrame | メイン画面。WBS / カンバン / ガント / カレンダーをタブで切替 |
 | src/main/java/org/example/AppTheme.java | AppTheme | 色、フォント、ボタン、入力欄の共通デザイン定義 |
 | src/main/java/org/example/Task.java | Task | タスクのデータモデル。ID、名前、期限、優先度などを保持 |
+| src/main/java/org/example/TaskService.java | TaskService | タスク CRUD のユースケースとイベント発行 |
 | src/main/java/org/example/TaskDao.java | TaskDao | タスクの CRUD と親タスク進捗再計算 |
 | src/main/java/org/example/UserDao.java | UserDao | ユーザー登録・認証・パスワード更新 |
 | src/main/java/org/example/UserSession.java | UserSession | ログイン中ユーザー情報の保持 |
@@ -72,11 +74,15 @@ TaskNavi は、以下の層で構成されています。
 | src/main/java/org/example/WbsPanel.java | WbsPanel | WBS 表形式のツリー管理画面 |
 | src/main/java/org/example/KanbanPanel.java | KanbanPanel | カンバンボード画面 |
 | src/main/java/org/example/GanttPanel.java | GanttPanel | ガントチャート画面 |
-| src/main/java/org/example/Database.java | Database | SQLite への接続と初期化処理 |
-| src/main/java/org/example/util/DatabaseUtil.java | DatabaseUtil | SQLite 接続とテーブル作成／マイグレーション |
+| src/main/java/org/example/CalendarPanel.java | CalendarPanel | カレンダー画面 |
+| src/main/java/org/example/TaskHierarchyUtil.java | TaskHierarchyUtil | タスク階層の共通走査 |
+| src/main/java/org/example/ui/gantt/GanttBarGeometry.java | GanttBarGeometry | ガントバー座標・ヒット判定 |
+| src/main/java/org/example/Database.java | Database | SQLite への接続と Flyway マイグレーション |
+| src/main/java/org/example/util/DatabaseUtil.java | DatabaseUtil | 接続ラッパーとトランザクション補助 |
 | src/main/java/org/example/CsvUtil.java | CsvUtil | CSV / JSON のエクスポート／インポート |
 | src/main/java/org/example/EmailUtil.java | EmailUtil | 認証コードをメール送信する処理 |
-| src/main/java/org/example/VerificationManager.java | VerificationManager | 認証コードの発行・照合・破棄 |
+| src/main/java/org/example/VerificationManager.java | VerificationManager | メール単位の認証コード発行・照合 |
+| src/main/java/org/example/AppMessages.java | AppMessages | 多言語メッセージ取得 |
 | src/main/java/org/example/SampleDataUtil.java | SampleDataUtil | 初回起動時のサンプルデータ投入 |
 
 ### 2.3 主要ファイルの責務
@@ -245,17 +251,17 @@ CsvUtil により以下の形式を扱う:
    - WbsPanel.refreshWbs()
    - KanbanPanel.refreshKanban()
    - GanttPanel.paintComponent()
-   - 各画面で TaskDao.getAllTasks() を呼ぶ
+   - 各画面は TaskService.getAllTasks() 経由で一覧を取得する
 
 8. DB からタスク一覧を取得
-   - TaskDao.getAllTasks()
+   - TaskService → TaskDao.getAllTasks()
    - SQLite の tasks テーブルから Task オブジェクトのリストを生成
    - priority なども読み出される
 
 9. ユーザーが編集や追加を行う
-   - WbsPanel でフォーム編集
-   - TaskDao.addTask() / updateTask() で DB に反映
-   - 変更後に画面再描画を行う
+   - WbsPanel などでフォーム編集
+   - TaskService.addTask() / updateTask() で DB に反映し、TaskEventBus で画面へ通知
+   - 各パネルがイベントを受けて再描画する
 
 10. 実行結果が再描画される
     - 修正後のデータが再読み込みされ、WBS / カンバン / ガントの各ビューが最新状態に更新される
@@ -268,13 +274,15 @@ Main
   → UserSession
   → MainFrame
   → WbsPanel / KanbanPanel / GanttPanel
+  → TaskService / TaskEventBus
   → TaskDao
   → DatabaseUtil
   → SQLite
 
 ### 4.3 重要な設計思想
 - UI とデータアクセスを分離している
-- TaskDao を通して DB 操作をまとめている
+- 画面は TaskService 経由で操作し、変更は TaskEventBus で連携する
+- TaskDao で DB 操作をまとめている
 - Task はデータモデルとして振る舞う
 - AppTheme は見た目を一元管理する
 - priority は DB と UI に横断的に渡る重要属性として扱われている

@@ -37,3 +37,8 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### TaskNavi local artifacts ###
+*.db
+out/
+maven-install.zip

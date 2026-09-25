@@ -19,7 +19,7 @@ package org.example;
 public class UserSession {
 
     private static final Object SESSION_LOCK = new Object();
-
+    private static final UserDao userDao = new UserDao();
     // ==========================================
     //  【フィールド】
     // ==========================================
@@ -36,8 +36,8 @@ public class UserSession {
            logout();
            return;
        }
-       User user = UserDao.findByUsername(username);
-       login(user);
+        User user = userDao.findByUsername(username);
+        login(user);
     }
 
     public static void logout() {

@@ -1,11 +1,14 @@
 package org.example;
 
-import org.example.util.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
 
 public final class UiDebugUtil {
+
+    private static final Logger logger = LoggerFactory.getLogger(UiDebugUtil.class);
 
     private UiDebugUtil() {
     }
@@ -14,7 +17,7 @@ public final class UiDebugUtil {
         if (!isEnabled()) {
             return;
         }
-        Logger.info("[UI_DEBUG] " + label);
+        logger.info("[UI_DEBUG] {}", label);
         dumpComponent(root, 0);
     }
 
@@ -24,8 +27,8 @@ public final class UiDebugUtil {
         }
         Font font = button.getFont();
         String text = button.getText();
-        Logger.info(String.format(
-                "[UI_DEBUG] %s text=%s preferred=%s min=%s font=%s/%d canDisplayCalendar=%s",
+        logger.info(
+                "[UI_DEBUG] {} text={} preferred={} min={} font={}/{} canDisplayCalendar={}",
                 label,
                 quote(text),
                 dimensionToString(button.getPreferredSize()),
@@ -33,16 +36,16 @@ public final class UiDebugUtil {
                 font == null ? "null" : font.getFontName(),
                 font == null ? -1 : font.getSize(),
                 font != null && font.canDisplay(0x1F4C5)
-        ));
+        );
     }
 
     private static void dumpComponent(Component component, int depth) {
         if (component == null) {
-            Logger.info("[UI_DEBUG] " + "  ".repeat(depth) + "<null>");
+            logger.info("[UI_DEBUG] {}<null>", "  ".repeat(depth));
             return;
         }
         String indent = "  ".repeat(depth);
-        Logger.info("[UI_DEBUG] " + indent + describe(component));
+        logger.info("[UI_DEBUG] {}{}", indent, describe(component));
         if (component instanceof Container) {
             for (Component child : ((Container) component).getComponents()) {
                 dumpComponent(child, depth + 1);

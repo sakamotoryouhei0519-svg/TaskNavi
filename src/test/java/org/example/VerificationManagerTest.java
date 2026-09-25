@@ -1,46 +1,49 @@
 package org.example;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class VerificationManagerTest {
 
+    @AfterEach
+    void tearDown() {
+        VerificationManager.clearAll();
+    }
+
     @Test
     public void testGenerateAndVerifyCode() {
-        String code = VerificationManager.generateCode();
+        String email = "user@example.com";
+        String code = VerificationManager.generateCode(email);
 
         assertNotNull(code);
         assertEquals(6, code.length());
         assertTrue(code.matches("\\d{6}"));
-        assertTrue(VerificationManager.verifyCode(code));
+        assertTrue(VerificationManager.verifyCode(email, code));
+        assertFalse(VerificationManager.verifyCode("other@example.com", code));
 
-        VerificationManager.clearCode();
-        assertFalse(VerificationManager.verifyCode(code));
+        VerificationManager.clearCode(email);
+        assertFalse(VerificationManager.verifyCode(email, code));
     }
 
     @Test
-    public void testExpiredCodeIsRejected() throws Exception {
-        String code = VerificationManager.generateCode();
-        setGeneratedAtMillis(System.currentTimeMillis() - (5 * 60 * 1000L) - 1L);
+    public void testExpiredCodeIsRejected() {
+        String email = "expire@example.com";
+        String code = VerificationManager.generateCode(email);
+        VerificationManager.expireForTesting(email);
 
-        assertFalse(VerificationManager.verifyCode(code));
-        assertNull(getCurrentCode());
-
-        VerificationManager.clearCode();
+        assertFalse(VerificationManager.verifyCode(email, code));
+        assertEquals(0, VerificationManager.sizeForTesting());
     }
 
-    private void setGeneratedAtMillis(long value) throws Exception {
-        Field field = VerificationManager.class.getDeclaredField("generatedAtMillis");
-        field.setAccessible(true);
-        field.setLong(null, value);
-    }
+    @Test
+    public void codesAreIsolatedPerEmail() {
+        String codeA = VerificationManager.generateCode("a@example.com");
+        String codeB = VerificationManager.generateCode("b@example.com");
 
-    private String getCurrentCode() throws Exception {
-        Field field = VerificationManager.class.getDeclaredField("currentCode");
-        field.setAccessible(true);
-        return (String) field.get(null);
+        assertTrue(VerificationManager.verifyCode("a@example.com", codeA));
+        assertTrue(VerificationManager.verifyCode("b@example.com", codeB));
+        assertFalse(VerificationManager.verifyCode("a@example.com", codeB));
     }
 }
