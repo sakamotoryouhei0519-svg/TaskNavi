@@ -176,3 +176,14 @@
 - UI 崩れや絵文字表示の問題は `tasknavi.uiDebug=true` で起動して、コンポーネントツリーとフォント情報をログで確認する
 - フォント・絵文字の最小再現は `EmojiTest` を使って本体から切り離して確認する
 - 変更内容の要約はこのファイルへ追記する
+
+## 2026-09-25
+
+### マージ後フォロー（1〜5）
+
+1. **スモーク**: `MainFrameSmokeTest` 追加（4タブ開閉・検索クリア・テーマ切替）。`CalendarPanelTest` / `TaskDialogUiTest` を隔離 DB 化。`mvn test` 79件すべて成功。
+2. **CI**: `.github/workflows/ci.yml`（JDK 17 + Maven `test`）を追加。
+3. **認証 UI**: `LoginFrame` / `RegisterFrame` / `ResetPasswordFrame` を `org.example.ui.auth` へ移動。
+4. **薄切り**: `GanttMouseController`、`IconGlyphs`、`AppThemeControls` を抽出。
+5. **小機能**: `MainFrame` が最後に開いたタブを Preferences で記憶・復元。
+6. **評価フォロー**: UI からの `new TaskDao()` を排除（`TaskService.createDefault()`）。`TaskDialog` は `taskService` 必須。handbook / README を現状パッケージに合わせて更新。

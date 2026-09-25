@@ -15,6 +15,11 @@ public class TaskService {
         this.taskDao = taskDao;
     }
 
+    /** 本番起動用。UI からは {@code TaskDao} を直接 new せず、これを使う。 */
+    public static TaskService createDefault() {
+        return new TaskService(new TaskDao());
+    }
+
     public List<Task> getAllTasks() {
         return taskDao.getAllTasks();
     }

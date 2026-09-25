@@ -25,8 +25,6 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -39,13 +37,14 @@ import java.util.Set;
  * 【ガントチャート画面パネルクラス】
  * WBS階層表示、日付ヘッダー、ドラッグ操作、進捗バー描画に対応。
  */
-public class GanttPanel extends JPanel implements SearchablePanel, MouseListener, MouseMotionListener {
+public class GanttPanel extends JPanel implements SearchablePanel {
 
     private static final long serialVersionUID = 1L;
 
     private final TaskService taskService;
     private final TaskEventListener taskEventListener = this::onTaskEvent;
     private final GanttDragSession dragSession = new GanttDragSession();
+    private final GanttMouseController mouseController;
 
     private int dayWidth = GanttMetrics.DEFAULT_DAY_WIDTH;
     private int totalDays = GanttMetrics.MIN_VISIBLE_DAYS;
@@ -131,6 +130,88 @@ public class GanttPanel extends JPanel implements SearchablePanel, MouseListener
 
     public GanttPanel(TaskService taskService) {
         this.taskService = taskService;
+        this.mouseController = new GanttMouseController(new GanttMouseController.Host() {
+            @Override
+            public GanttBarHit hitTest(MouseEvent e) {
+                return GanttPanel.this.hitTest(e);
+            }
+
+            @Override
+            public GanttDragSession dragSession() {
+                return dragSession;
+            }
+
+            @Override
+            public void setSelectedTaskId(Integer taskId) {
+                selectedTaskId = taskId;
+            }
+
+            @Override
+            public void setHoveredTask(Task task) {
+                hoveredTask = task;
+            }
+
+            @Override
+            public void setManualVisibleWindow(boolean manual) {
+                manualVisibleWindow = manual;
+            }
+
+            @Override
+            public LocalDate visibleStartDate() {
+                return visibleStartDate;
+            }
+
+            @Override
+            public LocalDate visibleEndDate() {
+                return visibleEndDate;
+            }
+
+            @Override
+            public void setVisibleWindow(LocalDate start, LocalDate end) {
+                visibleStartDate = start;
+                visibleEndDate = end;
+            }
+
+            @Override
+            public int dayWidth() {
+                return dayWidth;
+            }
+
+            @Override
+            public int panelWidth() {
+                return getWidth();
+            }
+
+            @Override
+            public TaskService taskService() {
+                return taskService;
+            }
+
+            @Override
+            public Task resolveRootProjectForDrag(Task task) {
+                return GanttPanel.this.resolveRootProjectForDrag(task);
+            }
+
+            @Override
+            public void repaintPanel() {
+                repaint();
+            }
+
+            @Override
+            public void setCursor(Cursor cursor) {
+                GanttPanel.this.setCursor(cursor);
+            }
+
+            @Override
+            public void setToolTipText(String text) {
+                GanttPanel.this.setToolTipText(text);
+            }
+
+            @Override
+            public java.awt.Component component() {
+                return GanttPanel.this;
+            }
+        });
 
         setBackground(Color.WHITE);
         setPreferredSize(new Dimension(Math.max(800, totalDays * dayWidth), 800));
@@ -138,8 +219,8 @@ public class GanttPanel extends JPanel implements SearchablePanel, MouseListener
         TaskEventBus.getInstance().register(taskEventListener);
         refreshTaskCache();
 
-        addMouseListener(this);
-        addMouseMotionListener(this);
+        addMouseListener(mouseController);
+        addMouseMotionListener(mouseController);
         addMouseWheelListener(e -> {
             Point p = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), this);
             if (p.x >= 0 && p.y >= 0) {
@@ -411,94 +492,5 @@ public class GanttPanel extends JPanel implements SearchablePanel, MouseListener
 
     private void refreshTaskCache() {
         cachedTasks = taskService.getAllTasks();
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e) {
-        GanttBarHit hit = hitTest(e);
-        if (hit == null) {
-            selectedTaskId = null;
-            dragSession.clear();
-            repaint();
-            return;
-        }
-        selectedTaskId = hit.getTask().getId();
-        dragSession.begin(hit, e.getX());
-        repaint();
-    }
-
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        GanttBarHit hit = hitTest(e);
-        if (hit == null) {
-            selectedTaskId = null;
-            repaint();
-            return;
-        }
-        selectedTaskId = hit.getTask().getId();
-        if (e.getClickCount() == 2) {
-            GanttTaskEditor.openEdit(this, taskService, hit.getTask());
-        }
-        repaint();
-    }
-
-    @Override
-    public void mouseDragged(MouseEvent e) {
-        if (!dragSession.isActive()) {
-            return;
-        }
-        dragSession.updateMouseX(e.getX());
-        manualVisibleWindow = true;
-        LocalDate[] window = new LocalDate[]{visibleStartDate, visibleEndDate};
-        if (dragSession.expandVisibleWindow(e.getX(), getWidth(), dayWidth, window)) {
-            visibleStartDate = window[0];
-            visibleEndDate = window[1];
-        }
-        repaint();
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        if (!dragSession.isActive()) {
-            return;
-        }
-        GanttBarDragMath.Result dates = dragSession.commitDates(
-                e.getX(), dayWidth, this::resolveRootProjectForDrag);
-        Task dragging = dragSession.draggingTask();
-        if (dates != null && dragging != null) {
-            dragging.setStartDate(dates.getStart());
-            dragging.setEndDate(dates.getEnd());
-            taskService.updateTask(dragging);
-        }
-        manualVisibleWindow = false;
-        visibleStartDate = null;
-        visibleEndDate = null;
-        dragSession.clear();
-    }
-
-    @Override
-    public void mouseMoved(MouseEvent e) {
-        GanttBarHit hit = hitTest(e);
-        if (hit == null) {
-            hoveredTask = null;
-            setCursor(Cursor.getDefaultCursor());
-            setToolTipText(null);
-            return;
-        }
-        hoveredTask = hit.getTask();
-        if (hit.getDragMode() == 2 || hit.getDragMode() == 3) {
-            setCursor(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR));
-        } else {
-            setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
-        }
-        setToolTipText(GanttTooltips.forTask(hoveredTask));
-    }
-
-    @Override
-    public void mouseEntered(MouseEvent e) {
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e) {
     }
 }

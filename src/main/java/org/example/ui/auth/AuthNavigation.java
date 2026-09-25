@@ -1,7 +1,5 @@
 package org.example.ui.auth;
 
-import org.example.LoginFrame;
-
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
@@ -22,3 +20,4 @@ public final class AuthNavigation {
         });
     }
 }
+

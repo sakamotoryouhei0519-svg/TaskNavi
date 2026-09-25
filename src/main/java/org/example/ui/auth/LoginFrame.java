@@ -1,7 +1,14 @@
-package org.example;
+package org.example.ui.auth;
 
 import net.miginfocom.swing.MigLayout;
-import org.example.ui.auth.AuthFormWidgets;
+import org.example.AppMessages;
+import org.example.AppTheme;
+import org.example.AuthService;
+import org.example.ErrorDialogUtil;
+import org.example.MainFrame;
+import org.example.TaskService;
+import org.example.UiConstants;
+import org.example.UserSession;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -219,8 +226,7 @@ public class LoginFrame extends JFrame {
                     if (result != null && result.isSuccess()) {
                         saveRememberedUsername(username, rememberMeCheckBox.isSelected());
                         UserSession.login(result.getUser());
-                        TaskService taskService = new TaskService(new TaskDao());
-                        new MainFrame(taskService).setVisible(true);
+                        new MainFrame(TaskService.createDefault()).setVisible(true);
                         LoginFrame.this.dispose();
                     } else if (result != null && result.getStatus() == AuthService.LoginStatus.LOCKED) {
                         AuthFormWidgets.setFieldErrorState(usernameField, true);

@@ -47,60 +47,41 @@ TaskNavi は、使いやすさだけでなく、実運用で必要になる「�
 ### 2.1 システム構成の概要
 TaskNavi は、以下の層で構成されています。
 
-- UI 層: Swing の JFrame / JPanel（WBS / カンバン / ガント / カレンダー）
-- アプリ制御層: Main, MainFrame, LoginFrame など
-- サービス層: TaskService, AuthService, TaskEventBus
-- ドメイン層: Task, Priority, TaskStatus, UserRole
-- データアクセス層: TaskDao, UserDao
-- DB 層: Database（Flyway）, DatabaseUtil
-- ユーティリティ層: CsvUtil, EmailUtil, VerificationManager, AppMessages, SampleDataUtil
+- UI 層: Swing（`ui.wbs` / `ui.kanban` / `ui.gantt` / `ui.calendar` / `ui.auth` / `ui.taskdialog`）
+- アプリ制御層: `Main`, `MainFrame`
+- サービス層: `TaskService`, `AuthService`, `event.TaskEventBus`
+- ドメイン層: `Task`, `Priority`, `TaskStatus`, `EntryType`, `UserRole`
+- データアクセス層: `TaskDao`（実装は `persistence.*` へ委譲）, `UserDao`
+- DB 層: `Database`（Flyway）, `util.DatabaseUtil`
+- ユーティリティ層: `CsvUtil`, `EmailUtil`, `VerificationManager`, `AppMessages`, `SampleDataUtil`, `util.TaskViewFilter` など
 
-### 2.2 Java ファイル一覧と役割
+### 2.2 主要パッケージと入口クラス
 
-| ファイル | クラス名 | 役割 |
-|---|---|---|
-| src/main/java/org/example/Main.java | Main | アプリケーションの開始点。初期化とログイン画面表示 |
-| src/main/java/org/example/LoginFrame.java | LoginFrame | ログイン画面。ユーザー認証の入口 |
-| src/main/java/org/example/RegisterFrame.java | RegisterFrame | 新規ユーザー登録画面 |
-| src/main/java/org/example/ResetPasswordFrame.java | ResetPasswordFrame | パスワード再設定画面 |
-| src/main/java/org/example/MainFrame.java | MainFrame | メイン画面。WBS / カンバン / ガント / カレンダーをタブで切替 |
-| src/main/java/org/example/AppTheme.java | AppTheme | 色、フォント、ボタン、入力欄の共通デザイン定義 |
-| src/main/java/org/example/Task.java | Task | タスクのデータモデル。ID、名前、期限、優先度などを保持 |
-| src/main/java/org/example/TaskService.java | TaskService | タスク CRUD のユースケースとイベント発行 |
-| src/main/java/org/example/TaskDao.java | TaskDao | タスクの CRUD と親タスク進捗再計算 |
-| src/main/java/org/example/UserDao.java | UserDao | ユーザー登録・認証・パスワード更新 |
-| src/main/java/org/example/UserSession.java | UserSession | ログイン中ユーザー情報の保持 |
-| src/main/java/org/example/TaskDialog.java | TaskDialog | タスク追加/編集のダイアログ |
-| src/main/java/org/example/WbsPanel.java | WbsPanel | WBS 表形式のツリー管理画面 |
-| src/main/java/org/example/KanbanPanel.java | KanbanPanel | カンバンボード画面 |
-| src/main/java/org/example/GanttPanel.java | GanttPanel | ガントチャート画面 |
-| src/main/java/org/example/CalendarPanel.java | CalendarPanel | カレンダー画面 |
-| src/main/java/org/example/TaskHierarchyUtil.java | TaskHierarchyUtil | タスク階層の共通走査 |
-| src/main/java/org/example/ui/gantt/GanttBarGeometry.java | GanttBarGeometry | ガントバー座標・ヒット判定 |
-| src/main/java/org/example/Database.java | Database | SQLite への接続と Flyway マイグレーション |
-| src/main/java/org/example/util/DatabaseUtil.java | DatabaseUtil | 接続ラッパーとトランザクション補助 |
-| src/main/java/org/example/CsvUtil.java | CsvUtil | CSV / JSON のエクスポート／インポート |
-| src/main/java/org/example/EmailUtil.java | EmailUtil | 認証コードをメール送信する処理 |
-| src/main/java/org/example/VerificationManager.java | VerificationManager | メール単位の認証コード発行・照合 |
-| src/main/java/org/example/AppMessages.java | AppMessages | 多言語メッセージ取得 |
-| src/main/java/org/example/SampleDataUtil.java | SampleDataUtil | 初回起動時のサンプルデータ投入 |
+| 場所 | 役割 |
+|---|---|
+| `org.example.Main` / `MainFrame` | 起動とメインウィンドウ（タブ・ヘッダー・ツールバー） |
+| `org.example.ui.auth.*` | ログイン／登録／パスワード再設定 |
+| `org.example.ui.wbs` / `kanban` / `gantt` / `calendar` | 各業務タブ（いずれも `TaskService` を受け取る） |
+| `org.example.ui.taskdialog.*` | タスク作成・編集ダイアログ |
+| `org.example.TaskService` | CRUD ユースケースと `TaskEventBus` へのイベント発行（`createDefault()` で組み立て） |
+| `org.example.TaskDao` + `persistence.*` | DB アクセスの公開 API と実装分割 |
+| `org.example.event.*` | 画面間の更新通知 |
+| `org.example.AppTheme` / `AppMessages` / `IconManager` | 見た目・文言・アイコン |
+
+詳細な読み方は `docs/beginner-handbook.md` を参照。
 
 ### 2.3 主要ファイルの責務
 
 - Main
   - プログラム開始時にデータベースを初期化し、UI を起動する
 - MainFrame
-  - アプリ全体の枠組み。3 つの画面を切り替える
-- WbsPanel
-  - タスクの木構造管理と詳細編集フォーム
-- KanbanPanel
-  - ステータス別ボード表示
-- GanttPanel
-  - 日程と期間をグラフィカルに表示
-- TaskDao
-  - SQLite と Java の Task オブジェクトをつなぐ中核
-- DatabaseUtil
-  - tasks / users テーブルの自動生成と更新
+  - アプリ全体の枠組み。4 つの画面を切り替える（最後のタブを記憶）
+- WbsPanel / KanbanPanel / GanttPanel / CalendarPanel
+  - 各ビューの表示と操作（`ui.*` パッケージ）
+- TaskService / TaskDao
+  - ユースケースと永続化。UI は Dao を直接 new しない
+- Database
+  - SQLite 接続と Flyway マイグレーション
 - Task
   - 1 タスクの属性を表すモデル
 
@@ -236,7 +217,7 @@ CsvUtil により以下の形式を扱う:
    - UI はイベントディスパッチスレッドで動かす設計になっている
 
 4. ログイン画面を表示
-   - LoginFrame が生成され、setVisible(true) で表示される
+   - ui.auth.LoginFrame が生成され、setVisible(true) で表示される
 
 5. ログイン処理
    - username / password を UserDao.authenticate() に渡す
@@ -245,7 +226,7 @@ CsvUtil により以下の形式を扱う:
 
 6. メイン画面を表示
    - MainFrame が起動
-   - WBS / カンバン / ガントの 3 つのタブを持つコンテナを生成
+   - WBS / カンバン / ガント / カレンダーの 4 つのタブを持つコンテナを生成
 
 7. 各画面がデータを読み込む
    - WbsPanel.refreshWbs()
@@ -264,25 +245,24 @@ CsvUtil により以下の形式を扱う:
    - 各パネルがイベントを受けて再描画する
 
 10. 実行結果が再描画される
-    - 修正後のデータが再読み込みされ、WBS / カンバン / ガントの各ビューが最新状態に更新される
+    - 修正後のデータが再読み込みされ、WBS / カンバン / ガント / カレンダーの各ビューが最新状態に更新される
 
 ### 4.2 画面間連携のイメージ
 
 Main
-  → LoginFrame
-  → UserDao
+  → ui.auth.LoginFrame
+  → AuthService / UserDao
   → UserSession
   → MainFrame
-  → WbsPanel / KanbanPanel / GanttPanel
+  → ui.wbs / ui.kanban / ui.gantt / ui.calendar
   → TaskService / TaskEventBus
-  → TaskDao
-  → DatabaseUtil
-  → SQLite
+  → TaskDao（persistence）
+  → Database / SQLite
 
 ### 4.3 重要な設計思想
 - UI とデータアクセスを分離している
-- 画面は TaskService 経由で操作し、変更は TaskEventBus で連携する
-- TaskDao で DB 操作をまとめている
+- 画面は TaskService 経由で操作し、変更は TaskEventBus で連携する（UI は `new TaskDao()` しない）
+- TaskDao で DB 操作をまとめ、詳細は persistence に委譲する
 - Task はデータモデルとして振る舞う
 - AppTheme は見た目を一元管理する
 - priority は DB と UI に横断的に渡る重要属性として扱われている

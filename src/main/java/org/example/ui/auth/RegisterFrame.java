@@ -1,9 +1,11 @@
-package org.example;
+package org.example.ui.auth;
 
 import net.miginfocom.swing.MigLayout;
-import org.example.ui.auth.AuthFormWidgets;
-import org.example.ui.auth.AuthNavigation;
-import org.example.ui.auth.AuthPasswordPolicy;
+import org.example.AppMessages;
+import org.example.AppTheme;
+import org.example.AuthService;
+import org.example.ErrorDialogUtil;
+import org.example.UserDao;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;

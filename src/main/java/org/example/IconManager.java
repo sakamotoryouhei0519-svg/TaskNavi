@@ -174,28 +174,7 @@ public class IconManager {
      * 絵文字を取得します。
      */
     private static String getEmoji(IconType type) {
-        switch (type) {
-            case TAB_WBS: return "☰";
-            case TAB_KANBAN: return "▧";
-            case TAB_GANTT: return "📊";
-            case TAB_CALENDAR: return new String(Character.toChars(0x1F4C5));
-            case LOGO: return "📋";
-            case USER: return "👤";
-            case THEME: return "☾";
-            case ADD: return "➕";
-            case SEARCH: return "🔍";
-            case FILTER: return "▼";
-            case DELETE: return "🗑️";
-            case REFRESH: return "↺";
-            case EXPORT: return "⇓";
-            case IMPORT: return "⇑";
-            case LOGOUT: return "↙";
-            case CALENDAR: return new String(Character.toChars(0x1F4C5));
-            case CHECK: return "✓";
-            case CROSS: return "✕";
-            case FOLDER: return "📁";
-            default: return "";
-        }
+        return IconGlyphs.emoji(type);
     }
 
     private static Font resolveEmojiFont(float size) {
@@ -273,28 +252,7 @@ public class IconManager {
      * アイコンファイル名を取得します。
      */
     private static String getIconFilename(IconType type) {
-        switch (type) {
-            case TAB_WBS: return "wbs.png";
-            case TAB_KANBAN: return "kanban.png";
-            case TAB_GANTT: return "gantt.png";
-            case TAB_CALENDAR: return "calendar.png";
-            case LOGO: return "logo.png";
-            case USER: return "user.png";
-            case THEME: return "theme.png";
-            case ADD: return "add.png";
-            case SEARCH: return "search.png";
-            case FILTER: return "filter.png";
-            case DELETE: return "delete.png";
-            case REFRESH: return "refresh.png";
-            case EXPORT: return "export.png";
-            case IMPORT: return "import.png";
-            case LOGOUT: return "logout.png";
-            case CALENDAR: return "calendar.png";
-            case CHECK: return "check.png";
-            case CROSS: return "cross.png";
-            case FOLDER: return "folder.png";
-            default: return null;
-        }
+        return IconGlyphs.filename(type);
     }
     
     /**

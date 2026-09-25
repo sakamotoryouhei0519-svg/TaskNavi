@@ -96,7 +96,7 @@ public class Main {
                 }
                 // LoginFrameとは、ログイン画面のクラス
                 // new LoginFrame()とは、ログイン画面を作ること
-                LoginFrame loginFrame = new LoginFrame();
+                org.example.ui.auth.LoginFrame loginFrame = new org.example.ui.auth.LoginFrame();
                 // ログイン画面を表示
                 loginFrame.setVisible(true);
             });
@@ -171,12 +171,8 @@ public class Main {
 
     // public static voidとは、どこからでも呼び出せる戻り値がないメソッド
     public static void openMainFrame() {
-        // MainFrameに必要な TaskService を準備する
-        TaskDao taskDao = new TaskDao();
-        TaskService taskService = new TaskService(taskDao);
-
-        // TaskService を渡して MainFrame を作成する
-        MainFrame mainFrame = new MainFrame(taskService);
+        // TaskService を渡して MainFrame を作成する（UI は Dao を直接 new しない）
+        MainFrame mainFrame = new MainFrame(TaskService.createDefault());
         // メイン画面を表示
         mainFrame.setVisible(true);
         // UiDebugUtil.dumpComponentTreeとは、画面部品の構造をログに出力するデバッグ用メソッド

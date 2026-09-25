@@ -18,10 +18,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 class TaskDialogUiTest {
 
+    @org.junit.jupiter.api.BeforeAll
+    static void setUpDatabase() {
+        DatabaseTestConfig.useIsolatedDatabase();
+    }
+
     @Test
     void dialogShouldStartWithExpectedDefaultValues() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
-            TaskDialog dialog = new TaskDialog(null, new TaskService(new TaskDao()));
+            TaskDialog dialog = new TaskDialog(null, TaskService.createDefault());
 
             JComboBox<?> typeCombo = getField(dialog, "typeCombo", JComboBox.class);
             JTextField startDateField = getField(dialog, "startDateField", JTextField.class);

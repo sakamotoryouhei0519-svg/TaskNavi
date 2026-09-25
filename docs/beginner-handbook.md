@@ -36,7 +36,7 @@
 - `align right/left/center` は寄せ方
 
 ## 5. 画面ごとの重要ポイント
-### LoginFrame / RegisterFrame / ResetPasswordFrame
+### LoginFrame / RegisterFrame / ResetPasswordFrame（`org.example.ui.auth`）
 - 認証画面のため、入力欄とボタン配置が重要
 - 認証ロジックは `AuthService`（試行制限付き）
 - 見た目の統一は `AppTheme` と `ui.auth.AuthFormWidgets` に寄せる
@@ -46,6 +46,7 @@
 - アプリ全体の土台
 - 上部ヘッダー（ユーザー・インポート/エクスポート・テーマ・ログアウト）とツールバー（検索・フィルタ）
 - メイン領域はタブ: WBS / カンバン / ガント / カレンダー
+- 最後に開いたタブは Preferences で記憶・次回起動時に復元する
 - グローバル検索は各タブの `SearchablePanel` に同期する
 - ヘッダー／検索バー／テーマ適用／ツールバーボタン／追加フローは `ui.MainHeaderBar`・`MainGlobalSearchBar`・`MainThemeSupport`・`MainToolbarButtons`・`MainTaskAddHelper` に分割
 - タブ装飾は `ui.MainTabChrome`
@@ -91,6 +92,9 @@
 - レイアウトの `wrap` を忘れると部品が横に並び続ける
 - ダークモード対応では背景色と文字色の両方を見る
 - Panel から `TaskDao` を直接呼ばず、必ず `TaskService` 経由にする
+- 本番起動の `TaskService` 組み立ては `TaskService.createDefault()`（UI が `new TaskDao()` しない）
+- GitHub Actions（`.github/workflows/ci.yml`）で `mvn test` が走る。ローカルでも同じコマンドで確認する
+- 画面土台の回帰は `MainFrameSmokeTest`（タブ切替・検索クリア・テーマ切替）を見る
 
 ## 8. 読む順番
 1. `MainFrame`
@@ -114,3 +118,4 @@
 - 次に `TaskService` と `TaskEventBus` でデータ更新の経路を見る
 - そのあと `TaskDialog` と `WbsPanel` を読む
 - 最後にカンバン・ガント・カレンダーを確認する
+- 変更後は `mvn test`（CI と同じ）で壊していないか確認する

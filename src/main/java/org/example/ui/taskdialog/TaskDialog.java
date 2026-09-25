@@ -5,7 +5,6 @@ import org.example.AppMessages;
 import org.example.AppTheme;
 import org.example.EntryType;
 import org.example.Task;
-import org.example.TaskDao;
 import org.example.TaskHierarchyUtil;
 import org.example.TaskService;
 import org.example.UiLabels;
@@ -23,6 +22,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 【タスク追加・編集用ダイアログクラス】
@@ -65,7 +65,7 @@ public class TaskDialog extends JDialog {
 
     private TaskDialog(Frame parent, TaskService taskService, Task task, String defaultType, Integer defaultParentProjectId) {
         super(parent, TaskDialogTitles.forTask(task), true);
-        this.taskService = taskService != null ? taskService : new TaskService(new TaskDao());
+        this.taskService = Objects.requireNonNull(taskService, "taskService");
         setSize(470, 430);
         setLocationRelativeTo(parent);
         setLayout(new MigLayout("fill, insets 0, gap 0", "[grow]", "[grow][]"));

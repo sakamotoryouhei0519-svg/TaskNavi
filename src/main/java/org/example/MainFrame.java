@@ -2,6 +2,7 @@ package org.example;
 
 import net.miginfocom.swing.MigLayout;
 import org.example.event.TaskEventBus;
+import org.example.ui.auth.LoginFrame;
 import org.example.ui.MainGlobalSearchBar;
 import org.example.ui.MainHeaderBar;
 import org.example.ui.MainTabChrome;
@@ -21,6 +22,8 @@ import java.awt.*;
 import java.util.HashSet;
 import java.util.Set;
 
+import java.util.prefs.Preferences;
+
 /**
  * 【メイン画面クラス】
  * アプリケーションのメインウィンドウであり、ヘッダー（ツールバー）と
@@ -29,6 +32,7 @@ import java.util.Set;
 public class MainFrame extends JFrame {
 
     private static final long serialVersionUID = 1L;
+    private static final String PREF_LAST_TAB = "tasknavi.main.lastTab";
 
     private final TaskService taskService;
     private final JTabbedPane mainTabbedPane;
@@ -101,12 +105,13 @@ public class MainFrame extends JFrame {
         addMainTab(AppMessages.get("mainframe.tab.gantt"), IconManager.IconType.TAB_GANTT, ganttScroll);
         addMainTab(AppMessages.get("mainframe.tab.calendar"), IconManager.IconType.TAB_CALENDAR, calendarPanel);
 
-        mainTabbedPane.setSelectedIndex(3);
+        mainTabbedPane.setSelectedIndex(loadLastTabIndex(mainTabbedPane.getTabCount()));
 
         mainTabbedPane.addChangeListener(e -> {
             MainTabChrome.updateTabTextColors(mainTabbedPane);
             globalSearchBar.syncActive();
             MainThemeSupport.updateViewTheme(getActiveComponent());
+            saveLastTabIndex(mainTabbedPane.getSelectedIndex());
         });
         MainTabChrome.updateTabTextColors(mainTabbedPane);
 
@@ -115,6 +120,21 @@ public class MainFrame extends JFrame {
 
         add(contentPane);
         applyThemeToWindow();
+    }
+
+    private static int loadLastTabIndex(int tabCount) {
+        int saved = Preferences.userNodeForPackage(MainFrame.class).getInt(PREF_LAST_TAB, 0);
+        if (saved < 0 || saved >= tabCount) {
+            return 0;
+        }
+        return saved;
+    }
+
+    private static void saveLastTabIndex(int index) {
+        if (index < 0) {
+            return;
+        }
+        Preferences.userNodeForPackage(MainFrame.class).putInt(PREF_LAST_TAB, index);
     }
 
     private void addMainTab(String title, IconManager.IconType iconType, Component component) {

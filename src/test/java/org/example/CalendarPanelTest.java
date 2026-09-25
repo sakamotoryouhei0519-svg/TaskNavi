@@ -2,17 +2,14 @@ package org.example;
 
 import org.example.ui.calendar.CalendarPanel;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.swing.*;
 import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.UUID;
-
-import org.example.util.DatabaseUtil;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,21 +22,22 @@ class CalendarPanelTest {
     private TaskDao taskDao;
     private TaskService taskService;
 
+    @BeforeAll
+    static void setUpDatabase() {
+        DatabaseTestConfig.useIsolatedDatabase();
+    }
+
     @BeforeEach
     void setUp() {
         Database.initialize();
+        DatabaseTestConfig.clearTasksTable();
         taskDao = new TaskDao();
         taskService = new TaskService(taskDao);
     }
 
     @AfterEach
     void tearDown() {
-        try (Connection conn = DatabaseUtil.getConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("DELETE FROM tasks");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        DatabaseTestConfig.clearTasksTable();
     }
 
     @Test
