@@ -50,26 +50,28 @@ public final class TaskBusinessRules {
            return currentProgress != null ? currentProgress : 0;
        }
 
-       switch (status) {
-           case "未着手":
-               return 0;
-           case "進行中":
-               return (currentProgress == null || currentProgress <= 0 || currentProgress >= 100)
-                       ? 50
-                       : currentProgress;
-           case "完了":
-               return 100;
-           default:
-               return currentProgress != null ? currentProgress : 0;
-       }
+       return switch (TaskStatus.fromString(status)) {
+           case NOT_STARTED -> 0;
+           case IN_PROGRESS -> (currentProgress == null || currentProgress <= 0 || currentProgress >= 100)
+                   ? 50
+                   : currentProgress;
+           case COMPLETED -> 100;
+       };
+    }
+
+    /** {@link #resolveProgress(String, Integer)} の Enum オーバーロード。 */
+    public static int resolveProgress(TaskStatus status, Integer currentProgress) {
+        return resolveProgress(status != null ? status.name() : null, currentProgress);
     }
 
     public static ValidationResult validateTaskDraft(String name, LocalDate taskStart, LocalDate taskEnd, Task parentProject) {
        if (name == null || name.trim().isEmpty()) {
-           return ValidationResult.invalid("タスク名を入力してください。");
+           return ValidationResult.invalid(
+                   AppMessages.get("validation.task.name.required", "タスク名を入力してください。"));
        }
        if (taskStart != null && taskEnd != null && taskEnd.isBefore(taskStart)) {
-           return ValidationResult.invalid("終了日は開始日以降の日付を指定してください。");
+           return ValidationResult.invalid(
+                   AppMessages.get("validation.task.end.before.start", "終了日は開始日以降の日付を指定してください。"));
        }
        if (parentProject != null) {
            return validateProjectDateRangeResult(parentProject, taskStart, taskEnd);
@@ -101,18 +103,23 @@ public final class TaskBusinessRules {
 
        if (projectStart != null && taskStart != null && taskStart.isBefore(projectStart)) {
            return ValidationResult.invalid(
-                   "タスクの開始日 (" + taskStart + ") は親プロジェクトの開始日 (" + projectStart + ") より前に設定できません。"
-           );
+                   AppMessages.format(
+                           "validation.task.start.before.project",
+                           "タスクの開始日 ({0}) は親プロジェクトの開始日 ({1}) より前に設定できません。",
+                           taskStart, projectStart));
        }
 
        if (projectEnd != null && taskEnd != null && taskEnd.isAfter(projectEnd)) {
            return ValidationResult.invalid(
-                   "タスクの終了日 (" + taskEnd + ") は親プロジェクトの終了日 (" + projectEnd + ") より後に設定できません。"
-           );
+                   AppMessages.format(
+                           "validation.task.end.after.project",
+                           "タスクの終了日 ({0}) は親プロジェクトの終了日 ({1}) より後に設定できません。",
+                           taskEnd, projectEnd));
        }
 
        if (taskStart != null && taskEnd != null && taskEnd.isBefore(taskStart)) {
-           return ValidationResult.invalid("終了日は開始日以降の日付を指定してください。");
+           return ValidationResult.invalid(
+                   AppMessages.get("validation.task.end.before.start", "終了日は開始日以降の日付を指定してください。"));
        }
 
        return ValidationResult.valid();

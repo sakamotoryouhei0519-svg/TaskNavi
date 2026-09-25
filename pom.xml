@@ -15,6 +15,19 @@
     </properties>
 
     <dependencies>
+        <!-- SLF4J API -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.13</version>
+        </dependency>
+
+        <!-- Logback (SLF4Jの実装) -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.6</version>
+        </dependency>
         <!-- SQLite JDBC Driver -->
         <dependency>
             <groupId>org.xerial</groupId>
@@ -30,6 +43,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.miglayout</groupId>
+            <artifactId>miglayout-swing</artifactId>
+            <version>11.3</version>
+        </dependency>
+        <dependency>
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
             <version>0.4</version>
@@ -41,12 +59,12 @@
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
         </dependency>
-        
+
         <!-- Flyway for database migrations -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>9.22.0</version>
+            <version>10.15.0</version> <!-- 10.x系にアップデート -->
         </dependency>
 
         <!-- JUnit 5 for unit testing -->

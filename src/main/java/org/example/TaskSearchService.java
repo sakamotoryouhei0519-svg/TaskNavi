@@ -1,12 +1,7 @@
 package org.example;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 【タスク検索・フィルタサービスクラス】
@@ -82,7 +77,7 @@ public class TaskSearchService {
      * 例: 「未着手」「進行中」「完了」などの状態に一致するタスクだけを返します。
      *
      * 初心者向けの解説:
-     * - status が null または "すべて" ならフィルタしません。
+     * - status が null または FILTER_ALL（ALL）ならフィルタしません。
      * - これにより、検索画面で「すべて」を選択したときは全件表示になります。
      *
      * @param tasks 一覧
@@ -90,14 +85,14 @@ public class TaskSearchService {
      * @return 条件に一致するタスク一覧
      */
     public static List<Task> filterByStatus(List<Task> tasks, String status) {
-        if (status == null || status.trim().isEmpty() || "すべて".equals(status)) {
+        if (status == null || status.trim().isEmpty() || AppMessages.isFilterAll(status)) {
             return new ArrayList<>(tasks);
         }
 
         List<Task> result = new ArrayList<>();
 
         for (Task task : tasks) {
-            if (status.equals(task.getStatus())) {
+            if (status.equals(task.getStatusCode())) {
                 result.add(task);
             }
         }
@@ -224,7 +219,7 @@ public class TaskSearchService {
             result = searchByAssignee(result, assignee);
         }
 
-        if (status != null && !status.trim().isEmpty() && !"すべて".equals(status)) {
+        if (status != null && !status.trim().isEmpty() && !AppMessages.isFilterAll(status)) {
             result = filterByStatus(result, status);
         }
 

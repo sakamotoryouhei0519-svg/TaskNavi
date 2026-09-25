@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * 【検索ロジックのテスト】
@@ -26,7 +26,7 @@ public class TaskSearchServiceTest {
      * @return 生成した Task オブジェクト
      */
     private Task t(int id, String name, Integer parentId, int level, int progress, String status, LocalDate s, LocalDate e) {
-        Task task = new Task(id, name, parentId, level, progress, status, s, e);
+        Task task = new Task(id, name, parentId, level, 0, progress, status, s, e);
         task.setAssignee("user");
         task.setPriority("中");
         return task;
@@ -57,7 +57,7 @@ public class TaskSearchServiceTest {
                 t(1, "A", null,1,0,"未着手", LocalDate.now(), LocalDate.now()),
                 t(2, "B", null,1,0,"完了", LocalDate.now(), LocalDate.now())
         );
-        List<Task> r = TaskSearchService.filterByStatus(tasks, "完了");
+        List<Task> r = TaskSearchService.filterByStatus(tasks, Task.STATUS_COMPLETED);
         assertEquals(1, r.size());
         assertEquals(2, r.get(0).getId());
     }
@@ -102,7 +102,7 @@ public class TaskSearchServiceTest {
         Task p = t(10, "ProjectX", null,1,0,"未着手", LocalDate.of(2026,1,1), LocalDate.of(2026,1,31));
         Task child = t(11, "Implement", 10,2,0,"進行中", LocalDate.of(2026,1,5), LocalDate.of(2026,1,10));
         List<Task> tasks = Arrays.asList(p, child);
-        List<Task> r = TaskSearchService.searchCombined(tasks, "Implement", null, "進行中", LocalDate.of(2026,1,1), LocalDate.of(2026,1,31), 10);
+        List<Task> r = TaskSearchService.searchCombined(tasks, "Implement", null, Task.STATUS_IN_PROGRESS, LocalDate.of(2026,1,1), LocalDate.of(2026,1,31), 10);
         assertEquals(1, r.size());
         assertEquals(11, r.get(0).getId());
     }

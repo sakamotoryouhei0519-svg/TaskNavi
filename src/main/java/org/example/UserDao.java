@@ -1,16 +1,17 @@
 package org.example;
 
 // --- 暗号化・セキュリティ関連ライブラリ ---
+
+import org.example.util.DatabaseUtil;
 import org.mindrot.jbcrypt.BCrypt;
 
-// --- データベース接続（JDBC）関連ライブラリ ---
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+// --- データベース接続（JDBC）関連ライブラリ ---
 // 独自作成の DB 接続ユーティリティ
-import org.example.util.DatabaseUtil;
 
 /**
  * 【ユーザーデータアクセスオブジェクト (DAO)】
@@ -30,6 +31,7 @@ import org.example.util.DatabaseUtil;
  */
 public class UserDao {
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UserDao.class);
     /**
      * 【新規ユーザー登録】
      * パスワードを BCrypt でハッシュ化してデータベースに保存します。
@@ -51,7 +53,7 @@ public class UserDao {
      * @param email    メールアドレス
      * @return 登録成功なら true
      */
-    public static boolean registerUser(String username, String password, String email) {
+    public  boolean registerUser(String username, String password, String email) {
         // ==========================================
         //  1. パスワードのハッシュ化
         // ==========================================
@@ -70,7 +72,7 @@ public class UserDao {
         // 【コードの読み方】
         // - usersテーブルにusername, password, email, roleを挿入
         // - roleは固定で'user'を設定
-        String sql = "INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, 'user')";
+        String sql = "INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)";
 
         // ==========================================
         //  3. データベース接続とSQL実行
@@ -85,6 +87,7 @@ public class UserDao {
             pstmt.setString(1, username);
             pstmt.setString(2, hashedPassword);
             pstmt.setString(3, email);
+            pstmt.setString(4, UserRole.USER.getValue());
 
             // 【重要】executeUpdate(): INSERT/UPDATE/DELETEを実行するメソッド
             // 【重要】戻り値: 影響を受けた行数
@@ -93,7 +96,7 @@ public class UserDao {
             return pstmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            org.example.util.Logger.error("ユーザー登録エラー", e);
+            logger.error("ユーザー登録エラー", e);
             return false;
         }
     }
@@ -116,7 +119,7 @@ public class UserDao {
      * @param password 平文のパスワード
      * @return 認証成功なら true
      */
-    public static boolean authenticate(String username, String password) {
+    public  boolean authenticate(String username, String password) {
         // 【重要】SELECT: データベースからデータを取得するSQL
         String sql = "SELECT password FROM users WHERE username = ?";
 
@@ -135,14 +138,13 @@ public class UserDao {
                     if (storedHash != null && storedHash.startsWith("$2")) {
                         // 平文パスワードとハッシュ値を照合
                         return BCrypt.checkpw(password, storedHash);
-                    } else if (storedHash != null) {
-                        // 旧バージョンの平文保存データとの互換性確保
-                        return password.equals(storedHash);
                     }
+                    // 平文保存は受け入れない（レガシー互換を廃止）
+                    logger.warn("非BCryptパスワードを検出したため認証を拒否しました: username={}", username);
                 }
             }
         } catch (SQLException e) {
-            org.example.util.Logger.error("認証エラー", e);
+            logger.error("認証エラー", e);
         }
         return false;
     }
@@ -156,11 +158,11 @@ public class UserDao {
      * @param newPassword 新しいパスワード（平文）
      * @return 更新成功なら true
      */
-    public static boolean resetPasswordWithVerification(String email, String verificationCode, String newPassword) {
+    public  boolean resetPasswordWithVerification(String email, String verificationCode, String newPassword) {
         if (email == null || verificationCode == null || newPassword == null) {
             return false;
         }
-        if (!VerificationManager.verifyCode(verificationCode)) {
+        if (!VerificationManager.verifyCode(email, verificationCode)) {
             return false;
         }
 
@@ -173,18 +175,18 @@ public class UserDao {
                     pstmt.setString(2, email);
                     boolean success = pstmt.executeUpdate() > 0;
                     if (success) {
-                        VerificationManager.clearCode();
+                        VerificationManager.clearCode(email);
                     }
                     return success;
                 }
             });
         } catch (SQLException e) {
-            org.example.util.Logger.error("パスワードリセットエラー", e);
+            logger.error("パスワードリセットエラー", e);
             return false;
         }
     }
 
-    public static User findByUsername(String username) {
+    public  User findByUsername(String username) {
         if (username == null || username.trim().isEmpty()) {
             return null;
         }
@@ -205,7 +207,7 @@ public class UserDao {
                 }
             }
         } catch (SQLException e) {
-            org.example.util.Logger.error("ユーザー取得エラー", e);
+            logger.error("ユーザー取得エラー", e);
         }
         return null;
     }
@@ -213,7 +215,7 @@ public class UserDao {
     /**
      * 【ユーザー名重複チェック】
      */
-    public static boolean isUsernameExists(String username) {
+    public  boolean isUsernameExists(String username) {
         String sql = "SELECT 1 FROM users WHERE username = ?";
         try (Connection conn = DatabaseUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -231,7 +233,7 @@ public class UserDao {
     /**
      * 【メールアドレス存在チェック】
      */
-    public static boolean isEmailRegistered(String email) {
+    public  boolean isEmailRegistered(String email) {
         String sql = "SELECT 1 FROM users WHERE email = ?";
         try (Connection conn = DatabaseUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -245,23 +247,4 @@ public class UserDao {
         }
     }
 
-    /**
-     * 【メールアドレス指定によるパスワード変更】
-     */
-    public static boolean updatePasswordByEmail(String email, String newPassword) {
-        String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
-        String sql = "UPDATE users SET password = ? WHERE email = ?";
-
-        try (Connection conn = DatabaseUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, hashedPassword);
-            pstmt.setString(2, email);
-            return pstmt.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-            org.example.util.Logger.error("パスワード更新エラー", e);
-            return false;
-        }
-    }
 }

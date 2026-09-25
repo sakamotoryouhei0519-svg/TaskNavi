@@ -1,5 +1,6 @@
 package org.example;
 
+import net.miginfocom.swing.MigLayout;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
@@ -15,8 +16,8 @@ public class TaskSearchDialog {
         private final String status;
 
         private SearchCriteria(String keyword, String status) {
-            this.keyword = normalizeKeyword(keyword);
-            this.status = normalizeStatus(status);
+            this.keyword = org.example.util.SearchFilterUtil.normalizeKeyword(keyword);
+            this.status = org.example.util.SearchFilterUtil.normalizeStatus(status);
         }
 
         public static SearchCriteria of(String keyword, String status) {
@@ -34,42 +35,29 @@ public class TaskSearchDialog {
         public boolean isEmpty() {
             return (keyword == null || keyword.isEmpty()) && (status == null || status.isEmpty());
         }
-
-        private static String normalizeKeyword(String value) {
-            if (value == null) {
-                return null;
-            }
-            String trimmed = value.trim();
-            return trimmed.isEmpty() ? null : trimmed;
-        }
-
-        private static String normalizeStatus(String value) {
-            if (value == null || "すべて".equals(value)) {
-                return null;
-            }
-            String trimmed = value.trim();
-            return trimmed.isEmpty() ? null : trimmed;
-        }
     }
 
     private final Frame parent;
     private final JDialog dialog;
     private final JTextField txtKeyword = new JTextField(12);
-    private final JComboBox<String> comboStatus = new JComboBox<>(new String[]{"すべて", "未着手", "進行中", "完了"});
-    private final Runnable projectAction;
-    private final Runnable clearAction;
+    private final JComboBox<String> comboStatus = new JComboBox<>(new String[]{
+            AppMessages.FILTER_ALL,
+            Task.STATUS_NOT_STARTED,
+            Task.STATUS_IN_PROGRESS,
+            Task.STATUS_COMPLETED
+    });
+    private final SearchablePanel owner;
     private boolean confirmed = false;
 
-    public TaskSearchDialog(Frame parent, String initialKeyword, String initialStatus) {
-        this(parent, initialKeyword, initialStatus, null, null);
+    public TaskSearchDialog(Frame parent, SearchablePanel owner) {
+        this(parent, owner, null, null);
     }
 
-    public TaskSearchDialog(Frame parent, String initialKeyword, String initialStatus, Runnable projectAction, Runnable clearAction) {
+    public TaskSearchDialog(Frame parent, SearchablePanel owner, String initialKeyword, String initialStatus) {
         this.parent = parent;
-        this.projectAction = projectAction;
-        this.clearAction = clearAction;
-        dialog = new JDialog(parent, "検索／フィルタ", true);
-        dialog.setLayout(new BorderLayout(8, 8));
+        this.owner = owner;
+        dialog = new JDialog(parent, AppMessages.get("search.title", "検索／フィルタ"), true);
+        dialog.setLayout(new MigLayout("fill, insets 8, gap 8", "[grow]", "[][grow][]"));
         dialog.setMinimumSize(new Dimension(400, 280));
         dialog.setSize(420, 290);
         dialog.setLocationRelativeTo(parent);
@@ -85,13 +73,13 @@ public class TaskSearchDialog {
         Color bgColor  = AppTheme.BACKGROUND;
         Color btnOutlineBg = AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE;
 
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
+        JPanel actionPanel = new JPanel(new MigLayout("insets 12 12 8 12, gap 8, align left", "[]"));
         actionPanel.setOpaque(true);
         actionPanel.setBackground(bgColor);
-        actionPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 8, 12));
 
-        JButton btnProjectFilter = IconManager.getIconButton(IconManager.IconType.FOLDER, "プロジェクト");
-        btnProjectFilter.setToolTipText("プロジェクトでフィルタ");
+        JButton btnProjectFilter = IconManager.getIconButton(IconManager.IconType.FOLDER,
+                AppMessages.get("search.tooltip.project", "プロジェクト"));
+        btnProjectFilter.setToolTipText(AppMessages.get("search.tooltip.project.filter", "プロジェクトでフィルタ"));
         btnProjectFilter.setMargin(new Insets(3, 10, 3, 10));
         btnProjectFilter.setFocusPainted(false);
         btnProjectFilter.setOpaque(true);
@@ -103,28 +91,21 @@ public class TaskSearchDialog {
                 BorderFactory.createEmptyBorder(4, 8, 4, 8)
         ));
         btnProjectFilter.addActionListener(e -> {
-            if (projectAction != null) {
-                projectAction.run();
+            if (owner != null) {
+                owner.handleExistingProject();
             }
         });
 
         actionPanel.add(btnProjectFilter);
 
-        JPanel contentPanel = new JPanel(new GridBagLayout());
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        JPanel contentPanel = new JPanel(new MigLayout("fill, insets 16 16 16 16, wrap", "[right][grow,fill]", "[]12"));
         contentPanel.setBackground(panelBg);
         contentPanel.setOpaque(true);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 6, 12, 6);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        JLabel lblKeyword = new JLabel("検索:");
-        lblKeyword.setFont(AppTheme.FONT_MAIN);
-        lblKeyword.setForeground(labelFg);
-        lblKeyword.setOpaque(false);
-        contentPanel.add(lblKeyword, gbc);
-        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0;
+        JLabel lblSearch = new JLabel(AppMessages.get("search.label.keyword", "検索") + ":");
+        lblSearch.setForeground(AppTheme.TEXT_PRIMARY); // 文字色を明示的に設定
+        contentPanel.add(lblSearch, "align right");
+
         txtKeyword.setPreferredSize(new Dimension(UiConstants.FIELD_WIDTH_COMPACT, UiConstants.FIELD_HEIGHT_COMPACT));
         txtKeyword.setBackground(fieldBg);
         txtKeyword.setForeground(fieldFg);
@@ -134,25 +115,21 @@ public class TaskSearchDialog {
                 BorderFactory.createLineBorder(AppTheme.BORDER_COLOR),
                 BorderFactory.createEmptyBorder(4, 8, 4, 8)
         ));
-        contentPanel.add(txtKeyword, gbc);
+        contentPanel.add(txtKeyword, "wrap");
 
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        JLabel lblStatus = new JLabel("状態:");
-        lblStatus.setFont(AppTheme.FONT_MAIN);
-        lblStatus.setForeground(labelFg);
-        lblStatus.setOpaque(false);
-        contentPanel.add(lblStatus, gbc);
-        gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1.0;
+        JLabel lblStatus = new JLabel(AppMessages.get("search.label.status", "状態") + ":");
+        lblStatus.setForeground(AppTheme.TEXT_PRIMARY); // 文字色を明示的に設定
+        contentPanel.add(lblStatus, "align right");
         comboStatus.setPreferredSize(new Dimension(UiConstants.BUTTON_WIDTH_STANDARD, UiConstants.FIELD_HEIGHT_COMPACT));
         styleComboBox(comboStatus);
-        contentPanel.add(comboStatus, gbc);
+        UiLabels.installStatusRenderer(comboStatus);
+        contentPanel.add(comboStatus, "wrap");
 
-        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel footer = new JPanel(new MigLayout("insets 8 12 12 12, gap 8, align right", "[][]"));
         footer.setOpaque(true);
         footer.setBackground(bgColor);
-        footer.setBorder(BorderFactory.createEmptyBorder(8, 12, 12, 12));
 
-        JButton btnApply = new JButton("検索");
+        JButton btnApply = new JButton(AppMessages.get("common.button.search", "検索"));
         btnApply.setMargin(new Insets(4, 16, 4, 16));
         btnApply.setOpaque(true);
         btnApply.setContentAreaFilled(true);
@@ -160,13 +137,18 @@ public class TaskSearchDialog {
         btnApply.setForeground(Color.WHITE);
         btnApply.setFocusPainted(false);
         btnApply.addActionListener(e -> {
+            if (owner != null) {
+                SearchCriteria criteria = getCriteria();
+                owner.applySearchFilter(criteria.getKeyword(), criteria.getStatus());
+            }
             confirmed = true;
             dialog.dispose();
         });
         dialog.getRootPane().setDefaultButton(btnApply);
 
-        JButton btnClearFilter = IconManager.getIconButton(IconManager.IconType.CROSS, "クリア");
-        btnClearFilter.setToolTipText("フィルタをクリア");
+        JButton btnClearFilter = IconManager.getIconButton(IconManager.IconType.CROSS,
+                AppMessages.get("common.button.clear", "クリア"));
+        btnClearFilter.setToolTipText(AppMessages.get("search.tooltip.clear.filter", "フィルタをクリア"));
         btnClearFilter.setMargin(new Insets(4, 16, 4, 16));
         btnClearFilter.setOpaque(true);
         btnClearFilter.setContentAreaFilled(true);
@@ -174,19 +156,19 @@ public class TaskSearchDialog {
         btnClearFilter.setForeground(labelFg);
         btnClearFilter.setFocusPainted(false);
         btnClearFilter.addActionListener(e -> {
-            if (clearAction != null) {
-                clearAction.run();
+            if (owner != null) {
+                owner.handleClearFilter();
             }
             txtKeyword.setText("");
-            comboStatus.setSelectedItem("すべて");
+            comboStatus.setSelectedItem(AppMessages.FILTER_ALL);
         });
 
         footer.add(btnApply);
         footer.add(btnClearFilter);
 
-        dialog.add(actionPanel, BorderLayout.NORTH);
-        dialog.add(contentPanel, BorderLayout.CENTER);
-        dialog.add(footer, BorderLayout.SOUTH);
+        dialog.add(actionPanel, "grow, wrap");
+        dialog.add(contentPanel, "grow, wrap");
+        dialog.add(footer, "grow");
 
         if (initialKeyword != null) {
             txtKeyword.setText(initialKeyword);
@@ -221,6 +203,9 @@ public class TaskSearchDialog {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof String statusValue) {
+                    setText(AppMessages.statusDisplay(statusValue));
+                }
                 if (AppTheme.isDarkMode()) {
                     if (isSelected) {
                         c.setBackground(new Color(96, 165, 250));

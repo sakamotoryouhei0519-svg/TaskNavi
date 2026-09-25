@@ -8,17 +8,21 @@ import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CsvUtilTest {
 
     @Test
     void exportAndImportShouldRoundTripQuotedFields() throws Exception {
         File file = File.createTempFile("tasknavi-csv-roundtrip", ".csv");
-        Task task = new Task(1, "要件定義,見積もり", 0, 1, 80, "進行中",
+        Task task = new Task(1, "要件定義,見積もり", 0, 1, 0, 80, "進行中",
                 LocalDate.of(2025, 1, 10), LocalDate.of(2025, 1, 20));
         task.setAssignee("田中 太郎");
-        task.setPriority("高");
+
+        // 【修正】Task.PRIORITY_HIGH などの定数があればそれを使う
+        // もし定数がなければ、以下のように比較対象を合わせる
+        task.setPriority(Priority.HIGH);
 
         CsvUtil.exportToCsv(file, List.of(task));
         List<Task> imported = CsvUtil.importFromCsv(file);
@@ -26,14 +30,16 @@ class CsvUtilTest {
         assertEquals(1, imported.size());
         assertEquals("要件定義,見積もり", imported.get(0).getTitle());
         assertEquals("田中 太郎", imported.get(0).getAssignee());
-        assertEquals("高", imported.get(0).getPriority());
+        assertEquals(Task.STATUS_IN_PROGRESS, imported.get(0).getStatusCode());
+        assertEquals(Priority.HIGH.name(), imported.get(0).getPriorityCode());
+        assertEquals("高", imported.get(0).getPriorityLabel());
         assertEquals(80, imported.get(0).getProgress());
     }
 
     @Test
     void exportToCsvWithBomShouldWriteUtf8Bom() throws Exception {
         File file = File.createTempFile("tasknavi-csv-bom", ".csv");
-        Task task = new Task(1, "基本設計", 0, 1, 40, "未着手",
+        Task task = new Task(1, "基本設計", 0, 1, 0, 40, "未着手",
                 LocalDate.of(2025, 2, 1), LocalDate.of(2025, 2, 5));
         task.setAssignee("佐藤");
         task.setPriority("中");
@@ -42,7 +48,7 @@ class CsvUtilTest {
         byte[] bytes = Files.readAllBytes(file.toPath());
 
         assertEquals(3, bytes.length >= 3 ? 3 : bytes.length);
-        assertArrayEquals(new byte[] {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF}, java.util.Arrays.copyOf(bytes, 3));
+        assertArrayEquals(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF}, java.util.Arrays.copyOf(bytes, 3));
     }
 
     @Test
