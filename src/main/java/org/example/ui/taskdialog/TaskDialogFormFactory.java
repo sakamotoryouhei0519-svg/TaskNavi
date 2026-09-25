@@ -3,7 +3,7 @@ package org.example.ui.taskdialog;
 import net.miginfocom.swing.MigLayout;
 import org.example.AppMessages;
 import org.example.AppTheme;
-import org.example.DatePickerDialog;
+import org.example.ui.DatePickerDialog;
 import org.example.IconManager;
 import org.example.UiDebugUtil;
 

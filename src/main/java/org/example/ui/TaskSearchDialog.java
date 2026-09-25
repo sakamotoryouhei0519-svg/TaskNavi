@@ -1,6 +1,13 @@
-package org.example;
+package org.example.ui;
 
 import net.miginfocom.swing.MigLayout;
+import org.example.AppMessages;
+import org.example.AppTheme;
+import org.example.IconManager;
+import org.example.SearchablePanel;
+import org.example.Task;
+import org.example.UiConstants;
+import org.example.UiLabels;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;

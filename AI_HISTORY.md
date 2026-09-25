@@ -187,3 +187,10 @@
 4. **薄切り**: `GanttMouseController`、`IconGlyphs`、`AppThemeControls` を抽出。
 5. **小機能**: `MainFrame` が最後に開いたタブを Preferences で記憶・復元。
 6. **評価フォロー**: UI からの `new TaskDao()` を排除（`TaskService.createDefault()`）。`TaskDialog` は `taskService` 必須。handbook / README を現状パッケージに合わせて更新。
+
+### 2026-09-25（続き）: push 後フォロー
+
+- CI を `xvfb-run` 対応にし、ロケール依存アサーションを修正（Linux headless での失敗解消）
+- キーワード検索が担当者名にもマッチ（`TaskViewFilter`）
+- `DatePickerDialog` / `TaskSearchDialog` を `org.example.ui` へ移動
+- `AuthServiceTest`・JSON ラウンドトリップ・担当者キーワードテストを追加

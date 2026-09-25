@@ -69,12 +69,13 @@
 - 新規作成の組み立ては `TaskEntryFactory` も参照
 - 親選択肢／フォーム／保存検証は同パッケージ内のヘルパーに分割
 
-### DatePickerDialog
+### DatePickerDialog（`org.example.ui.DatePickerDialog`）
 - 日付選択の再利用部品
 - `LocalDate` の加減算と日付ボタン生成が重要
 
-### TaskSearchDialog
+### TaskSearchDialog（`org.example.ui.TaskSearchDialog`）
 - 検索条件の入力と確定を担当
+- キーワードはタスク名に加え担当者にもマッチする（`TaskViewFilter`）
 - 確定後は `SearchablePanel.applySearchFilter` を呼ぶ
 
 ## 6. よく見るロジック
@@ -101,8 +102,8 @@
 2. `TaskService` / `event/TaskEventBus`
 3. `ui.wbs.WbsPanel`
 4. `ui.taskdialog.TaskDialog` / `TaskEntryFactory`
-5. `DatePickerDialog`
-6. `TaskSearchDialog`
+5. `ui.DatePickerDialog`
+6. `ui.TaskSearchDialog`
 7. `ui.kanban.KanbanPanel` / `ui.gantt.GanttPanel` / `ui.calendar.CalendarPanel`
 8. `TaskDao`（検索・階層は `persistence` へ委譲）/ `Database`（Flyway）
 

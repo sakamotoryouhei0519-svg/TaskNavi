@@ -12,6 +12,7 @@ import java.util.Set;
 /**
  * 画面共通のキーワード／ステータス／プロジェクト絞り込み。
  * カンバン・カレンダー・ガントなどで同じ条件意味を共有する。
+ * キーワードはタスク名または担当者に部分一致する。
  */
 public final class TaskViewFilter {
 
@@ -20,7 +21,7 @@ public final class TaskViewFilter {
 
     /**
      * @param source             元タスク一覧（null 可）
-     * @param searchKeyword      タスク名キーワード（前後空白無視・大小文字無視）
+     * @param searchKeyword      タスク名または担当者のキーワード（前後空白無視・大小文字無視）
      * @param statusFilter       ステータスコード。null / ALL / 「すべて」は未指定扱い
      * @param projectFilterId    プロジェクト ID。配下（子孫含む）のみ残す
      * @param projectMemberCache プロジェクト ID → メンバー ID 集合のキャッシュ（null 不可）
@@ -75,8 +76,13 @@ public final class TaskViewFilter {
         if (keyword == null) {
             return true;
         }
+        String needle = keyword.toLowerCase();
         String name = task.getName();
-        return name != null && name.toLowerCase().contains(keyword.toLowerCase());
+        if (name != null && name.toLowerCase().contains(needle)) {
+            return true;
+        }
+        String assignee = task.getAssignee();
+        return assignee != null && !assignee.isBlank() && assignee.toLowerCase().contains(needle);
     }
 
     private static boolean matchesStatus(Task task, String status) {

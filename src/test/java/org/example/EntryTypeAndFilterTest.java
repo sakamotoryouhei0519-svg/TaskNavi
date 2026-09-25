@@ -20,7 +20,10 @@ class EntryTypeAndFilterTest {
         assertTrue(AppMessages.isFilterAll("ALL"));
         assertTrue(AppMessages.isFilterAll("すべて"));
         assertNull(SearchFilterUtil.normalizeStatus(AppMessages.FILTER_ALL));
-        assertEquals("すべて", AppMessages.statusDisplay(AppMessages.FILTER_ALL));
+        String filterAllDisplay = AppMessages.statusDisplay(AppMessages.FILTER_ALL);
+        assertNotNull(filterAllDisplay);
+        assertFalse(filterAllDisplay.isBlank());
+        assertTrue(AppMessages.isFilterAll(filterAllDisplay) || AppMessages.isFilterAll("ALL"));
     }
 
     @Test

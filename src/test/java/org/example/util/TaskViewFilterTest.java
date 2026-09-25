@@ -45,6 +45,19 @@ class TaskViewFilterTest {
     }
 
     @Test
+    void keywordMatchesAssignee() {
+        Task named = task(1, "Alpha", null, Task.STATUS_NOT_STARTED);
+        named.setAssignee("Sato");
+        Task other = task(2, "Beta", null, Task.STATUS_NOT_STARTED);
+        other.setAssignee("Suzuki");
+
+        List<Task> filtered = TaskViewFilter.apply(
+                List.of(named, other), "sat", null, null, new HashMap<>());
+
+        assertEquals(List.of(1), filtered.stream().map(Task::getId).toList());
+    }
+
+    @Test
     void nullCacheIsRejected() {
         assertThrows(IllegalArgumentException.class,
                 () -> TaskViewFilter.apply(List.of(), null, null, null, null));

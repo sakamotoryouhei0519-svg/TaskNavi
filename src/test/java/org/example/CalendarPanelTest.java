@@ -55,11 +55,13 @@ class CalendarPanelTest {
             assertEquals(LocalDate.now(), currentDate);
             assertEquals(LocalDate.now(), selectedDate);
 
-            // 期間タイトルが現在年・月を含むこと
+            // 期間タイトルが現在年を含み、月表示ラベルと一致すること
             JLabel lblPeriodTitle = getField(calendarPanel, "lblPeriodTitle", JLabel.class);
             assertNotNull(lblPeriodTitle);
+            assertEquals(
+                    org.example.ui.calendar.CalendarPeriodLabels.forMonth(LocalDate.now()),
+                    lblPeriodTitle.getText());
             assertTrue(lblPeriodTitle.getText().contains(String.valueOf(LocalDate.now().getYear())));
-            assertTrue(lblPeriodTitle.getText().contains(String.valueOf(LocalDate.now().getMonthValue())));
         });
     }
 

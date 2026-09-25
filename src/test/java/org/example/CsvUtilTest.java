@@ -66,4 +66,22 @@ class CsvUtilTest {
         assertEquals(1, tasks.size());
         assertEquals("要件定義,確認", tasks.get(0).getTitle());
     }
+
+    @Test
+    void exportAndImportJsonShouldRoundTrip() throws Exception {
+        File file = File.createTempFile("tasknavi-json-roundtrip", ".json");
+        Task task = new Task(3, "JSONタスク", 0, 1, 0, 25, "未着手",
+                LocalDate.of(2025, 3, 1), LocalDate.of(2025, 3, 10));
+        task.setAssignee("鈴木");
+        task.setPriority(Priority.LOW);
+
+        CsvUtil.exportToJson(file, List.of(task));
+        List<Task> imported = CsvUtil.importFromJson(file);
+
+        assertEquals(1, imported.size());
+        assertEquals("JSONタスク", imported.get(0).getTitle());
+        assertEquals("鈴木", imported.get(0).getAssignee());
+        assertEquals(Priority.LOW.name(), imported.get(0).getPriorityCode());
+        assertEquals(25, imported.get(0).getProgress());
+    }
 }
