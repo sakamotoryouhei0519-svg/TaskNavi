@@ -1,270 +1,82 @@
-# プロジェクト定義書: TaskNavi
+# TaskNavi
 
-## 開発運用メモ
+ローカルで動く **プロジェクト／タスク管理デスクトップアプリ**（Java 17 + Swing）。  
+WBS・カンバン・ガント・カレンダーを一つのウィンドウで切り替え、SQLite に保存します。
 
-- Git 管理を前提に、変更確認は画像ではなく diff で行う
-- UI の崩れやフォント問題は `-Dtasknavi.uiDebug=true` を付けて起動し、コンポーネントツリーとボタン状態をログで確認する
-- 絵文字やフォントの最小再現は `org.example.EmojiTest` を単体起動して確認する
-- AI が行った調査や判断は `AI_HISTORY.md` に要点を追記する
+## 解決したいこと
 
-## 1. アプリケーションの概要
+- 進捗を「一覧・板・日程」で切り替えて見たい
+- 担当・期限・優先度を同じデータで共有したい
+- ネット不要のローカル環境で、すぐに試せる形にしたい
 
-TaskNavi は、業務やプロジェクトの進行管理を行うための Java Swing アプリケーションです。  
-主な対象は、WBS（作業分解構造）・カンバン・ガントチャートを組み合わせて、タスクの作成、編集、進捗管理、検索、優先度管理を一枚の画面で扱えるようにしたものです。
+## 主な機能
 
-このアプリが解決する課題:
-- タスクの一覧を見通しよく管理したい
-- 進捗・担当者・期間を視覚的に把握したい
-- 優先度ごとに重要度を見分けたい
-- 画面ごとに異なる見方（ツリー・ボード・日程表）で管理したい
-- ローカル環境で簡単にデータを保持したい
+- 認証（登録／ログイン／パスワード再設定、試行制限付き）
+- WBS ツリー、カンバン、ガント、カレンダー
+- グローバル検索（タスク名 **または担当者**）とステータス絞り込み
+- 期限超過の強調表示、適用中フィルタの表示
+- 絞り込み結果または全件の JSON エクスポート／インポート
+- ライト／ダークテーマ、最後に開いたタブの記憶
 
-提供する主な機能:
-- ユーザー登録 / ログイン / パスワード再設定
-- WBS 形式のタスク木構造管理
-- カンバン形式でのステータス移動
-- ガントチャート形式での期間表示
-- 検索とフィルタ
-- 優先度色分け
-- SQLite によるデータ保存
-- CSV / JSON 形式でのインポート / エクスポート
+## 技術スタック
 
-### 1.1 最近の改善点
+| 領域 | 技術 |
+|------|------|
+| 言語 | Java 17 |
+| UI | Swing + MigLayout |
+| DB | SQLite + Flyway |
+| ビルド／テスト | Maven, JUnit 5 |
+| CI | GitHub Actions（Xvfb 上で `mvn test`） |
 
-TaskNavi は、使いやすさだけでなく、実運用で必要になる「互換性」と「保守性」を重視して改善を続けています。
+## 設計の要点（面接用）
 
-- ダークモード対応: AppTheme をテーマ化し、ライト/ダークを切り替えられるようにしました。色やフォント、入力欄のスタイルを一元管理し、画面ごとの差異を抑えています。
-- Excel 互換性の強化: CSV 出力時に UTF-8 BOM を付与し、Excel で日本語が文字化けしにくいようにしました。カンマや引用符を含む文字列も安全に扱えるようにしています。
-- SQLite スキーマの安全な更新: 既存データを壊さずに `users.role` や `tasks.priority` のような新しいカラムを自動補完できるようにしました。長期運用時のアップデートにも強い設計です。
-- 回帰確認の自動化: CSV インポート/エクスポートの正常系と異常系、DB 初期化と既存データ互換性を JUnit で確認できるようにしています。
+```
+UI (Panel / Dialog)
+  → TaskService（ユースケース + TaskEventBus で画面同期）
+    → TaskDao（公開 API）
+      → persistence.*（CRUD / 検索 / 階層）
+```
 
-このため、TaskNavi は単なる個人向けタスク管理ツールではなく、実務でも使いやすい「データ管理型の業務支援ツール」として使える状態を目指しています。
+- UI は `TaskDao` を直接 `new` しない（`TaskService.createDefault()`）
+- 画面間の再描画は `TaskEventBus`
+- 学習用の読み方: [`docs/beginner-handbook.md`](docs/beginner-handbook.md) / [`docs/study-checklist.md`](docs/study-checklist.md)
 
----
+## 起動方法
 
-## 2. システム構成・ファイル一覧
+```bash
+mvn -B test
+mvn -B -DskipTests package
+java -jar target/TaskNavi-1.0-SNAPSHOT-jar-with-dependencies.jar
+```
 
-### 2.1 システム構成の概要
-TaskNavi は、以下の層で構成されています。
+ログイン省略（デモ／スモーク）:
 
-- UI 層: Swing（`ui.wbs` / `ui.kanban` / `ui.gantt` / `ui.calendar` / `ui.auth` / `ui.taskdialog`）
-- アプリ制御層: `Main`, `MainFrame`
-- サービス層: `TaskService`, `AuthService`, `event.TaskEventBus`
-- ドメイン層: `Task`, `Priority`, `TaskStatus`, `EntryType`, `UserRole`
-- データアクセス層: `TaskDao`（実装は `persistence.*` へ委譲）, `UserDao`
-- DB 層: `Database`（Flyway）, `util.DatabaseUtil`
-- ユーティリティ層: `CsvUtil`, `EmailUtil`, `VerificationManager`, `AppMessages`, `SampleDataUtil`, `util.TaskViewFilter` など
+```bash
+java -Dtasknavi.skipLogin=true -jar target/TaskNavi-1.0-SNAPSHOT-jar-with-dependencies.jar
+```
 
-### 2.2 主要パッケージと入口クラス
+## デモ手順（約2分）
 
-| 場所 | 役割 |
-|---|---|
-| `org.example.Main` / `MainFrame` | 起動とメインウィンドウ（タブ・ヘッダー・ツールバー） |
-| `org.example.ui.auth.*` | ログイン／登録／パスワード再設定 |
-| `org.example.ui.wbs` / `kanban` / `gantt` / `calendar` | 各業務タブ（いずれも `TaskService` を受け取る） |
-| `org.example.ui.taskdialog.*` | タスク作成・編集ダイアログ |
-| `org.example.TaskService` | CRUD ユースケースと `TaskEventBus` へのイベント発行（`createDefault()` で組み立て） |
-| `org.example.TaskDao` + `persistence.*` | DB アクセスの公開 API と実装分割 |
-| `org.example.event.*` | 画面間の更新通知 |
-| `org.example.AppTheme` / `AppMessages` / `IconManager` | 見た目・文言・アイコン |
+1. 起動 → ログイン（または skipLogin）
+2. 「追加」でタスクを作成
+3. カンバン／カレンダーで同じタスクが見えることを確認（EventBus）
+4. 検索欄で名前または担当者を絞る → フィルタ表示が変わる
+5. エクスポートで「絞り込み結果／全件」を選べることを確認
 
-詳細な読み方は `docs/beginner-handbook.md` を参照。
+## このリポジトリで自分が説明できる変更例
 
-### 2.3 主要ファイルの責務
+- UI／persistence のパッケージ分割と CI 導入
+- 担当者キーワード検索、タブ記憶、期限超過表示、絞り込みエクスポート
+- 初学者向け handbook / study-checklist
 
-- Main
-  - プログラム開始時にデータベースを初期化し、UI を起動する
-- MainFrame
-  - アプリ全体の枠組み。4 つの画面を切り替える（最後のタブを記憶）
-- WbsPanel / KanbanPanel / GanttPanel / CalendarPanel
-  - 各ビューの表示と操作（`ui.*` パッケージ）
-- TaskService / TaskDao
-  - ユースケースと永続化。UI は Dao を直接 new しない
-- Database
-  - SQLite 接続と Flyway マイグレーション
-- Task
-  - 1 タスクの属性を表すモデル
+AI エージェントを活用して構築・リファクタを加速しましたが、層分け・テスト・上記の変更内容は自分で追い説明できます。
 
----
+## 開発メモ
 
-## 3. 主要な機能の仕様（画面とデータ）
+- UI デバッグ: `-Dtasknavi.uiDebug=true`
+- 調査メモ: `AI_HISTORY.md`
+- パッケージ／Maven `groupId` はともに `org.tasknavi`
 
-### 3.1 WBS 画面の仕様
+## ライセンス
 
-WbsPanel でできること:
-- タスクをツリー形式で表示
-- 親子関係でタスクを整理
-- タスク名検索
-- ステータスでフィルタ
-- プロジェクト単位で絞り込み
-- フィルタクリア
-- 新規プロジェクト作成
-- 新規サブタスク追加
-- タスク複製
-- タスク削除
-- 既存タスクの選択と編集
-- 優先度の指定
-- 開始日 / 終了日 / 担当者 / ステータスの編集
-
-検索とフィルタのルール:
-- キーワード検索: タスク名に含まれる文字列を対象
-- ステータスフィルタ: 「すべて」「未着手」「進行中」「完了」
-- プロジェクトフィルタ: 親子関係で対象プロジェクト配下のみ表示
-- フィルタクリア: 現在の検索条件と状態フィルタを解除
-
-優先度の色分けルール:
-- 高: 赤
-- 中: 青
-- 低: 灰色
-- この優先度はツリー表示・カンバンカード・ガントバーに反映される
-- AppTheme で共通定義されており、見た目の一貫性を保っている
-
-### 3.2 カンバン画面の仕様
-
-KanbanPanel でできること:
-- ステータスごとに 3 列を表示
-  - 未着手
-  - 進行中
-  - 完了
-- タスクカードを横並びで表示
-- 検索キーワードでカードを絞り込み
-- 左右のボタンでステータスを前後移動
-- 優先度バーをカードに表示
-
-### 3.3 ガントチャート画面の仕様
-
-GanttPanel でできること:
-- タスク期間を横棒で表示
-- 日付単位でスケジュールを視覚化
-- WBS の階層順に行を並べる
-- ホバー時に詳細ツールチップ表示
-- 進捗率と優先度をバーの見た目や tooltip で表現
-- マウスホイールで日幅を拡大・縮小
-
-### 3.4 データベース仕様
-
-SQLite を中心に使用し、主に次の 2 つのテーブルを扱う。
-
-#### users テーブル
-保存項目:
-- id
-- username
-- password
-- email
-- role
-
-用途:
-- ログイン認証
-- ユーザー情報管理
-- 管理者/一般ユーザー区分
-
-#### tasks テーブル
-保存項目:
-- id
-- parent_id
-- level
-- name
-- assignee
-- start_date
-- end_date
-- progress
-- status
-- priority
-
-用途:
-- タスク本体の保存
-- 親子関係の管理
-- 進捗と期間管理
-- 優先度の保存
-
-優先度の値:
-- 高
-- 中
-- 低
-
-データベース側の補正:
-- DatabaseUtil.initializeDatabase() で tasks テーブルに priority カラムがなければ追加
-- 既存データの互換性を保つための ALTER TABLE 対応あり
-
-### 3.5 CSV / JSON 連携
-CsvUtil により以下の形式を扱う:
-- CSV
-- BOM 付き UTF-8 CSV
-- TSV
-- JSON
-
-活用法:
-- タスク一覧の出力
-- 他システムへの移行
-- バックアップと復元
-
----
-
-## 4. プログラムの処理の流れ（ライフサイクル）
-
-### 4.1 起動から画面表示までの流れ
-
-1. Main.main() が実行される
-   - src/main/java/org/example/Main.java
-   - Java アプリのエントリーポイント
-
-2. 初回起動時にサンプルデータを投入
-   - SampleDataUtil.insertSampleTasksIfEmpty()
-   - tasks テーブルが空なら、見本タスクを登録する
-
-3. Swing の GUI を EDT 上で開始
-   - SwingUtilities.invokeLater(...)
-   - UI はイベントディスパッチスレッドで動かす設計になっている
-
-4. ログイン画面を表示
-   - ui.auth.LoginFrame が生成され、setVisible(true) で表示される
-
-5. ログイン処理
-   - username / password を UserDao.authenticate() に渡す
-   - users テーブルからハッシュ化済みパスワードを照合
-   - 成功すれば UserSession にログイン状態を保存
-
-6. メイン画面を表示
-   - MainFrame が起動
-   - WBS / カンバン / ガント / カレンダーの 4 つのタブを持つコンテナを生成
-
-7. 各画面がデータを読み込む
-   - WbsPanel.refreshWbs()
-   - KanbanPanel.refreshKanban()
-   - GanttPanel.paintComponent()
-   - 各画面は TaskService.getAllTasks() 経由で一覧を取得する
-
-8. DB からタスク一覧を取得
-   - TaskService → TaskDao.getAllTasks()
-   - SQLite の tasks テーブルから Task オブジェクトのリストを生成
-   - priority なども読み出される
-
-9. ユーザーが編集や追加を行う
-   - WbsPanel などでフォーム編集
-   - TaskService.addTask() / updateTask() で DB に反映し、TaskEventBus で画面へ通知
-   - 各パネルがイベントを受けて再描画する
-
-10. 実行結果が再描画される
-    - 修正後のデータが再読み込みされ、WBS / カンバン / ガント / カレンダーの各ビューが最新状態に更新される
-
-### 4.2 画面間連携のイメージ
-
-Main
-  → ui.auth.LoginFrame
-  → AuthService / UserDao
-  → UserSession
-  → MainFrame
-  → ui.wbs / ui.kanban / ui.gantt / ui.calendar
-  → TaskService / TaskEventBus
-  → TaskDao（persistence）
-  → Database / SQLite
-
-### 4.3 重要な設計思想
-- UI とデータアクセスを分離している
-- 画面は TaskService 経由で操作し、変更は TaskEventBus で連携する（UI は `new TaskDao()` しない）
-- TaskDao で DB 操作をまとめ、詳細は persistence に委譲する
-- Task はデータモデルとして振る舞う
-- AppTheme は見た目を一元管理する
-- priority は DB と UI に横断的に渡る重要属性として扱われている
-
----
+個人ポートフォリオ用途。再利用時は作者に確認してください。

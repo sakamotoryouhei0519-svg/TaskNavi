@@ -93,12 +93,12 @@
 - `util.TaskStatusCycle` を追加（カンバン／カレンダーで共有）。`CalendarStatusCycle` は互換ファサードに縮小
 - 未使用の `ui.CalendarPeriodLabels` ファサードを削除
 - `ui.MainTabChrome` を追加し、`MainFrame` のタブアイコン／タブ装飾を抽出（約 820 行 → 約 710 行）
-- `org.example.gantt` を `org.example.ui.gantt` に移し、他ビュー抽出物と配置を揃えた
+- `org.tasknavi.gantt` を `org.tasknavi.ui.gantt` に移し、他ビュー抽出物と配置を揃えた
 - `IconManager.paintCalendarOutline` を public 化（`MainTabChrome` から利用）
 
 ### Phase B（続き）: KanbanPanel 分割
 
-- `org.example.ui.kanban` を追加
+- `org.tasknavi.ui.kanban` を追加
   - `KanbanTaskFilter` … キーワード／ステータス／プロジェクト絞り込み
   - `KanbanColumnSupport` … 列見出し文言とカラム振り分け
   - `KanbanCardFactory` … カード UI・進捗バー・前後ステータスボタン（`CalendarStatusCycle` 再利用）
@@ -107,7 +107,7 @@
 
 ### Phase B（続き）: TaskDao 分割
 
-- `org.example.persistence` を追加し、巨大だった `TaskDao` から以下を抽出
+- `org.tasknavi.persistence` を追加し、巨大だった `TaskDao` から以下を抽出
   - `TaskRowMapper` … ResultSet → Task（列名互換・日付パース）
   - `TaskHierarchySupport` … 子孫収集・親進捗ロールアップ・階層検証
   - `TaskSearchDao` … 名前／担当／ステータス／日付／複合検索（DB 側）
@@ -116,7 +116,7 @@
 
 ### Phase B（一部）: WbsPanel 分割
 
-- `org.example.ui.wbs` パッケージを追加し、巨大だった `WbsPanel` から以下を抽出
+- `org.tasknavi.ui.wbs` パッケージを追加し、巨大だった `WbsPanel` から以下を抽出
   - `WbsTreeFilter` … プロジェクト／キーワード／ステータス絞り込み（祖先保持）
   - `WbsTreeModelBuilder` … ツリーノード組み立て
   - `WbsTreeCellRenderer` … セル描画・ドロップハイライト
@@ -127,7 +127,7 @@
 
 ### Phase B（続き）: CalendarPanel 分割
 
-- `org.example.ui.calendar` を追加
+- `org.tasknavi.ui.calendar` を追加
   - `CalendarTaskFilter` … キーワード／ステータス／プロジェクト絞り込みと日付マッチ
   - `CalendarStatusCycle` … ステータス前後移動・進捗からの推定
   - `CalendarTaskCardFactory` … 日別／週表示カード
@@ -138,7 +138,7 @@
 
 ### Phase B（続き）: GanttPanel 分割
 
-- `org.example.gantt` に追加
+- `org.tasknavi.gantt` に追加
   - `GanttTaskFilter` … 表示対象タスクの絞り込み
   - `GanttBarHit` … マウスヒット判定
   - `GanttBarDragMath` … 移動／リサイズ時の日付計算（親期間クランプ）
@@ -183,7 +183,7 @@
 
 1. **スモーク**: `MainFrameSmokeTest` 追加（4タブ開閉・検索クリア・テーマ切替）。`CalendarPanelTest` / `TaskDialogUiTest` を隔離 DB 化。`mvn test` 79件すべて成功。
 2. **CI**: `.github/workflows/ci.yml`（JDK 17 + Maven `test`）を追加。
-3. **認証 UI**: `LoginFrame` / `RegisterFrame` / `ResetPasswordFrame` を `org.example.ui.auth` へ移動。
+3. **認証 UI**: `LoginFrame` / `RegisterFrame` / `ResetPasswordFrame` を `org.tasknavi.ui.auth` へ移動。
 4. **薄切り**: `GanttMouseController`、`IconGlyphs`、`AppThemeControls` を抽出。
 5. **小機能**: `MainFrame` が最後に開いたタブを Preferences で記憶・復元。
 6. **評価フォロー**: UI からの `new TaskDao()` を排除（`TaskService.createDefault()`）。`TaskDialog` は `taskService` 必須。handbook / README を現状パッケージに合わせて更新。
@@ -192,5 +192,5 @@
 
 - CI を `xvfb-run` 対応にし、ロケール依存アサーションを修正（Linux headless での失敗解消）
 - キーワード検索が担当者名にもマッチ（`TaskViewFilter`）
-- `DatePickerDialog` / `TaskSearchDialog` を `org.example.ui` へ移動
+- `DatePickerDialog` / `TaskSearchDialog` を `org.tasknavi.ui` へ移動
 - `AuthServiceTest`・JSON ラウンドトリップ・担当者キーワードテストを追加

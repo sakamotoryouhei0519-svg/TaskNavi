@@ -229,9 +229,9 @@ MainFrame
 | 区分 | ファイル |
 |------|----------|
 | 必読 | `ui/TaskDataIoHelper.java` |
-| 必読 | `CsvUtil.java` |
+| 必読 | `util/CsvUtil.java` |
 | 必読 | `TaskService.importTasks` |
-| テスト | `CsvUtilTest` |
+| テスト | `util/CsvUtilTest` |
 
 ### 操作P: ライト／ダーク切替
 

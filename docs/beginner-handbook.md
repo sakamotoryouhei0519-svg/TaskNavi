@@ -36,7 +36,7 @@
 - `align right/left/center` は寄せ方
 
 ## 5. 画面ごとの重要ポイント
-### LoginFrame / RegisterFrame / ResetPasswordFrame（`org.example.ui.auth`）
+### LoginFrame / RegisterFrame / ResetPasswordFrame（`org.tasknavi.ui.auth`）
 - 認証画面のため、入力欄とボタン配置が重要
 - 認証ロジックは `AuthService`（試行制限付き）
 - 見た目の統一は `AppTheme` と `ui.auth.AuthFormWidgets` に寄せる
@@ -53,7 +53,7 @@
 
 ### WbsPanel / KanbanPanel / GanttPanel / CalendarPanel
 - 主要業務画面（いずれも `TaskService` を受け取る）
-- 本体はそれぞれ `org.example.ui.wbs` / `ui.kanban` / `ui.gantt` / `ui.calendar` に配置
+- 本体はそれぞれ `org.tasknavi.ui.wbs` / `ui.kanban` / `ui.gantt` / `ui.calendar` に配置
 - タスク一覧、状態、操作ボタンのつながりを見る
 - 表示更新は `refresh` 系と `TaskEventListener` に注目する
 - WBS のツリー構築・フィルタ・DnD・詳細フォーム／登録は同パッケージ内に分割
@@ -63,17 +63,17 @@
 - ステータス前後移動は `util.TaskStatusCycle`
 
 ### TaskDialog
-- タスク作成・編集の中心（`org.example.ui.taskdialog.TaskDialog`）
+- タスク作成・編集の中心（`org.tasknavi.ui.taskdialog.TaskDialog`）
 - 種別は `EntryType`（PROJECT / PHASE / TASK）
 - 日付入力は `DatePickerDialog` と連動する
 - 新規作成の組み立ては `TaskEntryFactory` も参照
 - 親選択肢／フォーム／保存検証は同パッケージ内のヘルパーに分割
 
-### DatePickerDialog（`org.example.ui.DatePickerDialog`）
+### DatePickerDialog（`org.tasknavi.ui.DatePickerDialog`）
 - 日付選択の再利用部品
 - `LocalDate` の加減算と日付ボタン生成が重要
 
-### TaskSearchDialog（`org.example.ui.TaskSearchDialog`）
+### TaskSearchDialog（`org.tasknavi.ui.TaskSearchDialog`）
 - 検索条件の入力と確定を担当
 - キーワードはタスク名に加え担当者にもマッチする（`TaskViewFilter`）
 - 確定後は `SearchablePanel.applySearchFilter` を呼ぶ
