@@ -114,6 +114,16 @@
                     <useModulePath>false</useModulePath>
                 </configuration>
             </plugin>
+
+            <!-- IDE / CLI: mvn exec:java （mainClass はここに寄せる） -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.6.4</version>
+                <configuration>
+                    <mainClass>org.tasknavi.Main</mainClass>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
