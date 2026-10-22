@@ -2,11 +2,11 @@ package org.tasknavi.ui.calendar;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.SearchablePanel;
-import org.tasknavi.Task;
-import org.tasknavi.TaskService;
-import org.tasknavi.UiConstants;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.SearchablePanel;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
+import org.tasknavi.ui.UiConstants;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
 import org.tasknavi.ui.ProjectFilterDialog;
@@ -291,6 +291,9 @@ public class CalendarPanel extends JPanel implements SearchablePanel {
 
     @Override
     public void applySearchFilter(String keyword, String status) {
+        if (org.tasknavi.util.SearchFilterUtil.isUnchanged(currentSearchKeyword, currentStatusFilter, keyword, status)) {
+            return;
+        }
         this.currentSearchKeyword = org.tasknavi.util.SearchFilterUtil.normalizeKeyword(keyword);
         this.currentStatusFilter = org.tasknavi.util.SearchFilterUtil.normalizeStatus(status);
         refreshCalendar();

@@ -2,9 +2,9 @@ package org.tasknavi.ui.calendar;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.IconManager;
-import org.tasknavi.Task;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.IconManager;
+import org.tasknavi.model.Task;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -14,7 +14,10 @@ import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Insets;
+import java.awt.RenderingHints;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -45,15 +48,11 @@ public final class CalendarDailySideSupport {
         lblDailyHeader.setFont(AppTheme.FONT_HEADER.deriveFont(Font.BOLD, 13f));
         lblDailyHeader.setForeground(AppTheme.TEXT_PRIMARY);
 
-        JLabel lblDailyCountBadge = new JLabel(AppMessages.format("calendar.count.format", "{0}件", 0));
+        JLabel lblDailyCountBadge = new CountBadge(AppMessages.format("calendar.count.format", "{0}件", 0));
         lblDailyCountBadge.setFont(AppTheme.FONT_SMALL.deriveFont(Font.BOLD, 11f));
-        lblDailyCountBadge.setForeground(Color.WHITE);
-        lblDailyCountBadge.setOpaque(true);
-        lblDailyCountBadge.setBackground(AppTheme.PRIMARY);
-        lblDailyCountBadge.setBorder(BorderFactory.createCompoundBorder(
-                AppTheme.createRoundedBorder(AppTheme.PRIMARY_DARK, 10, 1, 1, 1, 1),
-                new EmptyBorder(2, 6, 2, 6)
-        ));
+        lblDailyCountBadge.setForeground(AppTheme.PRIMARY);
+        lblDailyCountBadge.setOpaque(false);
+        lblDailyCountBadge.setBorder(new EmptyBorder(3, 8, 3, 8));
 
         titlePanel.add(lblDailyHeader);
         titlePanel.add(lblDailyCountBadge);
@@ -121,6 +120,26 @@ public final class CalendarDailySideSupport {
             for (Task task : tasksForSelectedDate) {
                 container.add(CalendarTaskCardFactory.create(task, false, cardActions), "growx");
             }
+        }
+    }
+
+    private static final class CountBadge extends JLabel {
+        private CountBadge(String text) {
+            super(text);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(AppTheme.isDarkMode() ? new Color(30, 58, 95) : new Color(219, 234, 254));
+                int arc = Math.max(getHeight(), 1);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), arc, arc);
+            } finally {
+                g2.dispose();
+            }
+            super.paintComponent(g);
         }
     }
 }

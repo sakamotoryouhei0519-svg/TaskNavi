@@ -1,6 +1,6 @@
 package org.tasknavi.util;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;

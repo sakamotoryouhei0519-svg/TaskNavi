@@ -1,10 +1,9 @@
 package org.tasknavi.ui;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.EntryType;
-import org.tasknavi.ErrorDialogUtil;
-import org.tasknavi.Task;
-import org.tasknavi.TaskService;
+import org.tasknavi.model.EntryType;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
@@ -22,47 +21,54 @@ public final class TaskDeleteHelper {
 
     public static void confirmAndDelete(Component parent, TaskService taskService, Task selected) {
         if (selected == null) {
-            JOptionPane.showMessageDialog(
-                    parent,
-                    AppMessages.get("mainframe.delete.none"),
-                    AppMessages.get("common.dialog.info.title"),
-                    JOptionPane.INFORMATION_MESSAGE);
+            NoticeBar.info(parent, AppMessages.get("mainframe.delete.none"));
             return;
         }
 
         String typeDomain = (selected.getLevel() == 1) ? EntryType.PROJECT.name() : EntryType.TASK.name();
         String typeDisplay = AppMessages.entryTypeDisplay(typeDomain);
+        String message = AppMessages.format(
+                "mainframe.delete.confirm",
+                "{0}「{1}」を削除しますか？\n（子タスクが存在する場合は子タスクも同時に削除されます）",
+                typeDisplay,
+                selected.getName());
+        boolean shown = NoticeBar.confirm(parent, message, () -> delete(parent, taskService, selected));
+        if (shown) {
+            return;
+        }
         int choice = JOptionPane.showConfirmDialog(
                 parent,
-                AppMessages.format(
-                        "mainframe.delete.confirm",
-                        "{0}「{1}」を削除しますか？\n（子タスクが存在する場合は子タスクも同時に削除されます）",
-                        typeDisplay,
-                        selected.getName()),
+                message,
                 AppMessages.get("mainframe.delete.confirm.title"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE
         );
-
         if (choice == JOptionPane.YES_OPTION) {
-            SwingWorker<Void, Void> worker = new SwingWorker<>() {
-                @Override
-                protected Void doInBackground() throws Exception {
-                    taskService.deleteTask(selected.getId());
-                    return null;
-                }
-
-                @Override
-                protected void done() {
-                    try {
-                        get();
-                    } catch (Exception e) {
-                        ErrorDialogUtil.showError(parent, AppMessages.get("mainframe.error.delete"));
-                        logger.error("タスク削除エラー", e);
-                    }
-                }
-            };
-            worker.execute();
+            delete(parent, taskService, selected);
         }
+    }
+
+    private static void delete(Component parent, TaskService taskService, Task selected) {
+        String name = selected.getName();
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                taskService.deleteTask(selected.getId());
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get();
+                    NoticeBar.info(parent, AppMessages.format(
+                            "message.deleted.named", "「{0}」を削除しました。", name));
+                } catch (Exception e) {
+                    ErrorDialogUtil.showBackgroundError(parent, e, AppMessages.get("mainframe.error.delete"));
+                    logger.error("タスク削除エラー", e);
+                }
+            }
+        };
+        worker.execute();
     }
 }

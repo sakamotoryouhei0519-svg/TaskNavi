@@ -1,8 +1,8 @@
 package org.tasknavi.ui.wbs;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.Task;
-import org.tasknavi.TaskBusinessRules;
+import org.tasknavi.model.Task;
+import org.tasknavi.model.TaskBusinessRules;
 
 import java.time.LocalDate;
 

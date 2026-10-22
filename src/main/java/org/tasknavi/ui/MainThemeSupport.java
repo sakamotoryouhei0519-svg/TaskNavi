@@ -1,8 +1,5 @@
 package org.tasknavi.ui;
 
-import org.tasknavi.AppTheme;
-import org.tasknavi.SearchablePanel;
-
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -117,7 +114,7 @@ public final class MainThemeSupport {
             button.setBorder(AppTheme.createRoundedBorder(AppTheme.PRIMARY, 8, 2, 2, 2, 2));
             return;
         }
-        if ("toolbar-outline".equals(variant) || "header".equals(variant)
+        if ("header".equals(variant) || "toolbar-outline".equals(variant)
                 || "secondary".equals(variant) || "toolbar".equals(variant)) {
             button.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
             button.setForeground(AppTheme.TEXT_PRIMARY);

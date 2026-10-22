@@ -1,10 +1,10 @@
 package org.tasknavi.ui;
 
+import org.tasknavi.AppException;
 import org.tasknavi.AppMessages;
 import org.tasknavi.util.CsvUtil;
-import org.tasknavi.ErrorDialogUtil;
-import org.tasknavi.Task;
-import org.tasknavi.TaskService;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
 import org.tasknavi.util.TaskViewFilter;
 
 import javax.swing.JFileChooser;
@@ -79,15 +79,13 @@ public final class TaskDataIoHelper {
             File selectedFile = fileChooser.getSelectedFile();
             try {
                 CsvUtil.exportToJson(selectedFile, toExport);
-                JOptionPane.showMessageDialog(
+                NoticeBar.info(
                         parent,
                         AppMessages.format(
                                 "mainframe.export.success.count",
                                 "エクスポートが正常に完了しました（{0}件）。\n保存先: {1}",
                                 toExport.size(),
-                                selectedFile.getAbsolutePath()),
-                        AppMessages.get("common.dialog.success.title"),
-                        JOptionPane.INFORMATION_MESSAGE);
+                                selectedFile.getAbsolutePath()));
             } catch (Exception e) {
                 ErrorDialogUtil.showError(
                         parent,
@@ -116,15 +114,13 @@ public final class TaskDataIoHelper {
                 try {
                     List<Task> importedTasks = CsvUtil.importFromJson(selectedFile);
                     taskService.importTasks(importedTasks, false);
-                    JOptionPane.showMessageDialog(
-                            parent,
-                            AppMessages.get("mainframe.import.success"),
-                            AppMessages.get("common.dialog.success.title"),
-                            JOptionPane.INFORMATION_MESSAGE);
+                    NoticeBar.info(parent, AppMessages.get("mainframe.import.success"));
                 } catch (Exception e) {
-                    ErrorDialogUtil.showError(
-                            parent,
-                            AppMessages.format("mainframe.import.failed", "インポートに失敗しました: {0}", e.getMessage()));
+                    AppException appException = ErrorDialogUtil.findAppException(e);
+                    String message = appException != null
+                            ? appException.getUserMessage()
+                            : AppMessages.format("mainframe.import.failed", "インポートに失敗しました: {0}", e.getMessage());
+                    ErrorDialogUtil.showError(parent, message);
                     logger.error("インポートエラー", e);
                 }
             }

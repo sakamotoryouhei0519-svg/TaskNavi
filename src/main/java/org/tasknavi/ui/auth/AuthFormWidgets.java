@@ -2,8 +2,8 @@ package org.tasknavi.ui.auth;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.UiConstants;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.UiConstants;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -102,11 +102,8 @@ public final class AuthFormWidgets {
 
     public static JButton createPrimaryButton(String text, int width, int height) {
         JButton button = new JButton(text);
+        AppTheme.styleDialogPrimaryButton(button);
         button.setFont(AppTheme.FONT_HEADER);
-        button.setBackground(AppTheme.PRIMARY);
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setMaximumSize(new Dimension(width, height));
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
         return button;
@@ -182,11 +179,8 @@ public final class AuthFormWidgets {
 
     public static JToggleButton createPasswordToggle(JPasswordField field) {
         JToggleButton toggle = new JToggleButton("🙈");
+        AppTheme.styleDialogSecondaryButton(toggle);
         toggle.setPreferredSize(new Dimension(UiConstants.ICON_BUTTON_SIZE_LARGE, UiConstants.FIELD_HEIGHT));
-        toggle.setFocusPainted(false);
-        toggle.setContentAreaFilled(false);
-        toggle.setBorder(BorderFactory.createLineBorder(AppTheme.BORDER_COLOR, 1));
-        toggle.setCursor(new Cursor(Cursor.HAND_CURSOR));
         toggle.setToolTipText(AppMessages.get("auth.password.toggle.tooltip"));
         toggle.addActionListener(e -> {
             if (toggle.isSelected()) {
@@ -231,9 +225,11 @@ public final class AuthFormWidgets {
         button.setText(busy ? busyText : idleText);
         if (busy) {
             button.setBackground(new Color(132, 148, 166));
+            button.setForeground(Color.WHITE);
             button.setCursor(Cursor.getDefaultCursor());
         } else {
             button.setBackground(AppTheme.PRIMARY);
+            button.setForeground(Color.WHITE);
             button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         }
     }

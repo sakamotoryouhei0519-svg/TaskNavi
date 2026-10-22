@@ -1,6 +1,6 @@
 package org.tasknavi.persistence;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

@@ -35,4 +35,18 @@ class GanttBarGeometryTest {
         assertEquals(0, GanttBarGeometry.dragModeForX(50, bar, 8));
         assertNull(GanttBarGeometry.barRect(null, null, null, 0, 10, 10, 10));
     }
+
+    @Test
+    void progressLabelStaysOffThePaleRemainderWhenFillIsShort() {
+        GanttBarGeometry.ProgressLabel label = GanttBarGeometry.progressLabel(0, 1000, 340, 28);
+        assertEquals(GanttBarGeometry.ProgressLabelPlace.ON_TRACK, label.place());
+        assertEquals(346, label.x());
+    }
+
+    @Test
+    void progressLabelSitsOnTheFillWhenMostOfTheBarIsDone() {
+        GanttBarGeometry.ProgressLabel label = GanttBarGeometry.progressLabel(0, 1000, 600, 28);
+        assertEquals(GanttBarGeometry.ProgressLabelPlace.ON_FILL, label.place());
+        assertEquals(566, label.x());
+    }
 }

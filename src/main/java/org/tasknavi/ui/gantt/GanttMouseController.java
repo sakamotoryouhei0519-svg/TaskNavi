@@ -1,7 +1,7 @@
 package org.tasknavi.ui.gantt;
 
-import org.tasknavi.Task;
-import org.tasknavi.TaskService;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
 
 import java.awt.Component;
 import java.awt.Cursor;
@@ -22,6 +22,8 @@ final class GanttMouseController extends MouseAdapter {
         void setSelectedTaskId(Integer taskId);
 
         void setHoveredTask(Task task);
+
+        void setHoveredTaskAtY(int y);
 
         void setManualVisibleWindow(boolean manual);
 
@@ -116,10 +118,15 @@ final class GanttMouseController extends MouseAdapter {
     }
 
     @Override
+    public void mouseExited(MouseEvent e) {
+        host.setHoveredTask(null);
+    }
+
+    @Override
     public void mouseMoved(MouseEvent e) {
+        host.setHoveredTaskAtY(e.getY());
         GanttBarHit hit = host.hitTest(e);
         if (hit == null) {
-            host.setHoveredTask(null);
             host.setCursor(Cursor.getDefaultCursor());
             host.setToolTipText(null);
             return;

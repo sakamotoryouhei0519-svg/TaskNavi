@@ -1,7 +1,7 @@
 package org.tasknavi.persistence;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 import org.tasknavi.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,18 +23,20 @@ public final class TaskSearchDao {
     private static final Logger logger = LoggerFactory.getLogger(TaskSearchDao.class);
 
     private static final String SQL_SEARCH_BY_NAME =
-            "SELECT * FROM tasks WHERE name LIKE ? ORDER BY parent_id, order_index, id ASC";
+            "SELECT * FROM tasks WHERE owner_id = ? AND name LIKE ? ORDER BY parent_id, order_index, id ASC";
     private static final String SQL_SEARCH_BY_ASSIGNEE =
-            "SELECT * FROM tasks WHERE assignee = ? ORDER BY parent_id, order_index, id ASC";
+            "SELECT * FROM tasks WHERE owner_id = ? AND assignee = ? ORDER BY parent_id, order_index, id ASC";
     private static final String SQL_FILTER_BY_STATUS =
-            "SELECT * FROM tasks WHERE status = ? ORDER BY parent_id, order_index, id ASC";
+            "SELECT * FROM tasks WHERE owner_id = ? AND status = ? ORDER BY parent_id, order_index, id ASC";
     private static final String SQL_FILTER_BY_DATE_RANGE =
-            "SELECT * FROM tasks WHERE (start_date >= ? AND start_date <= ?) OR (end_date >= ? AND end_date <= ?) "
-                    + "ORDER BY parent_id, order_index, id ASC";
+            "SELECT * FROM tasks WHERE owner_id = ? AND ((start_date >= ? AND start_date <= ?) "
+                    + "OR (end_date >= ? AND end_date <= ?)) ORDER BY parent_id, order_index, id ASC";
 
+    private final int ownerId;
     private final Supplier<List<Task>> allTasksSupplier;
 
-    public TaskSearchDao(Supplier<List<Task>> allTasksSupplier) {
+    public TaskSearchDao(int ownerId, Supplier<List<Task>> allTasksSupplier) {
+        this.ownerId = ownerId;
         this.allTasksSupplier = allTasksSupplier;
     }
 
@@ -42,21 +44,21 @@ public final class TaskSearchDao {
         if (keyword == null || keyword.trim().isEmpty()) {
             return allTasksSupplier.get();
         }
-        return query(SQL_SEARCH_BY_NAME, "名前検索エラー", ps -> ps.setString(1, "%" + keyword.toLowerCase() + "%"));
+        return query(SQL_SEARCH_BY_NAME, "名前検索エラー", ps -> ps.setString(2, "%" + keyword.toLowerCase() + "%"));
     }
 
     public List<Task> searchByAssignee(String assignee) {
         if (assignee == null || assignee.trim().isEmpty()) {
             return allTasksSupplier.get();
         }
-        return query(SQL_SEARCH_BY_ASSIGNEE, "担当者検索エラー", ps -> ps.setString(1, assignee));
+        return query(SQL_SEARCH_BY_ASSIGNEE, "担当者検索エラー", ps -> ps.setString(2, assignee));
     }
 
     public List<Task> filterByStatus(String status) {
         if (status == null || status.trim().isEmpty() || AppMessages.isFilterAll(status)) {
             return allTasksSupplier.get();
         }
-        return query(SQL_FILTER_BY_STATUS, "ステータスフィルタエラー", ps -> ps.setString(1, status));
+        return query(SQL_FILTER_BY_STATUS, "ステータスフィルタエラー", ps -> ps.setString(2, status));
     }
 
     public List<Task> filterByDateRange(LocalDate startDate, LocalDate endDate) {
@@ -64,10 +66,10 @@ public final class TaskSearchDao {
             return allTasksSupplier.get();
         }
         return query(SQL_FILTER_BY_DATE_RANGE, "日付範囲フィルタエラー", ps -> {
-            ps.setString(1, startDate.toString());
-            ps.setString(2, endDate.toString());
-            ps.setString(3, startDate.toString());
-            ps.setString(4, endDate.toString());
+            ps.setString(2, startDate.toString());
+            ps.setString(3, endDate.toString());
+            ps.setString(4, startDate.toString());
+            ps.setString(5, endDate.toString());
         });
     }
 
@@ -80,8 +82,9 @@ public final class TaskSearchDao {
             return allTasksSupplier.get();
         }
 
-        StringBuilder sql = new StringBuilder("SELECT * FROM tasks WHERE 1=1");
+        StringBuilder sql = new StringBuilder("SELECT * FROM tasks WHERE owner_id = ?");
         List<Object> params = new ArrayList<>();
+        params.add(ownerId);
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             sql.append(" AND name LIKE ?");
@@ -130,6 +133,7 @@ public final class TaskSearchDao {
         List<Task> taskList = new ArrayList<>();
         try (Connection conn = DatabaseUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, ownerId);
             binder.bind(pstmt);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {

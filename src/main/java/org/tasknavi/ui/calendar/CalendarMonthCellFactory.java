@@ -2,8 +2,8 @@ package org.tasknavi.ui.calendar;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.Task;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.model.Task;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
@@ -49,12 +49,9 @@ public final class CalendarMonthCellFactory {
         if (!isCurrentMonth) {
             cellBg = AppTheme.isDarkMode() ? new Color(20, 29, 44) : new Color(248, 250, 252);
         }
-        cell.setBackground(cellBg);
+        Color restingBg = cellBg;
+        cell.setBackground(restingBg);
 
-        Border selectedBorder = BorderFactory.createCompoundBorder(
-                AppTheme.createRoundedBorder(AppTheme.PRIMARY, 8, 2, 2, 2, 2),
-                new EmptyBorder(3, 4, 3, 4)
-        );
         Border todayBorder = BorderFactory.createCompoundBorder(
                 AppTheme.createRoundedBorder(new Color(59, 130, 246), 8, 2, 2, 2, 2),
                 new EmptyBorder(3, 4, 3, 4)
@@ -63,16 +60,10 @@ public final class CalendarMonthCellFactory {
                 AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 8, 1, 1, 1, 1),
                 new EmptyBorder(4, 5, 4, 5)
         );
-        Border hoverBorder = BorderFactory.createCompoundBorder(
-                AppTheme.createRoundedBorder(AppTheme.PRIMARY, 8, 1, 1, 1, 1),
-                new EmptyBorder(4, 5, 4, 5)
-        );
 
         if (isSelected) {
-            cell.setBorder(selectedBorder);
-            if (!AppTheme.isDarkMode()) {
-                cell.setBackground(new Color(240, 247, 255));
-            }
+            cell.setBorder(isToday ? todayBorder : normalBorder);
+            cell.setBackground(AppTheme.selectedFill());
         } else if (isToday) {
             cell.setBorder(todayBorder);
         } else {
@@ -140,14 +131,14 @@ public final class CalendarMonthCellFactory {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 if (!date.equals(actions.selectedDate())) {
-                    cell.setBorder(hoverBorder);
+                    cell.setBackground(AppTheme.hoverFill());
                 }
             }
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
                 if (!date.equals(actions.selectedDate())) {
-                    cell.setBorder(isToday ? todayBorder : normalBorder);
+                    cell.setBackground(restingBg);
                 }
             }
         });

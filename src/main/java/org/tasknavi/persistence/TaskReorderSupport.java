@@ -1,10 +1,9 @@
 package org.tasknavi.persistence;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.ObjIntConsumer;
 
 /**
  * 兄弟タスクの order_index 再割当て。
@@ -14,10 +13,8 @@ public final class TaskReorderSupport {
     private TaskReorderSupport() {
     }
 
-    /**
-     * @param updateOrder (taskId, newOrderIndex) を DB へ反映するコールバック
-     */
-    public static void reorderSiblings(Integer parentId, List<Task> allTasks, ObjIntConsumer<Integer> updateOrder) {
+    /** 並びが変わった兄弟だけを返す。DB へは呼び出し側がまとめて書く。 */
+    public static List<Task> reorderSiblings(Integer parentId, List<Task> allTasks) {
         List<Task> siblings = new ArrayList<>();
         for (Task task : allTasks) {
             if (parentId == null) {
@@ -30,12 +27,14 @@ public final class TaskReorderSupport {
         }
 
         siblings.sort((a, b) -> Integer.compare(a.getOrderIndex(), b.getOrderIndex()));
+        List<Task> changed = new ArrayList<>();
         for (int i = 0; i < siblings.size(); i++) {
             Task task = siblings.get(i);
             if (task.getOrderIndex() != i) {
                 task.setOrderIndex(i);
-                updateOrder.accept(task.getId(), i);
+                changed.add(task);
             }
         }
+        return changed;
     }
 }

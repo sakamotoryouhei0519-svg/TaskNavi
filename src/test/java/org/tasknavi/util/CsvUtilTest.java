@@ -1,8 +1,8 @@
 package org.tasknavi.util;
 
 import org.junit.jupiter.api.Test;
-import org.tasknavi.Priority;
-import org.tasknavi.Task;
+import org.tasknavi.model.Priority;
+import org.tasknavi.model.Task;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;

@@ -1,7 +1,7 @@
 package org.tasknavi.persistence;
 
 import org.tasknavi.AppException;
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 import org.tasknavi.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,12 +18,12 @@ import java.util.function.Consumer;
 public final class TaskImportDao {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskImportDao.class);
-    private static final String SQL_DELETE_ALL = "DELETE FROM tasks";
+    private static final String SQL_DELETE_OWNED = "DELETE FROM tasks WHERE owner_id = ?";
 
     private TaskImportDao() {
     }
 
-    public static void importTasks(List<Task> tasks, boolean replaceExisting, Consumer<Task> validate) {
+    public static void importTasks(List<Task> tasks, boolean replaceExisting, int ownerId, Consumer<Task> validate) {
         if (tasks == null) {
             return;
         }
@@ -33,7 +33,8 @@ public final class TaskImportDao {
             conn.setAutoCommit(false);
             try {
                 if (replaceExisting) {
-                    try (PreparedStatement deleteStmt = conn.prepareStatement(SQL_DELETE_ALL)) {
+                    try (PreparedStatement deleteStmt = conn.prepareStatement(SQL_DELETE_OWNED)) {
+                        deleteStmt.setInt(1, ownerId);
                         deleteStmt.executeUpdate();
                     }
                 }
@@ -45,7 +46,7 @@ public final class TaskImportDao {
                         }
                         validate.accept(task);
                         task.setId(0);
-                        TaskStatementBinder.bindInsert(insertStmt, task);
+                        TaskStatementBinder.bindInsert(insertStmt, task, ownerId);
                         insertStmt.addBatch();
                     }
                     insertStmt.executeBatch();

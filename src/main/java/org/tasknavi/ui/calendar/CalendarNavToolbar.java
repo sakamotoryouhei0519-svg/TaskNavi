@@ -2,7 +2,7 @@ package org.tasknavi.ui.calendar;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
+import org.tasknavi.ui.AppTheme;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -32,8 +32,16 @@ public final class CalendarNavToolbar {
         void onWeekView();
     }
 
-    public record Result(JPanel panel, JLabel periodTitle, JButton monthButton, JButton weekButton) {
+    public record Result(
+            JPanel panel,
+            JLabel periodTitle,
+            JButton monthButton,
+            JButton weekButton,
+            JPanel viewSwitch
+    ) {
         public void updateViewSwitchStyle(boolean monthActive) {
+            viewSwitch.setBackground(trackColor());
+            viewSwitch.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 12, 2, 2, 2, 2));
             applyViewSwitchStyle(monthButton, monthActive);
             applyViewSwitchStyle(weekButton, !monthActive);
         }
@@ -70,9 +78,10 @@ public final class CalendarNavToolbar {
         lblPeriodTitle.setFont(AppTheme.FONT_TITLE.deriveFont(Font.BOLD, 18f));
         lblPeriodTitle.setForeground(AppTheme.TEXT_PRIMARY);
 
-        JPanel viewSwitchGroup = new JPanel(new MigLayout("insets 2, gap 2", "[][]"));
-        viewSwitchGroup.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : new Color(241, 245, 249));
-        viewSwitchGroup.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 10, 1, 1, 1, 1));
+        JPanel viewSwitchGroup = new JPanel(new MigLayout("insets 3, gap 0", "[][]"));
+        viewSwitchGroup.setOpaque(true);
+        viewSwitchGroup.setBackground(trackColor());
+        viewSwitchGroup.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 12, 2, 2, 2, 2));
 
         boolean month = actions.isMonthView();
         JButton btnMonthView = createViewSwitchButton(
@@ -90,7 +99,7 @@ public final class CalendarNavToolbar {
         panel.add(lblPeriodTitle, "center");
         panel.add(viewSwitchGroup, "right");
 
-        return new Result(panel, lblPeriodTitle, btnMonthView, btnWeekView);
+        return new Result(panel, lblPeriodTitle, btnMonthView, btnWeekView, viewSwitchGroup);
     }
 
     private static JButton createNavButton(String text) {
@@ -116,17 +125,10 @@ public final class CalendarNavToolbar {
     }
 
     static void applyViewSwitchStyle(JButton btn, boolean active) {
-        if (btn == null) {
-            return;
-        }
-        if (active) {
-            btn.setBackground(AppTheme.PRIMARY);
-            btn.setForeground(Color.WHITE);
-            btn.setBorder(AppTheme.createRoundedBorder(AppTheme.PRIMARY_DARK, 6, 1, 1, 1, 1));
-        } else {
-            btn.setBackground(AppTheme.isDarkMode() ? new Color(42, 50, 61) : Color.WHITE);
-            btn.setForeground(AppTheme.TEXT_MUTED);
-            btn.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 6, 1, 1, 1, 1));
-        }
+        AppTheme.styleSegmentButton(btn, active);
+    }
+
+    private static Color trackColor() {
+        return AppTheme.isDarkMode() ? new Color(30, 41, 59) : new Color(226, 232, 240);
     }
 }

@@ -1,8 +1,5 @@
 package org.tasknavi.ui;
 
-import org.tasknavi.AppTheme;
-import org.tasknavi.IconManager;
-
 import javax.swing.Icon;
 import javax.swing.JTabbedPane;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;

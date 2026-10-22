@@ -1,7 +1,7 @@
 package org.tasknavi.ui.taskdialog;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.EntryType;
+import org.tasknavi.model.EntryType;
 
 import java.time.LocalDate;
 

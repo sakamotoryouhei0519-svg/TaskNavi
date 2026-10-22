@@ -2,8 +2,8 @@ package org.tasknavi.ui.calendar;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.Task;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.model.Task;
 import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.BorderFactory;
@@ -43,7 +43,8 @@ public final class CalendarTaskCardFactory {
 
     public static JPanel create(Task task, boolean isCompact, Actions actions) {
         JPanel card = new JPanel(new BorderLayout(8, 6));
-        card.setBackground(AppTheme.isDarkMode() ? new Color(42, 50, 61) : Color.WHITE);
+        Color baseBg = AppTheme.isDarkMode() ? new Color(42, 50, 61) : Color.WHITE;
+        card.setBackground(baseBg);
 
         Color statusColor = AppTheme.getStatusColor(task.getStatusCode());
         Color accent = task.isOverdue()
@@ -53,12 +54,11 @@ public final class CalendarTaskCardFactory {
                 AppTheme.createRoundedBorder(accent, 10, task.isOverdue() ? 2 : 1, task.isOverdue() ? 2 : 1, task.isOverdue() ? 2 : 1, task.isOverdue() ? 2 : 1),
                 new EmptyBorder(8, 10, 8, 10)
         );
-        Border hoverBorder = BorderFactory.createCompoundBorder(
-                AppTheme.createRoundedBorder(AppTheme.PRIMARY, 10, 2, 2, 2, 2),
-                new EmptyBorder(7, 9, 7, 9)
-        );
         Integer selectedTaskId = actions.selectedTaskId();
-        card.setBorder((selectedTaskId != null && selectedTaskId.equals(task.getId())) ? hoverBorder : normalBorder);
+        card.setBorder(normalBorder);
+        if (selectedTaskId != null && selectedTaskId.equals(task.getId())) {
+            card.setBackground(AppTheme.selectedFill());
+        }
         card.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         card.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -70,15 +70,18 @@ public final class CalendarTaskCardFactory {
 
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
-                card.setBorder(hoverBorder);
+                Integer selected = actions.selectedTaskId();
+                if (selected == null || !selected.equals(task.getId())) {
+                    card.setBackground(AppTheme.hoverFill());
+                }
             }
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
                 Integer selected = actions.selectedTaskId();
-                if (selected == null || !selected.equals(task.getId())) {
-                    card.setBorder(normalBorder);
-                }
+                card.setBackground(selected != null && selected.equals(task.getId())
+                        ? AppTheme.selectedFill()
+                        : baseBg);
             }
         });
 
@@ -147,28 +150,14 @@ public final class CalendarTaskCardFactory {
             actionPanel.setOpaque(false);
 
             if (!task.isNotStarted()) {
-                JButton prevBtn = new JButton(AppMessages.get("calendar.button.prev.status", "◀ 前へ"));
-                prevBtn.setFont(AppTheme.FONT_SMALL.deriveFont(10f));
-                prevBtn.setMargin(new Insets(2, 6, 2, 6));
-                prevBtn.setFocusPainted(false);
-                prevBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                prevBtn.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 6, 1, 1, 1, 1));
-                prevBtn.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
-                prevBtn.setForeground(AppTheme.TEXT_PRIMARY);
+                JButton prevBtn = arrowButton(AppMessages.get("kanban.button.prev", "←"));
                 prevBtn.addActionListener(e ->
                         actions.onStatusChange(task, TaskStatusCycle.previous(task.getStatusCode())));
                 actionPanel.add(prevBtn);
             }
 
             if (!task.isCompleted()) {
-                JButton nextBtn = new JButton(AppMessages.get("calendar.button.next.status", "次へ ▶"));
-                nextBtn.setFont(AppTheme.FONT_SMALL.deriveFont(10f));
-                nextBtn.setMargin(new Insets(2, 6, 2, 6));
-                nextBtn.setFocusPainted(false);
-                nextBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                nextBtn.setBorder(AppTheme.createRoundedBorder(AppTheme.PRIMARY, 6, 1, 1, 1, 1));
-                nextBtn.setBackground(AppTheme.PRIMARY);
-                nextBtn.setForeground(Color.WHITE);
+                JButton nextBtn = arrowButton(AppMessages.get("kanban.button.next", "→"));
                 nextBtn.addActionListener(e ->
                         actions.onStatusChange(task, TaskStatusCycle.next(task.getStatusCode())));
                 actionPanel.add(nextBtn);
@@ -178,6 +167,22 @@ public final class CalendarTaskCardFactory {
         }
 
         return card;
+    }
+
+    private static JButton arrowButton(String text) {
+        JButton button = new JButton(text);
+        button.setUI(new javax.swing.plaf.basic.BasicButtonUI());
+        button.setFont(AppTheme.FONT_BOLD);
+        button.setMargin(new Insets(2, 8, 2, 8));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setFocusPainted(false);
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(true);
+        button.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+        button.setForeground(AppTheme.TEXT_PRIMARY);
+        button.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 8, 2, 2, 2, 2));
+        return button;
     }
 
     public static JComponent createProgressBar(int progress, String status) {

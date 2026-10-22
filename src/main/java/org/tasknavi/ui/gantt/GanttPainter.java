@@ -1,9 +1,9 @@
 package org.tasknavi.ui.gantt;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.Task;
-import org.tasknavi.UiLabels;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.model.Task;
+import org.tasknavi.ui.UiLabels;
 
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
@@ -101,7 +101,9 @@ public final class GanttPainter {
             g2.setColor(bgHeader);
             g2.fillRect(x, offsetY + 22, dayWidth, headerHeight - 22);
             g2.setColor(AppTheme.BORDER_COLOR);
+            g2.setStroke(new BasicStroke(2f));
             g2.drawRect(x, offsetY + 22, dayWidth, headerHeight - 22);
+            g2.setStroke(new BasicStroke(1f));
 
             Shape oldClip = g2.getClip();
             g2.clipRect(x, offsetY + 22, dayWidth, headerHeight - 22);
@@ -168,11 +170,13 @@ public final class GanttPainter {
             int totalDays,
             int dayWidth
     ) {
+        g2.setStroke(new BasicStroke(2f));
         for (int i = 0; i < totalDays; i++) {
             int x = i * dayWidth;
-            g2.setColor(new Color(220, 220, 220));
+            g2.setColor(AppTheme.isDarkMode() ? new Color(71, 85, 105) : new Color(148, 163, 184));
             g2.drawLine(x, startY, x, endY);
         }
+        g2.setStroke(new BasicStroke(1f));
     }
 
     public static void drawTaskNameCell(
@@ -180,23 +184,30 @@ public final class GanttPainter {
             Task task,
             int y,
             Integer selectedTaskId,
+            Integer hoveredTaskId,
             int taskNameWidth,
             int rowHeight
     ) {
+        boolean selected = selectedTaskId != null && task.getId() == selectedTaskId;
+        boolean hovered = hoveredTaskId != null && task.getId() == hoveredTaskId;
         Color rowBg;
-        if (AppTheme.isDarkMode()) {
+        if (selected) {
+            rowBg = AppTheme.selectedFill();
+        } else if (hovered) {
+            rowBg = AppTheme.hoverFill();
+        } else if (AppTheme.isDarkMode()) {
             rowBg = new Color(30, 41, 59);
         } else {
-            rowBg = (selectedTaskId != null && task.getId() == selectedTaskId)
-                    ? new Color(236, 244, 255)
-                    : Color.WHITE;
+            rowBg = Color.WHITE;
         }
         g2.setColor(rowBg);
         g2.fillRect(0, y, taskNameWidth, rowHeight);
-        g2.setColor(AppTheme.isDarkMode() ? new Color(71, 85, 105) : new Color(226, 232, 240));
-        g2.fillRect(0, y + rowHeight - 1, taskNameWidth, 1);
+        g2.setColor(AppTheme.isDarkMode() ? new Color(71, 85, 105) : new Color(148, 163, 184));
+        g2.fillRect(0, y + rowHeight - 2, taskNameWidth, 2);
+        g2.setStroke(new BasicStroke(2f));
         g2.setColor(AppTheme.BORDER_COLOR);
-        g2.drawRect(0, y, taskNameWidth, rowHeight);
+        g2.drawRect(1, y + 1, Math.max(1, taskNameWidth - 2), Math.max(1, rowHeight - 2));
+        g2.setStroke(new BasicStroke(1f));
 
         int indent = 10 + (Math.max(0, task.getLevel() - 1) * 15);
 
@@ -275,20 +286,21 @@ public final class GanttPainter {
         g2.drawRoundRect(barX, barY, barWidth, barHeight, 8, 8);
         g2.setStroke(new BasicStroke(1.0f));
 
-        g2.setFont(new Font("SansSerif", Font.BOLD, 11));
+        g2.setFont(new Font("SansSerif", Font.BOLD, 12));
         String progressText = progress + "%";
         FontMetrics fm = g2.getFontMetrics();
         int textWidth = fm.stringWidth(progressText);
-        int textX = barX + Math.max(6, (barWidth - textWidth) / 2);
+        GanttBarGeometry.ProgressLabel label = GanttBarGeometry.progressLabel(
+                barX, barWidth, progressWidth, textWidth);
         int textY = barY + (barHeight + fm.getAscent()) / 2 - 2;
-
-        if (progress == 0) {
-            g2.setColor(mainColor);
-            g2.drawString(progressText, textX, textY);
-        } else {
+        if (label.place() == GanttBarGeometry.ProgressLabelPlace.ON_FILL) {
             g2.setColor(Color.WHITE);
-            g2.drawString(progressText, textX, textY);
+        } else if (label.place() == GanttBarGeometry.ProgressLabelPlace.ON_TRACK) {
+            g2.setColor(new Color(15, 23, 42));
+        } else {
+            g2.setColor(AppTheme.TEXT_PRIMARY);
         }
+        g2.drawString(progressText, label.x(), textY);
 
         if (isDragging) {
             g2.setComposite(originalComposite);

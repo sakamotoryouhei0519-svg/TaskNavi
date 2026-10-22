@@ -1,11 +1,11 @@
 package org.tasknavi.ui.wbs;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.Task;
-import org.tasknavi.TaskService;
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
 
 import javax.swing.JComponent;
-import javax.swing.JOptionPane;
 import javax.swing.JTree;
 import javax.swing.TransferHandler;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -222,20 +222,18 @@ public class WbsTreeTransferHandler extends TransferHandler {
             siblings.add(newIndex, movedTask);
 
             for (int i = 0; i < siblings.size(); i++) {
-                Task task = siblings.get(i);
-                task.setOrderIndex(i);
-                taskService.updateTaskOrderIndex(task.getId(), i);
+                siblings.get(i).setOrderIndex(i);
             }
+            taskService.updateSiblingOrder(siblings);
 
             host.clearDropHighlight();
             return true;
         } catch (Exception e) {
             host.clearDropHighlight();
-            JOptionPane.showMessageDialog(
+            ErrorDialogUtil.showBackgroundError(
                     host.dialogParent(),
-                    AppMessages.get("wbs.error.move", "タスクの移動に失敗しました。"),
-                    AppMessages.get("common.dialog.error.title", "エラー"),
-                    JOptionPane.ERROR_MESSAGE);
+                    e,
+                    AppMessages.get("wbs.error.move", "タスクの移動に失敗しました。"));
             return false;
         }
     }

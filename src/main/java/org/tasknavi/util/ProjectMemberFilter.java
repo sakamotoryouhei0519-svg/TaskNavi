@@ -1,6 +1,6 @@
 package org.tasknavi.util;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 import java.util.HashMap;
 import java.util.HashSet;

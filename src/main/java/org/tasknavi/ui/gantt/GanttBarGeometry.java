@@ -58,4 +58,35 @@ public final class GanttBarGeometry {
         }
         return 1;
     }
+
+    public enum ProgressLabelPlace {
+        ON_FILL,
+        ON_TRACK,
+        OUTSIDE
+    }
+
+    public record ProgressLabel(int x, ProgressLabelPlace place) {
+    }
+
+    /**
+     * 進捗の数字を、塗った部分か薄い残りのどちらかに収める。
+     * バーの中央に置くと、進みが少ないとき白文字が白い残りに乗って読めなくなる。
+     */
+    public static ProgressLabel progressLabel(int barX, int barWidth, int progressWidth, int textWidth) {
+        int pad = 6;
+        int fillRoom = progressWidth - pad * 2;
+        int restStart = barX + progressWidth;
+        int restRoom = barWidth - progressWidth - pad * 2;
+        boolean halfOrMore = progressWidth * 2 >= barWidth;
+        if (fillRoom >= textWidth && (halfOrMore || restRoom < textWidth)) {
+            return new ProgressLabel(barX + progressWidth - textWidth - pad, ProgressLabelPlace.ON_FILL);
+        }
+        if (restRoom >= textWidth) {
+            return new ProgressLabel(restStart + pad, ProgressLabelPlace.ON_TRACK);
+        }
+        if (fillRoom >= textWidth) {
+            return new ProgressLabel(barX + pad, ProgressLabelPlace.ON_FILL);
+        }
+        return new ProgressLabel(barX + barWidth + 4, ProgressLabelPlace.OUTSIDE);
+    }
 }

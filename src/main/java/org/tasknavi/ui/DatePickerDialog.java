@@ -2,8 +2,6 @@ package org.tasknavi.ui;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.UiLabels;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -74,7 +72,9 @@ public class DatePickerDialog extends JDialog {
         
         // カレンダーUIの構築
         buildCalendarUI();
-        
+        DialogFit.showAll(this);
+        DialogKeys.install(this, null, this::dispose);
+
         // ダイアログを表示
         setVisible(true);
     }
@@ -95,8 +95,6 @@ public class DatePickerDialog extends JDialog {
      */
     private void initializeDialog() {
         // setSizeとは、ウィンドウのサイズを設定すること（幅320、高さ280）
-        setSize(320, 280);
-        
         // setLocationRelativeTo(parent)とは、親ウィンドウの中央に配置すること
         // nullを指定すると画面の中央に配置されます
         setLocationRelativeTo(getParent());
@@ -207,17 +205,12 @@ public class DatePickerDialog extends JDialog {
                 final int selectedDay = day;
                 
                 JButton btnDay = new JButton(String.valueOf(day));
-                btnDay.setMargin(new Insets(2, 2, 2, 2));
-                btnDay.setFocusPainted(false);
-                btnDay.setForeground(AppTheme.TEXT_PRIMARY);
-                
-                // 今日の日付なら背景色を変える（テーマ対応）
                 if (selectedDate[0].getDayOfMonth() == day) {
-                    btnDay.setBackground(AppTheme.isDarkMode() ? new Color(59, 130, 246) : new Color(200, 220, 255));
-                    btnDay.setForeground(Color.WHITE);
+                    AppTheme.styleDialogPrimaryButton(btnDay);
                 } else {
-                    btnDay.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+                    AppTheme.styleDialogSecondaryButton(btnDay);
                 }
+                btnDay.setMargin(new Insets(4, 8, 4, 8));
                 
                 // 日付ボタンクリック時の処理
                 btnDay.addActionListener(e -> {
@@ -288,10 +281,6 @@ public class DatePickerDialog extends JDialog {
      * @param button スタイリング対象のボタン
      */
     private void styleNavigationButton(JButton button) {
-        button.setFont(AppTheme.FONT_MAIN);
-        button.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
-        button.setForeground(AppTheme.TEXT_PRIMARY);
-        button.setFocusPainted(false);
-        button.setBorderPainted(false);
+        AppTheme.styleDialogSecondaryButton(button);
     }
 }

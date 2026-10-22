@@ -1,8 +1,13 @@
 package org.tasknavi.ui.gantt;
 
-import org.tasknavi.Task;
+import org.tasknavi.AppException;
+import org.tasknavi.AppMessages;
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.ui.NoticeBar;
+import org.tasknavi.model.Task;
 import org.tasknavi.ui.taskdialog.TaskDialog;
-import org.tasknavi.TaskService;
+import org.tasknavi.service.TaskService;
+import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.SwingUtilities;
 import java.awt.Component;
@@ -35,9 +40,15 @@ public final class GanttTaskEditor {
         task.setName(dialog.getTaskName());
         task.setAssignee(dialog.getAssignee());
         task.setProgress(dialog.getProgress());
+        task.setStatus(TaskStatusCycle.fromProgress(task.getProgress()));
         task.setPriority(dialog.getPriority());
         task.setStartDate(LocalDate.parse(dialog.getStartDate()));
         task.setEndDate(LocalDate.parse(dialog.getEndDate()));
-        taskService.updateTask(task);
+        try {
+            taskService.updateTask(task);
+            NoticeBar.info(parent, AppMessages.get("notice.saved", "保存しました"));
+        } catch (AppException e) {
+            ErrorDialogUtil.showError(parent, e.getUserMessage());
+        }
     }
 }

@@ -26,14 +26,22 @@ public final class GanttViewportSupport {
         if (e.isShiftDown()) {
             JScrollBar horizontal = scrollPane.getHorizontalScrollBar();
             if (horizontal != null) {
-                horizontal.setValue(horizontal.getValue() + e.getWheelRotation() * 24);
+                horizontal.setValue(horizontal.getValue() + wheelDelta(e));
             }
             return;
         }
 
         JScrollBar vertical = scrollPane.getVerticalScrollBar();
         if (vertical != null) {
-            vertical.setValue(vertical.getValue() + e.getWheelRotation() * 24);
+            vertical.setValue(vertical.getValue() + wheelDelta(e));
         }
+    }
+
+    private static int wheelDelta(MouseWheelEvent e) {
+        double rotation = e.getPreciseWheelRotation();
+        if (rotation == 0) {
+            rotation = e.getWheelRotation();
+        }
+        return (int) Math.round(rotation * 100);
     }
 }

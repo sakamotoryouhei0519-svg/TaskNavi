@@ -1,9 +1,7 @@
 package org.tasknavi.ui;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.SearchablePanel;
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -58,6 +56,14 @@ public final class MainGlobalSearchBar {
         return txtGlobalSearch;
     }
 
+    public void focusSearch() {
+        if (txtGlobalSearch == null) {
+            return;
+        }
+        txtGlobalSearch.requestFocusInWindow();
+        txtGlobalSearch.selectAll();
+    }
+
     public JButton filterButton() {
         return btnGlobalFilter;
     }
@@ -107,6 +113,7 @@ public final class MainGlobalSearchBar {
         txtGlobalSearch.setOpaque(false);
         txtGlobalSearch.setForeground(AppTheme.TEXT_PRIMARY);
         txtGlobalSearch.setCaretColor(AppTheme.TEXT_PRIMARY);
+        txtGlobalSearch.setToolTipText(AppMessages.get("mainframe.search.tooltip", "Ctrl+F"));
 
         btnClearSearch = new JButton("✕");
         btnClearSearch.setFont(AppTheme.FONT_SMALL.deriveFont(Font.BOLD, 10f));

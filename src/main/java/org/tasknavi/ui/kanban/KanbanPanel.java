@@ -1,13 +1,15 @@
 package org.tasknavi.ui.kanban;
 
 import net.miginfocom.swing.MigLayout;
+import org.tasknavi.AppException;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.ErrorDialogUtil;
-import org.tasknavi.SearchablePanel;
-import org.tasknavi.Task;
-import org.tasknavi.TaskBusinessRules;
-import org.tasknavi.TaskService;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.ui.SearchablePanel;
+import org.tasknavi.model.Task;
+import org.tasknavi.model.TaskBusinessRules;
+import org.tasknavi.model.TaskHierarchyUtil;
+import org.tasknavi.service.TaskService;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
 import org.tasknavi.ui.ProjectFilterDialog;
@@ -39,8 +41,6 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
     private static final long serialVersionUID = 1L;
 
     // --- 検索用コンポーネント ---
-    private JTextField txtSearchKeyword;
-
     // 現在の検索条件を保持
     private String currentSearchKeyword = null;
     private String currentStatusFilter = null;
@@ -80,6 +80,14 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         }
 
         @Override
+        public void onDrop(int taskId, Component source) {
+            String status = KanbanColumnSupport.statusOf(source);
+            if (status != null) {
+                moveTaskToStatus(taskId, status);
+            }
+        }
+
+        @Override
         public void refresh() {
             refreshKanban();
         }
@@ -95,7 +103,10 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         setBackground(AppTheme.BACKGROUND);
         setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        JPanel columnsPanel = new JPanel(new MigLayout("fill, insets 0, gap 12", "[grow,fill][grow,fill][grow,fill]", "[grow,fill]"));
+        JPanel columnsPanel = new JPanel(new MigLayout(
+                "fill, insets 0, gap 12",
+                "[grow,fill,0:0][grow,fill,0:0][grow,fill,0:0]",
+                "[grow,fill]"));
         columnsPanel.setBackground(AppTheme.BACKGROUND);
 
         // 3 つのカラム（未着手、進行中、完了）をそれぞれ構築して追加
@@ -103,9 +114,9 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         JPanel inProgressWrapper = buildColumnWrapper(Task.STATUS_IN_PROGRESS, AppMessages.get("kanban.column.inprogress"), inProgressColumn);
         JPanel doneWrapper = buildColumnWrapper(Task.STATUS_COMPLETED, AppMessages.get("kanban.column.done"), doneColumn);
 
-        columnsPanel.add(todoWrapper, "grow");
-        columnsPanel.add(inProgressWrapper, "grow");
-        columnsPanel.add(doneWrapper, "grow");
+        columnsPanel.add(todoWrapper, "grow, push");
+        columnsPanel.add(inProgressWrapper, "grow, push");
+        columnsPanel.add(doneWrapper, "grow, push");
 
         add(columnsPanel, BorderLayout.CENTER);
 
@@ -130,6 +141,8 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
     private JPanel buildColumnWrapper(String status, String title, JPanel cardsContainer) {
         JPanel wrapper = new JPanel(new MigLayout("fill, insets 0, gap 8", "[grow]", "[][grow]"));
         wrapper.setBackground(AppTheme.BACKGROUND);
+        wrapper.setMinimumSize(new Dimension(0, 0));
+        wrapper.putClientProperty("kanban.status", status);
         wrapper.setBorder(BorderFactory.createCompoundBorder(
                 AppTheme.createSoftPanelBorder(),
                 new EmptyBorder(0, 0, 0, 0)
@@ -164,6 +177,7 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         wrapper.add(scrollPane, "grow");
 
         cardsContainer.setTransferHandler(createColumnDropHandler(status));
+        KanbanColumnSupport.attachDrop(wrapper, createColumnDropHandler(status));
         return wrapper;
     }
 
@@ -218,6 +232,10 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
             }
         }
 
+        KanbanColumnSupport.attachDrop(todoColumn, createColumnDropHandler(Task.STATUS_NOT_STARTED));
+        KanbanColumnSupport.attachDrop(inProgressColumn, createColumnDropHandler(Task.STATUS_IN_PROGRESS));
+        KanbanColumnSupport.attachDrop(doneColumn, createColumnDropHandler(Task.STATUS_COMPLETED));
+
         if (todoHeaderLabel != null) {
             todoHeaderLabel.setText(KanbanColumnSupport.formatHeader(AppMessages.get("kanban.column.todo"), todoCount));
         }
@@ -244,11 +262,11 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
 
     @Override
     public void applySearchFilter(String keyword, String status) {
+        if (org.tasknavi.util.SearchFilterUtil.isUnchanged(currentSearchKeyword, currentStatusFilter, keyword, status)) {
+            return;
+        }
         currentSearchKeyword = org.tasknavi.util.SearchFilterUtil.normalizeKeyword(keyword);
         currentStatusFilter = org.tasknavi.util.SearchFilterUtil.normalizeStatus(status);
-        if (txtSearchKeyword != null) {
-            txtSearchKeyword.setText(currentSearchKeyword != null ? currentSearchKeyword : "");
-        }
         refreshKanban();
     }
 
@@ -257,9 +275,6 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         currentStatusFilter = null;
         currentProjectFilterId = null;
         projectMemberCache.clear();
-        if (txtSearchKeyword != null) {
-            txtSearchKeyword.setText("");
-        }
         refreshKanban();
     }
 
@@ -284,45 +299,6 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
             return null;
         }
         return taskService.getTaskById(selectedTaskId);
-    }
-
-    public void deleteSelectedTask() {
-        if (selectedTaskId == null) {
-            JOptionPane.showMessageDialog(this,
-                    AppMessages.get("kanban.delete.select.card"),
-                    AppMessages.get("kanban.delete.cannot"),
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        Task task = taskService.getTaskById(selectedTaskId);
-        if (task == null) {
-            return;
-        }
-
-        SwingWorker<Void, Void> worker = new SwingWorker<>() {
-            @Override
-            protected Void doInBackground() throws Exception {
-                taskService.deleteTask(selectedTaskId);
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    get();
-                    selectedTaskId = null;
-                    JOptionPane.showMessageDialog(KanbanPanel.this,
-                            AppMessages.format("kanban.delete.success", "「{0}」を削除しました。", task.getName()),
-                            AppMessages.get("kanban.delete.complete"),
-                            JOptionPane.INFORMATION_MESSAGE);
-                } catch (Exception e) {
-                    ErrorDialogUtil.showError(KanbanPanel.this, AppMessages.get("kanban.delete.error"));
-                    logger.error("タスク削除時の予期せぬエラー", e);
-                }
-            }
-        };
-        worker.execute();
     }
 
     private void updateHeaderLabelTheme(JLabel headerLabel, String title) {
@@ -386,7 +362,7 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
             @Override
             protected Void doInBackground() throws Exception {
                 Task task = taskService.getTaskById(taskId);
-                if (task != null) {
+                if (task != null && !TaskHierarchyUtil.hasChildren(task.getId(), taskService.getAllTasks())) {
                     task.setStatus(targetStatus);
                     task.setProgress(TaskBusinessRules.resolveProgress(targetStatus, task.getProgress()));
                     taskService.updateTask(task);
@@ -399,7 +375,8 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
                 try {
                     get();
                 } catch (Exception e) {
-                    ErrorDialogUtil.showError(KanbanPanel.this, AppMessages.get("kanban.status.change.error"));
+                    ErrorDialogUtil.showBackgroundError(KanbanPanel.this, e,
+                            AppMessages.get("kanban.status.change.error"));
                     logger.error("ステータス変更時の予期せぬエラー", e);
                 }
             }
@@ -424,12 +401,19 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
 
             task.setStatus(org.tasknavi.util.TaskStatusCycle.fromProgress(task.getProgress()));
 
-            taskService.updateTask(task);
+            try {
+                taskService.updateTask(task);
+            } catch (AppException e) {
+                ErrorDialogUtil.showError(this, e.getUserMessage());
+            }
         }
     }
 
     private void changeTaskStatus(Task task, String newStatus) {
         if (task == null || newStatus == null) return;
+        if (TaskHierarchyUtil.hasChildren(task.getId(), taskService.getAllTasks())) {
+            return;
+        }
 
         task.setStatus(newStatus);
         task.setProgress(TaskBusinessRules.resolveProgress(newStatus, task.getProgress()));
@@ -446,7 +430,8 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
                 try {
                     get();
                 } catch (Exception e) {
-                    ErrorDialogUtil.showError(KanbanPanel.this, AppMessages.get("kanban.status.update.error"));
+                    ErrorDialogUtil.showBackgroundError(KanbanPanel.this, e,
+                            AppMessages.get("kanban.status.update.error"));
                     logger.error("ステータス更新時の予期せぬエラー", e);
                 }
             }

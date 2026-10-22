@@ -2,9 +2,8 @@ package org.tasknavi.ui;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.Task;
-import org.tasknavi.TaskService;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
 
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -12,6 +11,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FontMetrics;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +35,7 @@ public final class ProjectFilterDialog {
             }
         }
         if (projectList.isEmpty()) {
-            JOptionPane.showMessageDialog(
+            NoticeBar.info(
                     parent,
                     AppMessages.get("project.switch.no.projects", "登録されているプロジェクトがありません。")
             );
@@ -50,6 +51,12 @@ public final class ProjectFilterDialog {
         JComboBox<String> projectCombo = new JComboBox<>(options);
         projectCombo.setSelectedIndex(0);
         AppTheme.styleComboBox(projectCombo);
+        FontMetrics metrics = projectCombo.getFontMetrics(projectCombo.getFont());
+        int optionWidth = 320;
+        for (String option : options) {
+            optionWidth = Math.max(optionWidth, metrics.stringWidth(option) + 48);
+        }
+        projectCombo.setPreferredSize(new Dimension(Math.min(optionWidth, 720), 36));
 
         JPanel dlgPanel = new JPanel(new MigLayout("fillx, insets 10, gap 10", "[grow]", "[][]"));
         dlgPanel.add(new JLabel(AppMessages.get("project.switch.select", "表示するプロジェクトを選択してください:")), "wrap");

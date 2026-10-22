@@ -1,7 +1,7 @@
 package org.tasknavi.ui.wbs;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.ArrayList;

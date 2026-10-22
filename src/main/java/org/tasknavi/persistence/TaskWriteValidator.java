@@ -1,7 +1,7 @@
 package org.tasknavi.persistence;
 
 import org.tasknavi.AppException;
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 import java.util.function.Function;
 

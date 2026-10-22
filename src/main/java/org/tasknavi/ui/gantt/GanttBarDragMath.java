@@ -1,6 +1,6 @@
 package org.tasknavi.ui.gantt;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 import java.time.LocalDate;
 

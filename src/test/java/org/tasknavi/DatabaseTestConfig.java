@@ -1,5 +1,8 @@
 package org.tasknavi;
 
+import org.tasknavi.model.User;
+import org.tasknavi.persistence.Database;
+import org.tasknavi.persistence.UserDao;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +39,18 @@ public final class DatabaseTestConfig {
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to clear tasks table", e);
         }
+    }
+
+    public static int insertUser(String username, String email) {
+        UserDao userDao = new UserDao();
+        if (!userDao.registerUser(username, "password-test", email)) {
+            throw new IllegalStateException("Failed to insert test user: " + username);
+        }
+        User user = userDao.findByUsername(username);
+        if (user == null) {
+            throw new IllegalStateException("Inserted user was not found: " + username);
+        }
+        return user.getId();
     }
 
     public static Path getCurrentTempDb() {

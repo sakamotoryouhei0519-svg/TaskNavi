@@ -1,7 +1,7 @@
 package org.tasknavi.ui.taskdialog;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 /**
  * TaskDialog のタイトル判定。

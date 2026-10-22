@@ -2,10 +2,10 @@ package org.tasknavi.ui.auth;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.AuthService;
-import org.tasknavi.ErrorDialogUtil;
-import org.tasknavi.UserDao;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.service.AuthService;
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.persistence.UserDao;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;

@@ -2,128 +2,142 @@ package org.tasknavi.ui.wbs;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.ui.DatePickerDialog;
-import org.tasknavi.IconManager;
-import org.tasknavi.Task;
-import org.tasknavi.UiConstants;
-import org.tasknavi.UiLabels;
+import org.tasknavi.model.Task;
+import org.tasknavi.ui.AppTheme;
 
-import javax.swing.ButtonGroup;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Frame;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 
 /**
- * WBS 右側の詳細編集フォーム。
+ * WBS 右側の表示専用パネル。編集はボタンからダイアログで行う。
  */
 public final class WbsDetailForm {
 
-    public record Values(
-            String projectName,
-            String stageName,
-            String taskName,
-            String assignee,
-            String startDateText,
-            String endDateText,
-            String priorityCode,
-            String statusCode
-    ) {
-    }
-
-    private final JTextField txtProjectName = new JTextField();
-    private final JTextField txtStageName = new JTextField();
-    private final JTextField txtTaskName = new JTextField();
-    private final JTextField txtAssignee = new JTextField();
-    private final JTextField txtStartDate = new JTextField(8);
-    private final JTextField txtEndDate = new JTextField(8);
-    private final JComboBox<String> comboPriority = new JComboBox<>(Task.PRIORITY_OPTIONS);
-    private final JRadioButton rbNotStarted =
-            new JRadioButton(AppMessages.statusDisplay(Task.STATUS_NOT_STARTED), true);
-    private final JRadioButton rbInProgress =
-            new JRadioButton(AppMessages.statusDisplay(Task.STATUS_IN_PROGRESS));
-    private final JRadioButton rbCompleted =
-            new JRadioButton(AppMessages.statusDisplay(Task.STATUS_COMPLETED));
-
     private final JPanel rootPanel;
+    private final JPanel bodyPanel;
+    private final JLabel emptyLabel;
+    private final JButton editButton;
+    private final JLabel nameLabel = new JLabel(" ");
+    private final PillLabel statusBadge = new PillLabel();
+    private final JLabel projectValue = new JLabel(" ");
+    private final JLabel stageValue = new JLabel(" ");
+    private final JLabel assigneeValue = new JLabel(" ");
+    private final PillLabel priorityBadge = new PillLabel();
+    private final JLabel startValue = new JLabel(" ");
+    private final JLabel endValue = new JLabel(" ");
+    private final JLabel progressPercent = new JLabel("0%");
+    private final ProgressTrack progressTrack = new ProgressTrack();
+    private final JLabel headingLabel = new JLabel();
+    private final JLabel projectCaption = caption();
+    private final JLabel stageCaption = caption();
+    private final JLabel assigneeCaption = caption();
+    private final JLabel priorityCaption = caption();
+    private final JLabel startCaption = caption();
+    private final JLabel endCaption = caption();
+    private final JLabel progressCaption = caption();
+    private final JPanel metaDivider = line();
+    private final JPanel progressDivider = line();
 
-    public WbsDetailForm(Runnable onSave, Runnable onCancel) {
-        UiLabels.installPriorityRenderer(comboPriority);
-        ButtonGroup statusGroup = new ButtonGroup();
-        statusGroup.add(rbNotStarted);
-        statusGroup.add(rbInProgress);
-        statusGroup.add(rbCompleted);
+    public WbsDetailForm(Runnable onEdit) {
+        headingLabel.setText(AppMessages.get("wbs.detail.title", "タスク詳細"));
+        headingLabel.setFont(AppTheme.FONT_HEADER);
 
-        AppTheme.styleTextField(txtProjectName);
-        AppTheme.styleTextField(txtStageName);
-        AppTheme.styleTextField(txtTaskName);
-        AppTheme.styleTextField(txtAssignee);
-        AppTheme.styleTextField(txtStartDate);
-        AppTheme.styleTextField(txtEndDate);
+        editButton = new JButton("✎  " + AppMessages.get("wbs.button.edit", "編集"));
+        editButton.setFont(AppTheme.FONT_BOLD);
+        editButton.setFocusPainted(false);
+        editButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        editButton.setEnabled(false);
+        editButton.addActionListener(e -> onEdit.run());
 
-        JButton btnSelectStart = createCalendarButton();
-        btnSelectStart.addActionListener(e -> openDatePicker(txtStartDate));
-        JButton btnSelectEnd = createCalendarButton();
-        btnSelectEnd.addActionListener(e -> openDatePicker(txtEndDate));
+        nameLabel.setFont(AppTheme.FONT_TITLE);
+        statusBadge.setFont(AppTheme.FONT_SMALL.deriveFont(Font.BOLD, 12f));
+        statusBadge.setForeground(Color.WHITE);
+        progressPercent.setFont(AppTheme.FONT_BOLD);
 
-        comboPriority.setPreferredSize(new Dimension(110, UiConstants.FIELD_HEIGHT_COMPACT));
-        AppTheme.styleComboBox(comboPriority);
+        JPanel header = new JPanel(new MigLayout("insets 0", "[grow][]", "[]"));
+        header.setOpaque(false);
+        header.add(headingLabel, "growx");
+        header.add(editButton, "h 36!");
 
-        JPanel formPanel = new JPanel(new MigLayout("fillx, insets 12 8 12 8", "[left, grow]", "[]8[]8[]8[]8[]8[]8[]8[]"));
-        formPanel.setOpaque(false);
+        JLabel docIcon = new JLabel("☰");
+        docIcon.setFont(AppTheme.FONT_TITLE);
+        docIcon.setForeground(AppTheme.PRIMARY);
 
-        formPanel.add(new JLabel(AppMessages.get("wbs.label.project.name", "プロジェクト名")), "wrap");
-        formPanel.add(txtProjectName, "growx, wrap, h 36!");
-        formPanel.add(new JLabel(AppMessages.get("wbs.label.stage.name", "工程名")), "wrap");
-        formPanel.add(txtStageName, "growx, wrap, h 36!");
-        formPanel.add(new JLabel(AppMessages.get("wbs.label.task.name", "タスク名")), "wrap");
-        formPanel.add(txtTaskName, "growx, wrap, h 36!");
-        formPanel.add(new JLabel(AppMessages.get("label.assignee", "担当者")), "wrap");
-        formPanel.add(txtAssignee, "growx, wrap, h 36!");
-        formPanel.add(new JLabel(AppMessages.get("label.priority", "優先度")), "wrap");
-        formPanel.add(comboPriority, "w 110!, h 36!, wrap");
-        formPanel.add(new JLabel(AppMessages.get("label.date", "日付")), "wrap");
+        JPanel titleRow = new JPanel(new MigLayout("insets 0, gap 8", "[][][]", "[]"));
+        titleRow.setOpaque(false);
+        titleRow.add(docIcon);
+        titleRow.add(nameLabel);
+        titleRow.add(statusBadge, "aligny center");
 
-        JPanel datePanel = new JPanel(new MigLayout("insets 0, gap 5", "[][][][][]"));
-        datePanel.setOpaque(false);
-        datePanel.add(txtStartDate, "w 120!, h 36!");
-        datePanel.add(btnSelectStart);
-        datePanel.add(new JLabel("〜"));
-        datePanel.add(txtEndDate, "w 120!, h 36!");
-        datePanel.add(btnSelectEnd);
-        formPanel.add(datePanel, "wrap");
+        JPanel meta = new JPanel(new MigLayout(
+                "insets 0",
+                "[grow,fill]16[grow,fill]16[grow,fill]16[80!]16[110!]16[110!]",
+                "[]4[]"));
+        meta.setOpaque(false);
+        projectCaption.setText(AppMessages.get("wbs.label.project.name", "プロジェクト名"));
+        stageCaption.setText(AppMessages.get("wbs.label.stage.name", "工程名"));
+        assigneeCaption.setText(AppMessages.get("label.assignee", "担当者"));
+        priorityCaption.setText(AppMessages.get("label.priority", "優先度"));
+        startCaption.setText(AppMessages.get("wbs.label.start", "開始日"));
+        endCaption.setText(AppMessages.get("wbs.label.end", "終了日"));
+        styleValue(projectValue);
+        styleValue(stageValue);
+        styleValue(assigneeValue);
+        styleValue(startValue);
+        styleValue(endValue);
+        priorityBadge.setFont(AppTheme.FONT_BOLD);
+        meta.add(projectCaption);
+        meta.add(stageCaption);
+        meta.add(assigneeCaption);
+        meta.add(priorityCaption);
+        meta.add(startCaption);
+        meta.add(endCaption, "wrap");
+        meta.add(projectValue);
+        meta.add(stageValue);
+        meta.add(assigneeValue);
+        meta.add(priorityBadge, "left");
+        meta.add(startValue);
+        meta.add(endValue);
 
-        formPanel.add(new JLabel(AppMessages.get("wbs.label.status.select", "状態を選択")), "wrap");
-        JPanel statusPanel = new JPanel(new MigLayout("insets 0, gap 15", "[][][]"));
-        statusPanel.setOpaque(false);
-        statusPanel.add(rbNotStarted);
-        statusPanel.add(rbInProgress);
-        statusPanel.add(rbCompleted);
-        formPanel.add(statusPanel, "wrap");
+        progressCaption.setText(AppMessages.get("wbs.label.progress.rate", "進捗率"));
+        JPanel progressHeader = new JPanel(new MigLayout("insets 0, gap 8", "[][]", "[]"));
+        progressHeader.setOpaque(false);
+        progressHeader.add(progressCaption);
+        progressHeader.add(progressPercent);
+        progressTrack.setPreferredSize(new Dimension(240, 10));
+        progressTrack.setMaximumSize(new Dimension(240, 10));
 
-        JPanel bottom = new JPanel(new MigLayout("insets 0, gap 10, align right", "[][]"));
-        bottom.setOpaque(false);
-        JButton btnSave = AppTheme.createPrimaryButton(
-                IconManager.getIcon(IconManager.IconType.CHECK) + " " + AppMessages.get("wbs.button.done", "完了"));
-        btnSave.addActionListener(e -> onSave.run());
-        JButton btnCancel = AppTheme.createSecondaryButton(
-                IconManager.getIcon(IconManager.IconType.CROSS) + " " + AppMessages.get("common.button.cancel", "キャンセル"));
-        btnCancel.addActionListener(e -> onCancel.run());
-        bottom.add(btnSave, "w 110!, h 36!");
-        bottom.add(btnCancel, "w 110!, h 36!");
+        bodyPanel = new JPanel(new MigLayout("insets 0", "[grow]", "[]10[]10[]8[]"));
+        bodyPanel.setOpaque(false);
+        bodyPanel.add(titleRow, "left, wrap");
+        bodyPanel.add(metaDivider, "growx, h 1!, wrap");
+        bodyPanel.add(meta, "growx, wrap");
+        bodyPanel.add(progressDivider, "growx, h 1!, wrap");
+        bodyPanel.add(progressHeader, "left, wrap");
+        bodyPanel.add(progressTrack, "w 240!, h 10!, left");
+        bodyPanel.setVisible(false);
 
-        rootPanel = new JPanel(new MigLayout("fill, insets 0, gap 10", "[grow]", "[grow][]"));
-        rootPanel.setBackground(AppTheme.PANEL_BG);
-        rootPanel.add(formPanel, "grow, wrap");
-        rootPanel.add(bottom, "grow");
+        emptyLabel = new JLabel(AppMessages.get(
+                "wbs.detail.empty", "左側のツリーから項目を選ぶと、ここに内容が出ます。"));
+        emptyLabel.setFont(AppTheme.FONT_MAIN);
+        emptyLabel.setForeground(AppTheme.TEXT_MUTED);
+
+        rootPanel = new JPanel(new MigLayout("insets 12 16 12 16", "[grow]", "[]12[]"));
+        rootPanel.add(header, "growx, wrap");
+        rootPanel.add(bodyPanel, "growx, wrap");
+        rootPanel.add(emptyLabel, "growx");
+        updateTheme();
     }
 
     public JPanel getPanel() {
@@ -131,93 +145,149 @@ public final class WbsDetailForm {
     }
 
     public void clear() {
-        txtProjectName.setText("");
-        txtStageName.setText("");
-        txtTaskName.setText("");
-        txtAssignee.setText("");
-        txtStartDate.setText("");
-        txtEndDate.setText("");
-        comboPriority.setSelectedItem(Task.DEFAULT_PRIORITY);
-        rbNotStarted.setSelected(true);
+        show(null, "", "", "");
     }
 
-    public void load(Task task, Task rootProject, Task parentStage) {
-        if (task == null) {
-            clear();
+    public void show(Task task, String projectName, String stageName, String wbsCode) {
+        boolean visible = task != null;
+        editButton.setEnabled(visible);
+        bodyPanel.setVisible(visible);
+        emptyLabel.setVisible(!visible);
+        if (!visible) {
+            rootPanel.revalidate();
+            rootPanel.repaint();
             return;
         }
-        txtProjectName.setText(rootProject != null ? rootProject.getName() : "");
-        if (task.getLevel() == 1) {
-            txtStageName.setText("");
-            txtTaskName.setText("");
-        } else if (task.getLevel() == 2) {
-            txtStageName.setText(task.getName());
-            txtTaskName.setText("");
-        } else {
-            txtStageName.setText(parentStage != null ? parentStage.getName() : "");
-            txtTaskName.setText(task.getName());
-        }
-        txtAssignee.setText(task.getAssignee() != null ? task.getAssignee() : "");
-        txtStartDate.setText(task.getStartDate() != null ? task.getStartDate().toString() : "");
-        txtEndDate.setText(task.getEndDate() != null ? task.getEndDate().toString() : "");
-        comboPriority.setSelectedItem(task.getPriorityCode());
-        if (task.isInProgress()) {
-            rbInProgress.setSelected(true);
-        } else if (task.isCompleted()) {
-            rbCompleted.setSelected(true);
-        } else {
-            rbNotStarted.setSelected(true);
-        }
-    }
 
-    public Values read() {
-        String priority = (String) comboPriority.getSelectedItem();
-        String status;
-        if (rbCompleted.isSelected()) {
-            status = Task.STATUS_COMPLETED;
-        } else if (rbInProgress.isSelected()) {
-            status = Task.STATUS_IN_PROGRESS;
-        } else {
-            status = Task.STATUS_NOT_STARTED;
-        }
-        return new Values(
-                txtProjectName.getText().trim(),
-                txtStageName.getText().trim(),
-                txtTaskName.getText().trim(),
-                txtAssignee.getText().trim(),
-                txtStartDate.getText(),
-                txtEndDate.getText(),
-                priority != null ? priority : Task.DEFAULT_PRIORITY,
-                status
-        );
+        String name = task.getName() == null ? "" : task.getName();
+        nameLabel.setText(wbsCode == null || wbsCode.isBlank() ? name : wbsCode + "  " + name);
+        statusBadge.setText(AppMessages.statusDisplay(task.getStatusCode()));
+        statusBadge.setBackground(AppTheme.getStatusColor(task.getStatusCode()));
+
+        projectValue.setText(textOrDash(projectName));
+        stageValue.setText(textOrDash(stageName));
+        assigneeValue.setText(assigneeHtml(task.getAssignee()));
+        priorityBadge.setText(AppMessages.priorityDisplay(task.getPriorityCode()));
+        priorityBadge.setBackground(AppTheme.getPriorityColor(task.getPriorityCode()));
+        startValue.setText(task.getStartDate() != null ? task.getStartDate().toString() : "—");
+        endValue.setText(task.getEndDate() != null ? task.getEndDate().toString() : "—");
+
+        int progress = Math.max(0, Math.min(100, task.getProgress()));
+        progressPercent.setText(progress + "%");
+        progressTrack.setPercent(progress);
+        rootPanel.revalidate();
+        rootPanel.repaint();
     }
 
     public void updateTheme() {
-        Color bgColor = AppTheme.isDarkMode() ? AppTheme.PANEL_BG : Color.WHITE;
-        Color fgColor = AppTheme.isDarkMode() ? new Color(226, 232, 240) : AppTheme.TEXT_PRIMARY;
-        for (JRadioButton rb : new JRadioButton[]{rbNotStarted, rbInProgress, rbCompleted}) {
-            rb.setBackground(bgColor);
-            rb.setForeground(fgColor);
-            rb.setOpaque(false);
-        }
+        Color fg = AppTheme.TEXT_PRIMARY;
+        Color muted = AppTheme.TEXT_MUTED;
         rootPanel.setBackground(AppTheme.PANEL_BG);
+        headingLabel.setForeground(fg);
+        nameLabel.setForeground(fg);
+        projectValue.setForeground(fg);
+        stageValue.setForeground(fg);
+        assigneeValue.setForeground(fg);
+        startValue.setForeground(fg);
+        endValue.setForeground(fg);
+        progressPercent.setForeground(fg);
+        emptyLabel.setForeground(muted);
+        for (JLabel caption : new JLabel[]{
+                projectCaption, stageCaption, assigneeCaption, priorityCaption,
+                startCaption, endCaption, progressCaption}) {
+            caption.setForeground(muted);
+        }
+        statusBadge.setForeground(Color.WHITE);
+        priorityBadge.setForeground(Color.WHITE);
+        editButton.setForeground(fg);
+        editButton.setBackground(AppTheme.PANEL_BG);
+        editButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER_COLOR, 1, true),
+                new EmptyBorder(6, 14, 6, 14)));
+        progressTrack.repaint();
+        metaDivider.setBackground(AppTheme.BORDER_COLOR);
+        progressDivider.setBackground(AppTheme.BORDER_COLOR);
     }
 
-    private static JButton createCalendarButton() {
-        JButton button = new JButton(IconManager.createCalendarOutlineIcon(AppTheme.TEXT_PRIMARY));
-        button.setForeground(AppTheme.TEXT_PRIMARY);
-        button.setPreferredSize(new Dimension(30, 36));
-        button.setMinimumSize(new Dimension(30, 36));
-        button.setOpaque(false);
-        button.setContentAreaFilled(false);
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        return button;
+    private static void styleValue(JLabel value) {
+        value.setFont(AppTheme.FONT_BOLD);
     }
 
-    private void openDatePicker(JTextField field) {
-        Frame frame = (Frame) SwingUtilities.getWindowAncestor(rootPanel);
-        new DatePickerDialog(frame, field);
+    private static JLabel caption() {
+        JLabel label = new JLabel();
+        label.setFont(AppTheme.FONT_SMALL);
+        return label;
+    }
+
+    private static JPanel line() {
+        JPanel line = new JPanel();
+        line.setBackground(AppTheme.BORDER_COLOR);
+        line.setPreferredSize(new Dimension(1, 1));
+        return line;
+    }
+
+    private static String textOrDash(String value) {
+        return value == null || value.isBlank() ? "—" : value;
+    }
+
+    private static String assigneeHtml(String assignee) {
+        if (assignee == null || assignee.isBlank()) {
+            return "—";
+        }
+        String color = String.format("#%06X", AppTheme.PRIMARY.getRGB() & 0xFFFFFF);
+        return "<html><span style='color:" + color + ";'>●</span> " + escapeHtml(assignee) + "</html>";
+    }
+
+    private static String escapeHtml(String value) {
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    private static final class PillLabel extends JLabel {
+        private PillLabel() {
+            setOpaque(false);
+            setBorder(new EmptyBorder(4, 10, 4, 10));
+            setHorizontalAlignment(CENTER);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(getBackground());
+            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, getHeight(), getHeight());
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    private static final class ProgressTrack extends JComponent {
+        private int percent;
+
+        private void setPercent(int percent) {
+            this.percent = percent;
+            repaint();
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            return new Dimension(240, 10);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int height = 8;
+            int y = (getHeight() - height) / 2;
+            int width = Math.max(0, getWidth() - 1);
+            g2.setColor(AppTheme.isDarkMode() ? new Color(51, 65, 85) : new Color(226, 232, 240));
+            g2.fillRoundRect(0, y, width, height, height, height);
+            int filled = (int) Math.round(width * (percent / 100.0));
+            if (filled > 0) {
+                g2.setColor(AppTheme.PRIMARY);
+                g2.fillRoundRect(0, y, Math.max(filled, height), height, height, height);
+            }
+            g2.dispose();
+        }
     }
 }

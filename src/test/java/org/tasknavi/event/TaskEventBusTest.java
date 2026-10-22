@@ -1,6 +1,6 @@
 package org.tasknavi.event;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 

@@ -1,7 +1,7 @@
 package org.tasknavi.ui;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;

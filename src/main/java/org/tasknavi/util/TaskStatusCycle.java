@@ -1,6 +1,6 @@
 package org.tasknavi.util;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 /**
  * ステータスの前後移動と、進捗からの推定。

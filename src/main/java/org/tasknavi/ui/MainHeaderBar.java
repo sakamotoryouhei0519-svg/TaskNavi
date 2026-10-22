@@ -1,23 +1,21 @@
 package org.tasknavi.ui;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.IconManager;
-import org.tasknavi.User;
-import org.tasknavi.UserSession;
+import org.tasknavi.model.User;
+import org.tasknavi.service.UserSession;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
+import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import net.miginfocom.swing.MigLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Insets;
 
 /**
  * MainFrame 上部ヘッダー（ロゴ・ユーザー・I/O・テーマ・ログアウト）。
@@ -82,22 +80,7 @@ public final class MainHeaderBar {
         JButton importButton = createHeaderIconButton(AppMessages.get("mainframe.button.import"), IconManager.IconType.IMPORT);
         importButton.addActionListener(e -> actions.onImport());
 
-        Object themeIcon = IconManager.getIcon(IconManager.IconType.THEME);
-        if (themeIcon instanceof String) {
-            themeToggleButton.setText((String) themeIcon);
-        } else {
-            themeToggleButton.setIcon((ImageIcon) themeIcon);
-        }
-        themeToggleButton.setBackground(Color.WHITE);
-        themeToggleButton.setForeground(AppTheme.TEXT_PRIMARY);
-        themeToggleButton.setContentAreaFilled(false);
-        themeToggleButton.setOpaque(false);
-        themeToggleButton.setFocusPainted(false);
-        themeToggleButton.setBorderPainted(false);
-        themeToggleButton.setBorder(new EmptyBorder(4, 6, 4, 6));
-        themeToggleButton.setPreferredSize(new Dimension(40, 36));
-        themeToggleButton.setMinimumSize(new Dimension(40, 36));
-        themeToggleButton.setToolTipText(AppMessages.get("mainframe.button.theme"));
+        styleThemeToggle(themeToggleButton);
 
         JPanel rightUserArea = new JPanel(new MigLayout("insets 0, gap 10, align right", "[][][][][]"));
         rightUserArea.setOpaque(false);
@@ -113,18 +96,54 @@ public final class MainHeaderBar {
     }
 
     private static JButton createHeaderIconButton(String text, IconManager.IconType iconType) {
-        JButton button = IconManager.getIconButton(iconType, text);
+        Object icon = IconManager.getIcon(iconType);
+        JButton button;
+        if (icon instanceof ImageIcon imageIcon) {
+            button = new AppTheme.RoundedFillButton(text, 8);
+            button.setIcon(imageIcon);
+            button.setHorizontalTextPosition(SwingConstants.RIGHT);
+        } else {
+            button = new AppTheme.RoundedFillButton(icon + "  " + text, 8);
+        }
         button.putClientProperty("app.button.variant", "header");
-        button.setFont(AppTheme.FONT_MAIN);
-        button.setBackground(AppTheme.PANEL_BG);
+        button.setFont(AppTheme.FONT_HEADER.deriveFont(Font.BOLD, 13f));
+        button.setIconTextGap(6);
+        button.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
         button.setForeground(AppTheme.TEXT_PRIMARY);
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setOpaque(true);
-        button.setContentAreaFilled(true);
         button.setBorderPainted(true);
-        button.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 7, 1, 1, 1, 1));
-        button.setMargin(new Insets(4, 10, 4, 10));
+        button.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 8, 2, 2, 2, 2));
+        button.setRolloverEnabled(true);
+        button.setHorizontalAlignment(SwingConstants.CENTER);
+        int contentWidth = button.getFontMetrics(button.getFont()).stringWidth(button.getText());
+        if (button.getIcon() != null) {
+            contentWidth += button.getIcon().getIconWidth() + button.getIconTextGap();
+        }
+        Dimension size = new Dimension(contentWidth + 28, 32);
+        button.setPreferredSize(size);
+        button.setMinimumSize(size);
         return button;
+    }
+
+    static void styleThemeToggle(JToggleButton themeToggleButton) {
+        Object themeIcon = IconManager.getIcon(IconManager.IconType.THEME);
+        if (themeIcon instanceof String) {
+            themeToggleButton.setText((String) themeIcon);
+            themeToggleButton.setIcon(null);
+        } else {
+            themeToggleButton.setText("");
+            themeToggleButton.setIcon((ImageIcon) themeIcon);
+        }
+        themeToggleButton.setBackground(Color.WHITE);
+        themeToggleButton.setForeground(AppTheme.TEXT_PRIMARY);
+        themeToggleButton.setContentAreaFilled(false);
+        themeToggleButton.setOpaque(false);
+        themeToggleButton.setFocusPainted(false);
+        themeToggleButton.setBorderPainted(false);
+        themeToggleButton.setBorder(new EmptyBorder(4, 6, 4, 6));
+        themeToggleButton.setPreferredSize(new Dimension(36, 32));
+        themeToggleButton.setMinimumSize(new Dimension(36, 32));
+        themeToggleButton.setToolTipText(AppMessages.get("mainframe.button.theme"));
     }
 }

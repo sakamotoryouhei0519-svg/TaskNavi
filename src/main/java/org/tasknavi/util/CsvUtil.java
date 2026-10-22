@@ -2,8 +2,8 @@ package org.tasknavi.util;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import org.tasknavi.Priority;
-import org.tasknavi.Task;
+import org.tasknavi.model.Priority;
+import org.tasknavi.model.Task;
 
 import java.io.*;
 import java.lang.reflect.Type;

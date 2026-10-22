@@ -1,5 +1,8 @@
 package org.tasknavi;
 
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.model.Task;
+import org.tasknavi.persistence.TaskDao;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -8,6 +11,14 @@ import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AppExceptionTest {
+
+    @Test
+    void findAppExceptionUnwrapsWorkerFailure() {
+        AppException app = AppException.validation("名前が未入力です", "名前を入力してください。");
+        Exception wrapped = new java.util.concurrent.ExecutionException(app);
+
+        assertSame(app, ErrorDialogUtil.findAppException(wrapped));
+    }
 
     @Test
     void shouldExposeErrorCodeAndUserMessage() {
@@ -46,7 +57,7 @@ class AppExceptionTest {
 
     @Test
     void shouldRejectInvalidDateRange() {
-        TaskDao taskDao = new TaskDao();
+        TaskDao taskDao = new TaskDao(1);
         Task task = new Task(1, "範囲不正", null, 1, 0, 0, "未着手",
                 LocalDate.of(2026, 1, 10), LocalDate.of(2026, 1, 5));
 

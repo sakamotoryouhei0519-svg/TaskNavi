@@ -1,8 +1,5 @@
 package org.tasknavi.ui;
 
-import org.tasknavi.AppTheme;
-import org.tasknavi.IconManager;
-
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.SwingConstants;

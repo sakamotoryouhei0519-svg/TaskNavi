@@ -1,17 +1,17 @@
 package org.tasknavi.ui.wbs;
 
 import net.miginfocom.swing.MigLayout;
-import org.tasknavi.AppException;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.ErrorDialogUtil;
-import org.tasknavi.SearchablePanel;
-import org.tasknavi.Task;
-import org.tasknavi.TaskBusinessRules;
-import org.tasknavi.TaskHierarchyUtil;
-import org.tasknavi.TaskService;
-import org.tasknavi.UiConstants;
-import org.tasknavi.UiLabels;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.ui.NoticeBar;
+import org.tasknavi.ui.SearchablePanel;
+import org.tasknavi.model.Task;
+import org.tasknavi.model.TaskHierarchyUtil;
+import org.tasknavi.service.TaskService;
+import org.tasknavi.ui.taskdialog.TaskDialog;
+import org.tasknavi.ui.UiConstants;
+import org.tasknavi.util.TaskStatusCycle;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
 import org.tasknavi.ui.ProjectFilterDialog;
@@ -23,14 +23,17 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 【WBS画面パネルクラス】
- * 左側にツリー構造と操作ボタン、右側にタスク編集フォームを配置した左右分割UIです。
+ * 左側にツリー、右側に選択中の内容を表示する。編集はダイアログで行う。
  */
 public class WbsPanel extends JPanel implements SearchablePanel {
     private static final long serialVersionUID = 1L;
@@ -44,18 +47,20 @@ public class WbsPanel extends JPanel implements SearchablePanel {
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(WbsPanel.class);
 
     private final JTree wbsTree;
-    private final JTextField txtSearchKeyword;
-    private final JComboBox<String> comboStatusFilter;
     private final WbsDetailForm detailForm;
+    private final JPanel detailHolder;
 
     private Integer selectedTaskId = null;
-    private Integer selectedRootProjectId = null;
+    private int hoverRow = -1;
     private Integer currentFilterProjectId = null;
     private String currentSearchKeyword = null;
     private String currentStatusFilter = null;
 
     private final Map<DefaultMutableTreeNode, Task> nodeTaskMap = new HashMap<>();
-    private List<Task> taskCache = new ArrayList<>();
+    private List<Task> taskCache;
+    private final Set<Integer> expandedTaskIds = new HashSet<>();
+    private boolean treeReady;
+    private boolean restoringTree;
     private TreePath highlightDropPath;
 
     public WbsPanel(TaskService taskService) {
@@ -64,38 +69,6 @@ public class WbsPanel extends JPanel implements SearchablePanel {
         setLayout(new BorderLayout(10, 10));
         setBackground(AppTheme.BACKGROUND);
         setBorder(new EmptyBorder(10, 10, 10, 10));
-
-        txtSearchKeyword = new JTextField(12);
-        txtSearchKeyword.setToolTipText(AppMessages.get("wbs.search.tooltip", "タスク名で検索"));
-        AppTheme.styleTextField(txtSearchKeyword);
-        txtSearchKeyword.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            @Override
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                handleSearch();
-            }
-
-            @Override
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                handleSearch();
-            }
-
-            @Override
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                handleSearch();
-            }
-        });
-
-        comboStatusFilter = new JComboBox<>(new String[]{
-                AppMessages.FILTER_ALL,
-                Task.STATUS_NOT_STARTED,
-                Task.STATUS_IN_PROGRESS,
-                Task.STATUS_COMPLETED
-        });
-        comboStatusFilter.setFont(AppTheme.FONT_SMALL);
-        comboStatusFilter.setPreferredSize(new Dimension(90, UiConstants.FIELD_HEIGHT_COMPACT));
-        AppTheme.styleComboBox(comboStatusFilter);
-        UiLabels.installStatusRenderer(comboStatusFilter);
-        comboStatusFilter.addActionListener(e -> handleSearch());
 
         JPanel leftPanel = new JPanel(new MigLayout("fill, insets 0, gap 5", "[grow]", "[grow]"));
         leftPanel.setBackground(AppTheme.PANEL_BG);
@@ -115,18 +88,57 @@ public class WbsPanel extends JPanel implements SearchablePanel {
             public TreePath highlightDropPath() {
                 return highlightDropPath;
             }
+
+            @Override
+            public int hoverRow() {
+                return hoverRow;
+            }
         }));
+        wbsTree.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                int row = wbsTree.getRowForLocation(e.getX(), e.getY());
+                if (row != hoverRow) {
+                    hoverRow = row;
+                    wbsTree.repaint();
+                }
+            }
+        });
+        wbsTree.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                if (hoverRow != -1) {
+                    hoverRow = -1;
+                    wbsTree.repaint();
+                }
+            }
+        });
         wbsTree.addTreeSelectionListener(e -> handleTreeSelection());
         configureTreeDragAndDrop();
         leftPanel.add(new JScrollPane(wbsTree), "grow");
 
-        detailForm = new WbsDetailForm(this::handleSaveTask, this::clearForm);
+        detailForm = new WbsDetailForm(this::openEditDialog);
+        detailHolder = new JPanel(new BorderLayout());
+        detailHolder.setBackground(AppTheme.PANEL_BG);
+        detailHolder.add(detailForm.getPanel(), BorderLayout.NORTH);
 
-        JScrollPane rightScroll = new JScrollPane(detailForm.getPanel());
+        JScrollPane rightScroll = new JScrollPane(detailHolder);
         rightScroll.setBorder(null);
+        rightScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        rightScroll.getVerticalScrollBar().setUnitIncrement(72);
+        rightScroll.addMouseWheelListener(e -> {
+            int delta = (int) Math.round(e.getPreciseWheelRotation() * 100);
+            if (delta == 0) {
+                delta = e.getWheelRotation() * 100;
+            }
+            java.awt.Adjustable bar = rightScroll.getVerticalScrollBar();
+            bar.setValue(bar.getValue() + delta);
+            e.consume();
+        });
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightScroll);
         splitPane.setDividerLocation(UiConstants.SPLIT_DIVIDER_LOCATION);
+        splitPane.setResizeWeight(0.28);
         add(splitPane, BorderLayout.CENTER);
 
         refreshWbs();
@@ -154,6 +166,11 @@ public class WbsPanel extends JPanel implements SearchablePanel {
     }
 
     public void refreshWbs(List<Task> taskSnapshot) {
+        if (treeReady && wbsTree.getRowCount() > 0) {
+            expandedTaskIds.clear();
+            expandedTaskIds.addAll(collectExpandedTaskIds());
+        }
+
         WbsTreeModelBuilder.Result built = WbsTreeModelBuilder.build(
                 taskSnapshot,
                 currentFilterProjectId,
@@ -161,13 +178,85 @@ public class WbsPanel extends JPanel implements SearchablePanel {
                 currentStatusFilter);
         nodeTaskMap.clear();
         nodeTaskMap.putAll(built.getNodeTaskMap());
-        wbsTree.setModel(new DefaultTreeModel(built.getRoot()));
+
+        restoringTree = true;
+        try {
+            wbsTree.setModel(new DefaultTreeModel(built.getRoot()));
+            if (!treeReady) {
+                for (int i = 0; i < wbsTree.getRowCount(); i++) {
+                    wbsTree.expandRow(i);
+                }
+            } else {
+                restoreExpansion(built.getRoot(), expandedTaskIds);
+            }
+            restoreSelection(selectedTaskId);
+        } finally {
+            restoringTree = false;
+        }
+        treeReady = true;
+        reloadDetail();
+    }
+
+    private Set<Integer> collectExpandedTaskIds() {
+        Set<Integer> ids = new HashSet<>();
         for (int i = 0; i < wbsTree.getRowCount(); i++) {
-            wbsTree.expandRow(i);
+            TreePath path = wbsTree.getPathForRow(i);
+            if (path == null || !wbsTree.isExpanded(path)) {
+                continue;
+            }
+            Object last = path.getLastPathComponent();
+            if (last instanceof DefaultMutableTreeNode node) {
+                Task task = nodeTaskMap.get(node);
+                if (task != null) {
+                    ids.add(task.getId());
+                }
+            }
+        }
+        return ids;
+    }
+
+    private void restoreExpansion(DefaultMutableTreeNode node, Set<Integer> expandedIds) {
+        Task task = nodeTaskMap.get(node);
+        if (task != null && expandedIds.contains(task.getId())) {
+            wbsTree.expandPath(new TreePath(node.getPath()));
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            restoreExpansion((DefaultMutableTreeNode) node.getChildAt(i), expandedIds);
         }
     }
 
+    private void restoreSelection(Integer taskId) {
+        if (taskId == null) {
+            return;
+        }
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) wbsTree.getModel().getRoot();
+        DefaultMutableTreeNode node = findNodeByTaskId(root, taskId);
+        if (node == null) {
+            return;
+        }
+        TreePath path = new TreePath(node.getPath());
+        wbsTree.setSelectionPath(path);
+        wbsTree.scrollPathToVisible(path);
+    }
+
+    private DefaultMutableTreeNode findNodeByTaskId(DefaultMutableTreeNode node, int taskId) {
+        Task task = nodeTaskMap.get(node);
+        if (task != null && task.getId() == taskId) {
+            return node;
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode found = findNodeByTaskId((DefaultMutableTreeNode) node.getChildAt(i), taskId);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
     private void handleTreeSelection() {
+        if (restoringTree) {
+            return;
+        }
         TreePath path = wbsTree.getSelectionPath();
         if (path == null) {
             return;
@@ -180,14 +269,52 @@ public class WbsPanel extends JPanel implements SearchablePanel {
         }
 
         selectedTaskId = task.getId();
-        Task rootProject = findRootProject(task);
-        selectedRootProjectId = rootProject != null ? rootProject.getId() : null;
+        reloadDetail();
+    }
 
-        Task parentStage = null;
-        if (task.getLevel() >= 3 && task.getParentId() != null) {
-            parentStage = taskService.getTaskById(task.getParentId());
+    private void reloadDetail() {
+        if (selectedTaskId == null) {
+            detailForm.clear();
+            return;
         }
-        detailForm.load(task, rootProject, parentStage);
+        Task task = taskService.getTaskById(selectedTaskId);
+        if (task == null) {
+            detailForm.clear();
+            return;
+        }
+        Task rootProject = findRootProject(task);
+        String stageName = "";
+        if (task.getLevel() == 2) {
+            stageName = task.getName();
+        } else if (task.getLevel() >= 3 && task.getParentId() != null) {
+            Task parentStage = taskService.getTaskById(task.getParentId());
+            stageName = parentStage != null ? parentStage.getName() : "";
+        }
+        detailForm.show(
+                task,
+                rootProject != null ? rootProject.getName() : "",
+                stageName,
+                wbsCodeOfSelection());
+    }
+
+    private String wbsCodeOfSelection() {
+        TreePath path = wbsTree.getSelectionPath();
+        if (path == null) {
+            return "";
+        }
+        StringBuilder code = new StringBuilder();
+        for (int i = 1; i < path.getPathCount(); i++) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getPathComponent(i);
+            DefaultMutableTreeNode parent = (DefaultMutableTreeNode) node.getParent();
+            if (parent == null) {
+                continue;
+            }
+            if (code.length() > 0) {
+                code.append('.');
+            }
+            code.append(parent.getIndex(node) + 1);
+        }
+        return code.toString();
     }
 
     private Task findRootProject(Task task) {
@@ -195,17 +322,15 @@ public class WbsPanel extends JPanel implements SearchablePanel {
     }
 
     private List<Task> getCachedTasksSnapshot() {
-        if (taskCache.isEmpty()) {
-            taskCache = taskService.getAllTasks();
-            if (taskCache == null) {
-                taskCache = new ArrayList<>();
-            }
+        if (taskCache == null) {
+            List<Task> loaded = taskService.getAllTasks();
+            taskCache = loaded != null ? loaded : new ArrayList<>();
         }
         return new ArrayList<>(taskCache);
     }
 
     private void invalidateTaskCache() {
-        taskCache.clear();
+        taskCache = null;
     }
 
     @Override
@@ -272,14 +397,16 @@ public class WbsPanel extends JPanel implements SearchablePanel {
 
     @Override
     public void applySearchFilter(String keyword, String status) {
+        if (org.tasknavi.util.SearchFilterUtil.isUnchanged(currentSearchKeyword, currentStatusFilter, keyword, status)) {
+            return;
+        }
         currentSearchKeyword = org.tasknavi.util.SearchFilterUtil.normalizeKeyword(keyword);
         currentStatusFilter = org.tasknavi.util.SearchFilterUtil.normalizeStatus(status);
-        txtSearchKeyword.setText(currentSearchKeyword != null ? currentSearchKeyword : "");
-        comboStatusFilter.setSelectedItem(currentStatusFilter != null ? currentStatusFilter : AppMessages.FILTER_ALL);
-        handleSearch();
+        refreshWbs();
     }
 
     public void updateTheme() {
+        detailHolder.setBackground(AppTheme.PANEL_BG);
         detailForm.updateTheme();
         wbsTree.setBackground(AppTheme.PANEL_BG);
         wbsTree.setForeground(AppTheme.TEXT_PRIMARY);
@@ -293,106 +420,45 @@ public class WbsPanel extends JPanel implements SearchablePanel {
         return taskService.getTaskById(selectedTaskId);
     }
 
-    public void deleteSelectedTask() {
+    private void openEditDialog() {
         if (selectedTaskId == null) {
-            JOptionPane.showMessageDialog(this,
-                    AppMessages.get("wbs.delete.select", "削除するタスクを左側のツリーから選択してください。"));
-            return;
-        }
-
-        Task task = taskService.getTaskById(selectedTaskId);
-        if (task == null) {
-            return;
-        }
-
-        SwingWorker<Void, Void> worker = new SwingWorker<>() {
-            @Override
-            protected Void doInBackground() {
-                taskService.deleteTask(selectedTaskId);
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    get();
-                    clearForm();
-                    JOptionPane.showMessageDialog(WbsPanel.this,
-                            AppMessages.format("message.deleted.named", "「{0}」を削除しました。", task.getName()));
-                } catch (AppException e) {
-                    ErrorDialogUtil.showError(WbsPanel.this, e.getUserMessage());
-                } catch (Exception e) {
-                    ErrorDialogUtil.showError(WbsPanel.this,
-                            AppMessages.get("mainframe.error.delete", "削除中にエラーが発生しました。"));
-                    logger.error("タスク削除時の予期せぬエラー", e);
-                }
-            }
-        };
-        worker.execute();
-    }
-
-    private void clearForm() {
-        selectedTaskId = null;
-        selectedRootProjectId = null;
-        detailForm.clear();
-    }
-
-    private void handleSaveTask() {
-        if (selectedTaskId == null) {
-            JOptionPane.showMessageDialog(this,
+            NoticeBar.info(this,
                     AppMessages.get("wbs.edit.select", "左側のツリーから編集対象のタスクを選択してください。"));
             return;
         }
-
         Task task = taskService.getTaskById(selectedTaskId);
         if (task == null) {
             return;
         }
+        Frame frame = (Frame) SwingUtilities.getWindowAncestor(this);
+        if (frame == null) {
+            return;
+        }
 
-        WbsDetailForm.Values values = detailForm.read();
-        LocalDate startDate = WbsFormValidator.parseOptionalDate(values.startDateText());
-        LocalDate endDate = WbsFormValidator.parseOptionalDate(values.endDateText());
-        if ((values.startDateText() != null && !values.startDateText().trim().isEmpty() && startDate == null)
-                || (values.endDateText() != null && !values.endDateText().trim().isEmpty() && endDate == null)) {
-            JOptionPane.showMessageDialog(this,
+        TaskDialog dialog = new TaskDialog(frame, taskService, task);
+        dialog.setVisible(true);
+        if (!dialog.isConfirmed()) {
+            return;
+        }
+
+        LocalDate startDate;
+        LocalDate endDate;
+        try {
+            startDate = LocalDate.parse(dialog.getStartDate());
+            endDate = LocalDate.parse(dialog.getEndDate());
+        } catch (DateTimeParseException ex) {
+            ErrorDialogUtil.showError(this,
                     AppMessages.get("wbs.error.date.format", "日付の形式は YYYY-MM-DD で入力してください。"));
             return;
         }
 
-        String nameToValidate = WbsFormValidator.nameForLevel(
-                task.getLevel(), values.projectName(), values.stageName(), values.taskName());
-        Task rootProject = findRootProject(task);
-        String validationError = WbsFormValidator.validate(
-                nameToValidate, values.startDateText(), values.endDateText(), rootProject);
-        if (validationError != null) {
-            JOptionPane.showMessageDialog(this, validationError,
-                    AppMessages.get("wbs.error.date.range.title", "日付範囲エラー"),
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        if (selectedRootProjectId != null && !values.projectName().isEmpty()) {
-            Task rootProjectTask = taskService.getTaskById(selectedRootProjectId);
-            if (rootProjectTask != null && !rootProjectTask.getName().equals(values.projectName())) {
-                rootProjectTask.setName(values.projectName());
-                taskService.updateTask(rootProjectTask);
-            }
-        }
-
-        if (task.getLevel() == 1) {
-            task.setName(values.projectName());
-        } else if (task.getLevel() == 2) {
-            task.setName(values.stageName());
-        } else {
-            task.setName(values.taskName());
-        }
-
-        task.setAssignee(values.assignee());
+        task.setName(dialog.getTaskName());
+        task.setAssignee(dialog.getAssignee());
+        task.setProgress(dialog.getProgress());
+        task.setPriority(dialog.getPriority());
         task.setStartDate(startDate);
         task.setEndDate(endDate);
-        task.setPriority(values.priorityCode());
-        task.setStatus(values.statusCode());
-        task.setProgress(TaskBusinessRules.resolveProgress(task.getStatusCode(), task.getProgress()));
+        task.setStatus(TaskStatusCycle.fromProgress(task.getProgress()));
 
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
@@ -405,12 +471,9 @@ public class WbsPanel extends JPanel implements SearchablePanel {
             protected void done() {
                 try {
                     get();
-                    JOptionPane.showMessageDialog(WbsPanel.this,
-                            AppMessages.get("wbs.message.updated", "更新しました。"));
-                } catch (AppException e) {
-                    ErrorDialogUtil.showError(WbsPanel.this, e.getUserMessage());
+                    NoticeBar.info(WbsPanel.this, AppMessages.get("notice.saved", "保存しました"));
                 } catch (Exception e) {
-                    ErrorDialogUtil.showError(WbsPanel.this,
+                    ErrorDialogUtil.showBackgroundError(WbsPanel.this, e,
                             AppMessages.get("wbs.error.update", "更新中に予期せぬエラーが発生しました。"));
                     logger.error("タスク保存時の予期せぬエラー", e);
                 }
@@ -419,18 +482,8 @@ public class WbsPanel extends JPanel implements SearchablePanel {
         worker.execute();
     }
 
-    private void handleSearch() {
-        String keyword = txtSearchKeyword.getText().trim();
-        String status = (String) comboStatusFilter.getSelectedItem();
-        currentSearchKeyword = keyword.isEmpty() ? null : keyword;
-        currentStatusFilter = AppMessages.isFilterAll(status) ? null : status;
-        refreshWbs();
-    }
-
     @Override
     public void handleClearFilter() {
-        txtSearchKeyword.setText("");
-        comboStatusFilter.setSelectedIndex(0);
         currentFilterProjectId = null;
         currentSearchKeyword = null;
         currentStatusFilter = null;

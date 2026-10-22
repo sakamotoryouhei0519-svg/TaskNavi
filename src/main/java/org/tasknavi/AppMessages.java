@@ -1,5 +1,8 @@
 package org.tasknavi;
 
+import org.tasknavi.model.EntryType;
+import org.tasknavi.model.Priority;
+import org.tasknavi.model.TaskStatus;
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.MissingResourceException;

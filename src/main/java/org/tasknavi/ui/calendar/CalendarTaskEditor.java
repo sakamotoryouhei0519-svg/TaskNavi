@@ -1,17 +1,19 @@
 package org.tasknavi.ui.calendar;
 
+import org.tasknavi.AppException;
 import org.tasknavi.AppMessages;
-import org.tasknavi.ErrorDialogUtil;
-import org.tasknavi.Task;
-import org.tasknavi.TaskBusinessRules;
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.ui.NoticeBar;
+import org.tasknavi.model.Task;
+import org.tasknavi.model.TaskBusinessRules;
+import org.tasknavi.model.TaskHierarchyUtil;
 import org.tasknavi.ui.taskdialog.TaskDialog;
-import org.tasknavi.TaskEntryFactory;
-import org.tasknavi.TaskService;
+import org.tasknavi.ui.TaskEntryFactory;
+import org.tasknavi.service.TaskService;
 import org.tasknavi.util.TaskStatusCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import java.awt.Component;
@@ -42,11 +44,8 @@ public final class CalendarTaskEditor {
         }
 
         if (TaskEntryFactory.requiresParent(dialog.getEntryType()) && dialog.getParentProjectId() == null) {
-            JOptionPane.showMessageDialog(parent,
-                    AppMessages.get("dialog.error.parent.required",
-                            "工程・タスクは親プロジェクトまたは親工程を選択してから登録してください。"),
-                    AppMessages.get("dialog.error.input", "入力エラー"),
-                    JOptionPane.ERROR_MESSAGE);
+            NoticeBar.error(parent, AppMessages.get("dialog.error.parent.required",
+                    "工程・タスクは親プロジェクトまたは親工程を選択してから登録してください。"));
             return;
         }
 
@@ -67,8 +66,9 @@ public final class CalendarTaskEditor {
                 protected void done() {
                     try {
                         get();
+                        NoticeBar.info(parent, AppMessages.get("notice.saved", "保存しました"));
                     } catch (Exception ex) {
-                        ErrorDialogUtil.showError(parent,
+                        ErrorDialogUtil.showBackgroundError(parent, ex,
                                 AppMessages.get("mainframe.error.task.add", "タスク追加中にエラーが発生しました。"));
                         logger.error("カレンダーからのタスク追加エラー", ex);
                     }
@@ -103,11 +103,19 @@ public final class CalendarTaskEditor {
         task.setStartDate(LocalDate.parse(dialog.getStartDate()));
         task.setEndDate(LocalDate.parse(dialog.getEndDate()));
         task.setStatus(TaskStatusCycle.fromProgress(task.getProgress()));
-        taskService.updateTask(task);
+        try {
+            taskService.updateTask(task);
+            NoticeBar.info(parent, AppMessages.get("notice.saved", "保存しました"));
+        } catch (AppException e) {
+            ErrorDialogUtil.showError(parent, e.getUserMessage());
+        }
     }
 
     public static void changeStatus(Component parent, TaskService taskService, Task task, String newStatus) {
         if (task == null || newStatus == null) {
+            return;
+        }
+        if (TaskHierarchyUtil.hasChildren(task.getId(), taskService.getAllTasks())) {
             return;
         }
         task.setStatus(newStatus);
@@ -125,7 +133,7 @@ public final class CalendarTaskEditor {
                 try {
                     get();
                 } catch (Exception e) {
-                    ErrorDialogUtil.showError(parent,
+                    ErrorDialogUtil.showBackgroundError(parent, e,
                             AppMessages.get("kanban.status.update.error", "ステータス更新中に予期せぬエラーが発生しました。"));
                     logger.error("カレンダーステータス更新エラー", e);
                 }

@@ -1,6 +1,6 @@
 package org.tasknavi.persistence;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -27,6 +27,22 @@ class TaskHierarchySupportTest {
     }
 
     @Test
+    void rollupAveragesChildProgress() {
+        Task parent = task(1, null, 1);
+        Task c1 = task(2, 1, 2);
+        c1.setStatus(Task.STATUS_IN_PROGRESS);
+        c1.setProgress(50);
+        Task c2 = task(3, 1, 2);
+        c2.setStatus(Task.STATUS_COMPLETED);
+        c2.setProgress(100);
+
+        Optional<Task> rolled = TaskHierarchySupport.rollupParentProgress(1, List.of(parent, c1, c2));
+        assertTrue(rolled.isPresent());
+        assertEquals(75, rolled.get().getProgress());
+        assertEquals(Task.STATUS_IN_PROGRESS, rolled.get().getStatusCode());
+    }
+
+    @Test
     void rollupSetsCompletedWhenAllChildrenDone() {
         Task parent = task(1, null, 1);
         Task c1 = task(2, 1, 2);
@@ -40,6 +56,22 @@ class TaskHierarchySupportTest {
         assertTrue(rolled.isPresent());
         assertEquals(Task.STATUS_COMPLETED, rolled.get().getStatusCode());
         assertEquals(100, rolled.get().getProgress());
+    }
+
+    @Test
+    void rollupAncestorsUpdatesPhaseAndProject() {
+        Task project = task(1, null, 1);
+        Task phase = task(2, 1, 2);
+        Task leaf = task(3, 2, 3);
+        leaf.setStatus(Task.STATUS_COMPLETED);
+        leaf.setProgress(100);
+
+        TaskHierarchySupport.rollupAncestors(3, List.of(project, phase, leaf));
+
+        assertEquals(100, phase.getProgress());
+        assertEquals(Task.STATUS_COMPLETED, phase.getStatusCode());
+        assertEquals(100, project.getProgress());
+        assertEquals(Task.STATUS_COMPLETED, project.getStatusCode());
     }
 
     @Test

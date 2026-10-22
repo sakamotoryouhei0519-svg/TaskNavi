@@ -1,7 +1,9 @@
 package org.tasknavi.persistence;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -75,6 +77,37 @@ public final class TaskHierarchySupport {
             parent.setStatus(Task.STATUS_NOT_STARTED);
         }
         return Optional.of(parent);
+    }
+
+    /**
+     * 指定タスクから親へ向かって進捗を再計算する。
+     * 子がいないタスクは飛ばし、子がいる親だけを返す。
+     */
+    public static List<Task> rollupAncestors(int startId, List<Task> allTasks) {
+        List<Task> changed = new ArrayList<>();
+        if (allTasks == null || allTasks.isEmpty()) {
+            return changed;
+        }
+        Integer current = startId;
+        Set<Integer> seen = new HashSet<>();
+        while (current != null && current > 0 && seen.add(current)) {
+            rollupParentProgress(current, allTasks).ifPresent(changed::add);
+            current = parentIdOf(current, allTasks);
+        }
+        return changed;
+    }
+
+    private static Integer parentIdOf(int id, List<Task> allTasks) {
+        for (Task task : allTasks) {
+            if (task.getId() == id) {
+                Integer parentId = task.getParentId();
+                if (parentId == null || parentId == 0) {
+                    return null;
+                }
+                return parentId;
+            }
+        }
+        return null;
     }
 
     public static boolean isValidHierarchy(Task task, Function<Integer, Task> parentLookup) {

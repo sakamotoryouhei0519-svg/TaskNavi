@@ -1,7 +1,7 @@
 package org.tasknavi.util;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 import java.util.ArrayList;
 import java.util.Collections;

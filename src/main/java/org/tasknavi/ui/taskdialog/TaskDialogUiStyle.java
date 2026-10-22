@@ -1,7 +1,7 @@
 package org.tasknavi.ui.taskdialog;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
+import org.tasknavi.ui.AppTheme;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;

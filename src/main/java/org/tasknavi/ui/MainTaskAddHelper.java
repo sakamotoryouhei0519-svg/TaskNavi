@@ -1,16 +1,13 @@
 package org.tasknavi.ui;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.ErrorDialogUtil;
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 import org.tasknavi.ui.taskdialog.TaskDialog;
-import org.tasknavi.TaskEntryFactory;
-import org.tasknavi.TaskService;
+import org.tasknavi.service.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 
 /**
@@ -31,11 +28,7 @@ public final class MainTaskAddHelper {
         }
 
         if (TaskEntryFactory.requiresParent(dialog.getEntryType()) && dialog.getParentProjectId() == null) {
-            JOptionPane.showMessageDialog(
-                    parent,
-                    AppMessages.get("dialog.error.parent.required"),
-                    AppMessages.get("dialog.error.input"),
-                    JOptionPane.ERROR_MESSAGE);
+            NoticeBar.error(parent, AppMessages.get("dialog.error.parent.required"));
             return;
         }
 
@@ -55,8 +48,9 @@ public final class MainTaskAddHelper {
             protected void done() {
                 try {
                     get();
+                    NoticeBar.info(parent, AppMessages.get("notice.saved", "保存しました"));
                 } catch (Exception e) {
-                    ErrorDialogUtil.showError(parent, AppMessages.get("mainframe.error.task.add"));
+                    ErrorDialogUtil.showBackgroundError(parent, e, AppMessages.get("mainframe.error.task.add"));
                     logger.error("タスク追加エラー", e);
                 }
             }

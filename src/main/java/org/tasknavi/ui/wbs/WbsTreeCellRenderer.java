@@ -1,7 +1,7 @@
 package org.tasknavi.ui.wbs;
 
-import org.tasknavi.AppTheme;
-import org.tasknavi.Task;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.model.Task;
 
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
@@ -23,6 +23,8 @@ public class WbsTreeCellRenderer extends DefaultTreeCellRenderer {
         Task taskFor(DefaultMutableTreeNode node);
 
         TreePath highlightDropPath();
+
+        int hoverRow();
     }
 
     private final Context context;
@@ -72,6 +74,14 @@ public class WbsTreeCellRenderer extends DefaultTreeCellRenderer {
             setBackground(AppTheme.getStatusSoftColor(status));
             setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, AppTheme.PRIMARY));
             setForeground(AppTheme.isDarkMode() ? new Color(226, 232, 240) : AppTheme.TEXT_PRIMARY);
+        } else if (sel) {
+            setOpaque(true);
+            setBackground(AppTheme.selectedFill());
+            setBorder(BorderFactory.createEmptyBorder(1, 0, 1, 0));
+        } else if (row == context.hoverRow()) {
+            setOpaque(true);
+            setBackground(AppTheme.hoverFill());
+            setBorder(BorderFactory.createEmptyBorder(1, 0, 1, 0));
         } else {
             setBorder(BorderFactory.createEmptyBorder(1, 0, 1, 0));
             setOpaque(false);

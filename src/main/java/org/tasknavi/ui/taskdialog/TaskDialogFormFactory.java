@@ -2,18 +2,16 @@ package org.tasknavi.ui.taskdialog;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
+import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.DatePickerDialog;
-import org.tasknavi.IconManager;
-import org.tasknavi.UiDebugUtil;
+import org.tasknavi.ui.IconManager;
+import org.tasknavi.ui.UiDebugUtil;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JSlider;
 import javax.swing.JTextField;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Insets;
@@ -43,8 +41,8 @@ public final class TaskDialogFormFactory {
             JTextField startDateField,
             JTextField endDateField,
             JComboBox<String> priorityCombo,
-            JSlider progressSlider,
-            JLabel progressLabel,
+            JComboBox<String> statusCombo,
+            String statusHint,
             Frame ownerForDatePicker) {
 
         JPanel formPanel = new JPanel(new MigLayout("fill, insets 15 20 15 20, wrap", "[right][grow,fill]", "[]8"));
@@ -82,42 +80,47 @@ public final class TaskDialogFormFactory {
         formPanel.add(labeled(AppMessages.get("dialog.label.priority", "優先度") + ":"), "align right");
         formPanel.add(priorityCombo, "wrap");
 
-        progressSlider.setMajorTickSpacing(25);
-        progressSlider.setPaintTicks(true);
-        progressSlider.addChangeListener(e -> progressLabel.setText(progressSlider.getValue() + "%"));
-
-        JPanel progressPanel = new JPanel(new MigLayout("fill, insets 0, gap 5", "[grow][]"));
+        JPanel progressPanel = new JPanel(new MigLayout("fill, insets 0, gap 5", "[grow]"));
         progressPanel.setOpaque(false);
-        progressPanel.add(progressSlider, "grow");
-        progressPanel.add(progressLabel);
+        progressPanel.add(statusCombo, "grow, wrap");
+        if (statusHint != null && !statusHint.isBlank()) {
+            JLabel hint = new JLabel(statusHint);
+            hint.setFont(AppTheme.FONT_SMALL);
+            hint.setForeground(AppTheme.TEXT_MUTED);
+            progressPanel.add(hint, "grow");
+        }
 
-        formPanel.add(labeled(AppMessages.get("dialog.label.progress", "進捗率") + ":"), "align right");
+        formPanel.add(labeled(AppMessages.get("dialog.label.status", "状態") + ":"), "align right");
         formPanel.add(progressPanel, "wrap");
 
         return new FormParts(formPanel, parentLabel, startPanel, endPanel, progressPanel);
     }
 
-    public static JPanel buildButtonPanel(Runnable onSave, Runnable onCancel) {
+    public record DialogButtons(JPanel panel, JButton saveButton) {
+    }
+
+    public static DialogButtons buildButtonPanel(Runnable onSave, Runnable onCancel) {
         JPanel buttonPanel = new JPanel(new MigLayout("insets 10, gap 10, align right", "[][]"));
         buttonPanel.setBackground(AppTheme.BACKGROUND);
 
         JButton saveButton = new JButton(AppMessages.get("common.button.save", "保存"));
-        saveButton.setFont(AppTheme.FONT_MAIN);
-        saveButton.setBackground(AppTheme.PRIMARY);
-        saveButton.setForeground(Color.WHITE);
-        saveButton.setFocusPainted(false);
-        saveButton.addActionListener(e -> onSave.run());
-
         JButton cancelButton = new JButton(AppMessages.get("common.button.cancel", "キャンセル"));
-        cancelButton.setFont(AppTheme.FONT_MAIN);
-        cancelButton.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
-        cancelButton.setForeground(AppTheme.TEXT_PRIMARY);
-        cancelButton.setFocusPainted(false);
+        AppTheme.styleDialogSecondaryButton(saveButton);
+        AppTheme.styleDialogSecondaryButton(cancelButton);
+        int textWidth = Math.max(
+                saveButton.getFontMetrics(saveButton.getFont()).stringWidth(saveButton.getText()),
+                cancelButton.getFontMetrics(cancelButton.getFont()).stringWidth(cancelButton.getText()));
+        Dimension buttonSize = new Dimension(textWidth + 36, 36);
+        saveButton.setPreferredSize(buttonSize);
+        saveButton.setMinimumSize(buttonSize);
+        cancelButton.setPreferredSize(buttonSize);
+        cancelButton.setMinimumSize(buttonSize);
+        saveButton.addActionListener(e -> onSave.run());
         cancelButton.addActionListener(e -> onCancel.run());
 
         buttonPanel.add(saveButton);
         buttonPanel.add(cancelButton);
-        return buttonPanel;
+        return new DialogButtons(buttonPanel, saveButton);
     }
 
     private static JLabel labeled(String text) {
@@ -133,15 +136,10 @@ public final class TaskDialogFormFactory {
         AppTheme.styleTextField(field);
 
         JButton cal = new JButton(IconManager.createCalendarOutlineIcon(AppTheme.TEXT_PRIMARY));
+        AppTheme.styleDialogSecondaryButton(cal);
         cal.setPreferredSize(new Dimension(40, 36));
         cal.setMargin(new Insets(0, 2, 0, 2));
         cal.setToolTipText(tooltip);
-        cal.setFocusPainted(false);
-        cal.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
-        cal.setForeground(AppTheme.TEXT_PRIMARY);
-        cal.setBorderPainted(false);
-        cal.setContentAreaFilled(false);
-        cal.setOpaque(false);
         UiDebugUtil.logButtonState(debugName, cal);
         cal.addActionListener(e -> new DatePickerDialog(owner, field));
 

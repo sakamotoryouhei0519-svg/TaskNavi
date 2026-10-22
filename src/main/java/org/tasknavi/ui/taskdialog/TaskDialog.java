@@ -2,22 +2,28 @@ package org.tasknavi.ui.taskdialog;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.EntryType;
-import org.tasknavi.Task;
-import org.tasknavi.TaskHierarchyUtil;
-import org.tasknavi.TaskService;
-import org.tasknavi.UiLabels;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.DialogFit;
+import org.tasknavi.ui.DialogKeys;
+import org.tasknavi.ui.NoticeBar;
+import org.tasknavi.model.EntryType;
+import org.tasknavi.model.Task;
+import org.tasknavi.model.TaskBusinessRules;
+import org.tasknavi.model.TaskHierarchyUtil;
+import org.tasknavi.model.TaskStatus;
+import org.tasknavi.service.TaskService;
+import org.tasknavi.ui.UiLabels;
+import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JSlider;
 import javax.swing.JTextField;
-import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FontMetrics;
 import java.awt.Frame;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,8 +50,9 @@ public class TaskDialog extends JDialog {
     private final JTextField startDateField = new JTextField(10);
     private final JTextField endDateField = new JTextField(10);
     private final JComboBox<String> priorityCombo = new JComboBox<>(Task.PRIORITY_OPTIONS);
-    private final JSlider progressSlider = new JSlider(0, 100, 0);
-    private final JLabel progressLabel = new JLabel("0%");
+    private final JComboBox<String> statusCombo = new JComboBox<>(Task.STATUS_OPTIONS);
+    private final boolean progressLocked;
+    private int baselineProgress;
     private final JComboBox<String> parentProjectCombo = new JComboBox<>();
     private final Map<String, Task> parentTargetMap = new LinkedHashMap<>();
 
@@ -66,8 +73,6 @@ public class TaskDialog extends JDialog {
     private TaskDialog(Frame parent, TaskService taskService, Task task, String defaultType, Integer defaultParentProjectId) {
         super(parent, TaskDialogTitles.forTask(task), true);
         this.taskService = Objects.requireNonNull(taskService, "taskService");
-        setSize(470, 430);
-        setLocationRelativeTo(parent);
         setLayout(new MigLayout("fill, insets 0, gap 0", "[grow]", "[grow][]"));
 
         AppTheme.styleTextField(nameField);
@@ -81,10 +86,17 @@ public class TaskDialog extends JDialog {
         UiLabels.installPriorityRenderer(priorityCombo);
         typeCombo.setRenderer(TaskDialogUiStyle.createTypeRenderer());
 
-        progressSlider.setOpaque(false);
-        progressSlider.setForeground(AppTheme.isDarkMode() ? new Color(96, 165, 250) : AppTheme.PRIMARY);
-        progressLabel.setFont(AppTheme.FONT_MAIN);
-        progressLabel.setForeground(AppTheme.isDarkMode() ? new Color(226, 232, 240) : AppTheme.TEXT_PRIMARY);
+        TaskDialogUiStyle.styleComboBox(statusCombo);
+        UiLabels.installStatusRenderer(statusCombo);
+        progressLocked = task != null && TaskHierarchyUtil.hasChildren(task.getId(), taskService.getAllTasks());
+        if (task != null) {
+            baselineProgress = task.getProgress();
+            statusCombo.setSelectedItem(TaskStatus.fromString(task.getStatusCode()).name());
+        } else {
+            baselineProgress = 0;
+            statusCombo.setSelectedItem(Task.STATUS_NOT_STARTED);
+        }
+        statusCombo.setEnabled(!progressLocked);
 
         parentProjectCombo.setEnabled(task == null);
         if (task == null) {
@@ -114,9 +126,12 @@ public class TaskDialog extends JDialog {
 
         TaskDialogFormFactory.FormParts form = TaskDialogFormFactory.buildForm(
                 typeCombo, parentProjectCombo, nameField, assigneeField,
-                startDateField, endDateField, priorityCombo, progressSlider, progressLabel,
+                startDateField, endDateField, priorityCombo, statusCombo,
+                progressLocked
+                        ? AppMessages.get("dialog.status.from.children", "子タスクの進捗から計算されます")
+                        : null,
                 parent);
-        JPanel buttonPanel = TaskDialogFormFactory.buildButtonPanel(this::handleSave, this::dispose);
+        TaskDialogFormFactory.DialogButtons buttons = TaskDialogFormFactory.buildButtonPanel(this::handleSave, this::dispose);
 
         if (task != null) {
             nameField.setText(task.getName());
@@ -128,8 +143,6 @@ public class TaskDialog extends JDialog {
                 endDateField.setText(task.getEndDate().toString());
             }
             priorityCombo.setSelectedItem(task.getPriorityCode());
-            progressSlider.setValue(task.getProgress());
-            progressLabel.setText(task.getProgress() + "%");
             if (task.getParentId() != null) {
                 Task rootProject = TaskHierarchyUtil.findRootProject(task, this.taskService.getAllTasks());
                 if (rootProject != null) {
@@ -141,8 +154,38 @@ public class TaskDialog extends JDialog {
         }
 
         add(form.formPanel(), "grow, wrap");
-        add(buttonPanel, "grow");
+        add(buttons.panel(), "grow");
         setBackground(AppTheme.BACKGROUND);
+        widenFieldsToFitText();
+        DialogFit.showAll(this);
+        DialogKeys.install(this, buttons.saveButton(), this::dispose);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowOpened(WindowEvent e) {
+                nameField.requestFocusInWindow();
+                nameField.selectAll();
+            }
+        });
+    }
+
+    private void widenFieldsToFitText() {
+        FontMetrics metrics = parentProjectCombo.getFontMetrics(parentProjectCombo.getFont());
+        int textWidth = metrics.stringWidth(nameField.getText());
+        textWidth = Math.max(textWidth, metrics.stringWidth(assigneeField.getText()));
+        for (int i = 0; i < parentProjectCombo.getItemCount(); i++) {
+            Object item = parentProjectCombo.getItemAt(i);
+            if (item != null) {
+                textWidth = Math.max(textWidth, metrics.stringWidth(item.toString()));
+            }
+        }
+        int fieldWidth = Math.max(280, textWidth + 64);
+        Dimension fieldSize = new Dimension(fieldWidth, 36);
+        typeCombo.setPreferredSize(fieldSize);
+        parentProjectCombo.setPreferredSize(fieldSize);
+        nameField.setPreferredSize(fieldSize);
+        assigneeField.setPreferredSize(fieldSize);
+        priorityCombo.setPreferredSize(fieldSize);
+        statusCombo.setPreferredSize(fieldSize);
     }
 
     private void updateParentProjectVisibility() {
@@ -162,10 +205,7 @@ public class TaskDialog extends JDialog {
                 startDateField.getText(),
                 endDateField.getText());
         if (!result.ok()) {
-            JOptionPane.showMessageDialog(this,
-                    result.message(),
-                    AppMessages.get("dialog.error.input", "入力エラー"),
-                    JOptionPane.ERROR_MESSAGE);
+            NoticeBar.error(this, result.message());
             return;
         }
         confirmed = true;
@@ -224,13 +264,20 @@ public class TaskDialog extends JDialog {
         priorityCombo.setSelectedItem(priority);
     }
 
+    public String getStatus() {
+        return (String) statusCombo.getSelectedItem();
+    }
+
     public int getProgress() {
-        return progressSlider.getValue();
+        if (progressLocked) {
+            return baselineProgress;
+        }
+        return TaskBusinessRules.resolveProgress(getStatus(), baselineProgress);
     }
 
     public void setProgress(int progress) {
-        progressSlider.setValue(progress);
-        progressLabel.setText(progress + "%");
+        baselineProgress = progress;
+        statusCombo.setSelectedItem(TaskStatusCycle.fromProgress(progress));
     }
 
     public Integer getParentProjectId() {

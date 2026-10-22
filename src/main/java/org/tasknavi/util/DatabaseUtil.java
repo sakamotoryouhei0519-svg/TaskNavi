@@ -6,7 +6,7 @@ import java.sql.SQLException;
 /**
  * 【データベース接続ユーティリティ】
  * 既存コードとの互換性を保つための薄いラッパーです。
- * 実際の初期化/マイグレーション処理は org.tasknavi.Database に集約します。
+ * 実際の初期化/マイグレーション処理は org.tasknavi.persistence.Database に集約します。
  */
 public class DatabaseUtil {
 
@@ -19,7 +19,7 @@ public class DatabaseUtil {
      * データベース接続を取得し、必要に応じてスキーマを準備します。
      */
     public static Connection getConnection() throws SQLException {
-        return org.tasknavi.Database.connect();
+        return org.tasknavi.persistence.Database.connect();
     }
 
     public static <T> T withTransaction(SqlCallback<T> callback) throws SQLException {
@@ -43,6 +43,6 @@ public class DatabaseUtil {
      * 既存コード互換のため残す。
      */
     public static void initializeDatabase() {
-        org.tasknavi.Database.initialize();
+        org.tasknavi.persistence.Database.initialize();
     }
 }

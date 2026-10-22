@@ -1,7 +1,7 @@
 package org.tasknavi.ui.wbs;
 
-import org.tasknavi.Task;
-import org.tasknavi.TaskService;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
 
 import java.util.List;
 

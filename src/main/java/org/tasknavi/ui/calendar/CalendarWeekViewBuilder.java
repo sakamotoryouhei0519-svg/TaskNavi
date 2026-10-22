@@ -2,9 +2,9 @@ package org.tasknavi.ui.calendar;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.Task;
-import org.tasknavi.UiLabels;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.model.Task;
+import org.tasknavi.ui.UiLabels;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;

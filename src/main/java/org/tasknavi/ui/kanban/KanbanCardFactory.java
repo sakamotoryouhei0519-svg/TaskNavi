@@ -2,8 +2,8 @@ package org.tasknavi.ui.kanban;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.Task;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.model.Task;
 import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.BorderFactory;
@@ -23,6 +23,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Insets;
 import java.awt.RenderingHints;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.MouseEvent;
@@ -41,6 +42,8 @@ public final class KanbanCardFactory {
 
         void onStatusChange(Task task, String newStatus);
 
+        void onDrop(int taskId, java.awt.Component source);
+
         void refresh();
     }
 
@@ -49,17 +52,14 @@ public final class KanbanCardFactory {
 
     public static JPanel create(Task task, Actions actions) {
         JPanel card = new JPanel(new BorderLayout(10, 8));
-        card.setBackground(AppTheme.isDarkMode() ? new Color(42, 50, 61) : new Color(255, 255, 255));
+        Color baseBg = AppTheme.isDarkMode() ? new Color(42, 50, 61) : new Color(255, 255, 255);
+        card.setBackground(baseBg);
 
         Color statusColor = AppTheme.getStatusColor(task.getStatusCode());
         Color borderColor = task.isOverdue() ? new Color(220, 38, 38) : statusColor;
         Border normalBorder = BorderFactory.createCompoundBorder(
                 AppTheme.createRoundedBorder(borderColor, 12, task.isOverdue() ? 2 : 1, task.isOverdue() ? 2 : 1, task.isOverdue() ? 2 : 1, task.isOverdue() ? 2 : 1),
                 new EmptyBorder(10, 12, 10, 12)
-        );
-        Border hoverBorder = BorderFactory.createCompoundBorder(
-                AppTheme.createRoundedBorder(borderColor, 12, 2, 2, 2, 2),
-                new EmptyBorder(9, 11, 9, 11)
         );
         card.setBorder(normalBorder);
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -76,6 +76,25 @@ public final class KanbanCardFactory {
             @Override
             public int getSourceActions(JComponent c) {
                 return TransferHandler.MOVE;
+            }
+
+            @Override
+            public boolean canImport(TransferSupport support) {
+                return support.isDataFlavorSupported(DataFlavor.stringFlavor);
+            }
+
+            @Override
+            public boolean importData(TransferSupport support) {
+                if (!canImport(support)) {
+                    return false;
+                }
+                try {
+                    String text = (String) support.getTransferable().getTransferData(DataFlavor.stringFlavor);
+                    actions.onDrop(Integer.parseInt(text.trim()), support.getComponent());
+                    return true;
+                } catch (Exception ex) {
+                    return false;
+                }
             }
         });
 
@@ -100,21 +119,24 @@ public final class KanbanCardFactory {
 
             @Override
             public void mouseEntered(MouseEvent e) {
-                card.setBorder(hoverBorder);
+                Integer selected = actions.selectedTaskId();
+                if (selected == null || !selected.equals(task.getId())) {
+                    card.setBackground(AppTheme.hoverFill());
+                }
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
                 Integer selected = actions.selectedTaskId();
-                if (selected == null || !selected.equals(task.getId())) {
-                    card.setBorder(normalBorder);
-                }
+                card.setBackground(selected != null && selected.equals(task.getId())
+                        ? AppTheme.selectedFill()
+                        : baseBg);
             }
         });
 
         Integer selectedTaskId = actions.selectedTaskId();
         if (selectedTaskId != null && selectedTaskId.equals(task.getId())) {
-            card.setBorder(hoverBorder);
+            card.setBackground(AppTheme.selectedFill());
         }
 
         JLabel nameLabel = new JLabel(task.getName());
@@ -148,22 +170,14 @@ public final class KanbanCardFactory {
         buttonPanel.setOpaque(false);
 
         if (!task.isNotStarted()) {
-            JButton prevBtn = new JButton(AppMessages.get("kanban.button.prev"));
-            prevBtn.setFont(AppTheme.FONT_MAIN);
-            prevBtn.setMargin(new Insets(2, 6, 2, 6));
-            prevBtn.setFocusPainted(false);
-            prevBtn.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 8, 1, 1, 1, 1));
+            JButton prevBtn = arrowButton(AppMessages.get("kanban.button.prev"));
             prevBtn.addActionListener(e ->
                     actions.onStatusChange(task, TaskStatusCycle.previous(task.getStatusCode())));
             buttonPanel.add(prevBtn);
         }
 
         if (!task.isCompleted()) {
-            JButton nextBtn = new JButton(AppMessages.get("kanban.button.next"));
-            nextBtn.setFont(AppTheme.FONT_MAIN);
-            nextBtn.setMargin(new Insets(2, 6, 2, 6));
-            nextBtn.setFocusPainted(false);
-            nextBtn.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 8, 1, 1, 1, 1));
+            JButton nextBtn = arrowButton(AppMessages.get("kanban.button.next"));
             nextBtn.addActionListener(e ->
                     actions.onStatusChange(task, TaskStatusCycle.next(task.getStatusCode())));
             buttonPanel.add(nextBtn);
@@ -178,6 +192,21 @@ public final class KanbanCardFactory {
         card.add(buttonPanel, BorderLayout.SOUTH);
 
         return card;
+    }
+
+    private static JButton arrowButton(String text) {
+        JButton button = new JButton(text);
+        button.setUI(new javax.swing.plaf.basic.BasicButtonUI());
+        button.setFont(AppTheme.FONT_BOLD);
+        button.setMargin(new Insets(2, 8, 2, 8));
+        button.setFocusPainted(false);
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(true);
+        button.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+        button.setForeground(AppTheme.TEXT_PRIMARY);
+        button.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 8, 2, 2, 2, 2));
+        return button;
     }
 
     private static JComponent createProgressBar(int progress, String status) {

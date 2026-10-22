@@ -1,6 +1,6 @@
 package org.tasknavi.persistence;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -14,8 +14,20 @@ public final class TaskStatementBinder {
     private TaskStatementBinder() {
     }
 
-    /** INSERT 用（1..10）。 */
-    public static void bindInsert(PreparedStatement pstmt, Task task) throws SQLException {
+    /** INSERT 用（1..10 がタスク、11 が所有者）。 */
+    public static void bindInsert(PreparedStatement pstmt, Task task, int ownerId) throws SQLException {
+        bindTaskColumns(pstmt, task);
+        pstmt.setInt(11, ownerId);
+    }
+
+    /** UPDATE 用（1..10 がタスク、11 が id、12 が所有者）。 */
+    public static void bindUpdate(PreparedStatement pstmt, Task task, int ownerId) throws SQLException {
+        bindTaskColumns(pstmt, task);
+        pstmt.setInt(11, task.getId());
+        pstmt.setInt(12, ownerId);
+    }
+
+    private static void bindTaskColumns(PreparedStatement pstmt, Task task) throws SQLException {
         if (task.getParentId() != null && task.getParentId() != 0) {
             pstmt.setInt(1, task.getParentId());
         } else {
@@ -30,11 +42,5 @@ public final class TaskStatementBinder {
         pstmt.setString(8, task.getStatusCode() != null ? task.getStatusCode() : Task.STATUS_NOT_STARTED);
         pstmt.setInt(9, task.getProgress());
         pstmt.setString(10, task.getPriorityCode());
-    }
-
-    /** UPDATE 用（1..10 は INSERT と同じ、11 に id）。 */
-    public static void bindUpdate(PreparedStatement pstmt, Task task) throws SQLException {
-        bindInsert(pstmt, task);
-        pstmt.setInt(11, task.getId());
     }
 }

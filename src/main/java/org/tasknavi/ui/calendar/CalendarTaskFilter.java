@@ -1,6 +1,6 @@
 package org.tasknavi.ui.calendar;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 import org.tasknavi.util.TaskViewFilter;
 
 import java.time.LocalDate;

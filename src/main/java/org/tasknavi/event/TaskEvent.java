@@ -1,6 +1,6 @@
 package org.tasknavi.event;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 /**
  * 発生したタスクイベントの情報を保持するクラス

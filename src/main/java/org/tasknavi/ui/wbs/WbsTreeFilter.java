@@ -1,6 +1,6 @@
 package org.tasknavi.ui.wbs;
 
-import org.tasknavi.Task;
+import org.tasknavi.model.Task;
 
 import java.util.ArrayList;
 import java.util.HashSet;

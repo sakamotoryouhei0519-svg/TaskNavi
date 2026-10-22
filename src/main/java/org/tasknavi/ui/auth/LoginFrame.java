@@ -2,13 +2,14 @@ package org.tasknavi.ui.auth;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.AuthService;
-import org.tasknavi.ErrorDialogUtil;
-import org.tasknavi.MainFrame;
-import org.tasknavi.TaskService;
-import org.tasknavi.UiConstants;
-import org.tasknavi.UserSession;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.service.AuthService;
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.ui.MainFrame;
+import org.tasknavi.service.TaskService;
+import org.tasknavi.ui.UiConstants;
+import org.tasknavi.persistence.SampleDataUtil;
+import org.tasknavi.service.UserSession;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -214,7 +215,11 @@ public class LoginFrame extends JFrame {
         SwingWorker<AuthService.LoginResult, Void> worker = new SwingWorker<>() {
             @Override
             protected AuthService.LoginResult doInBackground() {
-                return AuthService.authenticate(username, password);
+                AuthService.LoginResult result = AuthService.authenticate(username, password);
+                if (result != null && result.isSuccess() && result.getUser() != null) {
+                    SampleDataUtil.prepareLedgerForUser(result.getUser().getId());
+                }
+                return result;
             }
 
             @Override

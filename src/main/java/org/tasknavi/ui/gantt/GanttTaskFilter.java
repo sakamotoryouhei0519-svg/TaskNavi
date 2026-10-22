@@ -1,7 +1,7 @@
 package org.tasknavi.ui.gantt;
 
-import org.tasknavi.Task;
-import org.tasknavi.TaskHierarchyUtil;
+import org.tasknavi.model.Task;
+import org.tasknavi.model.TaskHierarchyUtil;
 import org.tasknavi.util.TaskViewFilter;
 
 import java.util.List;

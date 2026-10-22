@@ -1,22 +1,20 @@
 package org.tasknavi.ui.gantt;
 
-import org.tasknavi.AppMessages;
-import org.tasknavi.AppTheme;
-import org.tasknavi.SearchablePanel;
-import org.tasknavi.Task;
-import org.tasknavi.TaskHierarchyUtil;
-import org.tasknavi.TaskService;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.SearchablePanel;
+import org.tasknavi.model.Task;
+import org.tasknavi.model.TaskHierarchyUtil;
+import org.tasknavi.service.TaskService;
 import org.tasknavi.event.TaskEvent;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
 import org.tasknavi.ui.ProjectFilterDialog;
 
 import javax.swing.JComponent;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -52,7 +50,6 @@ public class GanttPanel extends JPanel implements SearchablePanel {
     private LocalDate visibleEndDate = LocalDate.now().plusDays(30);
     private boolean manualVisibleWindow = false;
 
-    private JTextField txtSearchKeyword;
     private String currentSearchKeyword = null;
     private String currentStatusFilter = null;
     private Integer currentProjectFilterId = null;
@@ -79,6 +76,25 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         @Override
         public Integer selectedTaskId() {
             return selectedTaskId;
+        }
+
+        @Override
+        public Integer hoveredTaskId() {
+            return hoveredTask == null ? null : hoveredTask.getId();
+        }
+
+        @Override
+        public void setHoveredTaskId(Integer taskId) {
+            Task match = null;
+            if (taskId != null) {
+                for (Task task : getVisibleTasks()) {
+                    if (taskId.equals(task.getId())) {
+                        match = task;
+                        break;
+                    }
+                }
+            }
+            setHoveredTask(match);
         }
 
         @Override
@@ -148,7 +164,15 @@ public class GanttPanel extends JPanel implements SearchablePanel {
 
             @Override
             public void setHoveredTask(Task task) {
-                hoveredTask = task;
+                GanttPanel.this.setHoveredTask(task);
+            }
+
+            @Override
+            public void setHoveredTaskAtY(int y) {
+                List<Task> tasks = getVisibleTasks();
+                int row = y / GanttMetrics.ROW_HEIGHT;
+                Task task = row >= 0 && row < tasks.size() ? tasks.get(row) : null;
+                GanttPanel.this.setHoveredTask(task);
             }
 
             @Override
@@ -222,13 +246,13 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         addMouseListener(mouseController);
         addMouseMotionListener(mouseController);
         addMouseWheelListener(e -> {
-            Point p = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), this);
-            if (p.x >= 0 && p.y >= 0) {
+            if (e.isControlDown()) {
                 dayWidth = GanttMetrics.adjustDayWidth(dayWidth, e.getWheelRotation());
                 notifyLayoutChanged();
-                return;
+            } else {
+                GanttViewportSupport.scrollParentViewport(this, e);
             }
-            GanttViewportSupport.scrollParentViewport(this, e);
+            e.consume();
         });
 
         ToolTipManager.sharedInstance().registerComponent(this);
@@ -315,6 +339,19 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         return GanttTooltips.forTask(hoveredTask);
     }
 
+    private void setHoveredTask(Task task) {
+        Integer before = hoveredTask == null ? null : hoveredTask.getId();
+        hoveredTask = task;
+        Integer after = hoveredTask == null ? null : hoveredTask.getId();
+        if (java.util.Objects.equals(before, after)) {
+            return;
+        }
+        repaint();
+        if (taskNameColumnView != null) {
+            taskNameColumnView.repaint();
+        }
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -346,7 +383,14 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         GanttPainter.drawDayGrid(g2, minDate, 0, tasks.size() * GanttMetrics.ROW_HEIGHT, totalDays, dayWidth);
 
         int currentY = 0;
+        Integer hoverId = hoveredTask == null ? null : hoveredTask.getId();
         for (Task task : tasks) {
+            boolean selected = selectedTaskId != null && selectedTaskId.equals(task.getId());
+            boolean hovered = hoverId != null && hoverId.equals(task.getId());
+            if (selected || hovered) {
+                g2.setColor(selected ? AppTheme.selectedFill() : AppTheme.hoverFill());
+                g2.fillRect(0, currentY, getWidth(), GanttMetrics.ROW_HEIGHT);
+            }
             boolean dragging = dragSession.isDragging(task);
             LocalDate dragStart = null;
             LocalDate dragEnd = null;
@@ -363,8 +407,10 @@ public class GanttPanel extends JPanel implements SearchablePanel {
                     dragging,
                     selectedTaskId != null && selectedTaskId.equals(task.getId()),
                     dragStart, dragEnd);
-            g2.setColor(new Color(220, 225, 232));
+            g2.setStroke(new BasicStroke(2f));
+            g2.setColor(AppTheme.isDarkMode() ? new Color(71, 85, 105) : new Color(148, 163, 184));
             g2.drawLine(0, currentY + GanttMetrics.ROW_HEIGHT - 1, getWidth(), currentY + GanttMetrics.ROW_HEIGHT - 1);
+            g2.setStroke(new BasicStroke(1f));
             currentY += GanttMetrics.ROW_HEIGHT;
         }
 
@@ -417,11 +463,11 @@ public class GanttPanel extends JPanel implements SearchablePanel {
 
     @Override
     public void applySearchFilter(String keyword, String status) {
+        if (org.tasknavi.util.SearchFilterUtil.isUnchanged(currentSearchKeyword, currentStatusFilter, keyword, status)) {
+            return;
+        }
         currentSearchKeyword = org.tasknavi.util.SearchFilterUtil.normalizeKeyword(keyword);
         currentStatusFilter = org.tasknavi.util.SearchFilterUtil.normalizeStatus(status);
-        if (txtSearchKeyword != null) {
-            txtSearchKeyword.setText(currentSearchKeyword != null ? currentSearchKeyword : "");
-        }
         notifyLayoutChanged();
     }
 
@@ -430,9 +476,6 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         currentStatusFilter = null;
         currentProjectFilterId = null;
         projectMemberCache.clear();
-        if (txtSearchKeyword != null) {
-            txtSearchKeyword.setText("");
-        }
         notifyLayoutChanged();
     }
 
@@ -466,28 +509,6 @@ public class GanttPanel extends JPanel implements SearchablePanel {
             return null;
         }
         return taskService.getTaskById(selectedTaskId);
-    }
-
-    public void deleteSelectedTask() {
-        if (selectedTaskId == null) {
-            JOptionPane.showMessageDialog(this,
-                    AppMessages.get("gantt.delete.select", "削除するバーを選択してください。"),
-                    AppMessages.get("message.delete.blocked.title", "削除できません"),
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        Task task = taskService.getTaskById(selectedTaskId);
-        if (task == null) {
-            return;
-        }
-
-        taskService.deleteTask(selectedTaskId);
-        selectedTaskId = null;
-        JOptionPane.showMessageDialog(this,
-                AppMessages.format("message.deleted.named", "「{0}」を削除しました。", task.getName()),
-                AppMessages.get("message.delete.done.title", "削除完了"),
-                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void refreshTaskCache() {

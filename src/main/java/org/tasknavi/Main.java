@@ -1,10 +1,17 @@
 package org.tasknavi;
 
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.MainFrame;
+import org.tasknavi.persistence.SampleDataUtil;
+import org.tasknavi.persistence.UserDao;
+import org.tasknavi.service.TaskService;
+import org.tasknavi.ui.UiDebugUtil;
+import org.tasknavi.model.User;
+import org.tasknavi.service.UserSession;
 import org.tasknavi.ui.auth.LoginFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -15,8 +22,6 @@ import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.time.LocalDateTime;
 
 /**
  * アプリケーション起動入口。
@@ -40,14 +45,6 @@ public class Main {
                         throwable));
             }
         });
-
-        try {
-            SampleDataUtil.insertSampleTasksIfEmpty();
-        } catch (Exception e) {
-            logger.error("サンプルデータ初期化エラー", e);
-            showFatalStartupError("初期データの準備に失敗しました。\nアプリケーションを再起動してください。", e);
-            return;
-        }
 
         SwingUtilities.invokeLater(() -> {
             try {
@@ -92,20 +89,13 @@ public class Main {
         }
         String username = System.getProperty("tasknavi.autoLoginUser", "testuser");
         String email = System.getProperty("tasknavi.autoLoginEmail", username + "@example.com");
-        UserSession.login(new User(0, username, email, "USER", username, LocalDateTime.now()));
+        User user = new UserDao().ensureDemoUser(username, email);
+        SampleDataUtil.prepareLedgerForUser(user.getId());
+        UserSession.login(user);
     }
 
     private static void applyGlobalUiDefaults() {
-        UIManager.put("Button.background", Color.WHITE);
-        UIManager.put("Button.foreground", AppTheme.TEXT_PRIMARY);
-        UIManager.put("Button.border", BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(AppTheme.BORDER_COLOR, 1, true),
-                new EmptyBorder(4, 12, 4, 12)
-        ));
-        UIManager.put("ToggleButton.background", Color.WHITE);
-        UIManager.put("ToggleButton.foreground", AppTheme.TEXT_PRIMARY);
-        UIManager.put("Panel.background", AppTheme.PANEL_BG);
-        UIManager.put("Label.foreground", AppTheme.TEXT_PRIMARY);
+        AppTheme.applySwingDefaults();
     }
 
     public static void openMainFrame() {

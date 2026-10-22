@@ -1,9 +1,9 @@
 package org.tasknavi.ui.taskdialog;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.EntryType;
-import org.tasknavi.Task;
-import org.tasknavi.TaskHierarchyUtil;
+import org.tasknavi.model.EntryType;
+import org.tasknavi.model.Task;
+import org.tasknavi.model.TaskHierarchyUtil;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;

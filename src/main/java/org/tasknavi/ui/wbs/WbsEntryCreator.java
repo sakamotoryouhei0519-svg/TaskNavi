@@ -2,16 +2,16 @@ package org.tasknavi.ui.wbs;
 
 import org.tasknavi.AppException;
 import org.tasknavi.AppMessages;
-import org.tasknavi.EntryType;
-import org.tasknavi.ErrorDialogUtil;
-import org.tasknavi.Task;
+import org.tasknavi.model.EntryType;
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.ui.NoticeBar;
+import org.tasknavi.model.Task;
 import org.tasknavi.ui.taskdialog.TaskDialog;
-import org.tasknavi.TaskEntryFactory;
-import org.tasknavi.TaskService;
+import org.tasknavi.ui.TaskEntryFactory;
+import org.tasknavi.service.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import java.awt.Component;
@@ -63,11 +63,8 @@ public final class WbsEntryCreator {
         }
 
         if (TaskEntryFactory.requiresParent(dialog.getEntryType()) && dialog.getParentProjectId() == null) {
-            JOptionPane.showMessageDialog(parent,
-                    AppMessages.get("dialog.error.parent.required",
-                            "工程・タスクは親プロジェクトまたは親工程を選択してから登録してください。"),
-                    AppMessages.get("dialog.error.input", "入力エラー"),
-                    JOptionPane.ERROR_MESSAGE);
+            NoticeBar.error(parent, AppMessages.get("dialog.error.parent.required",
+                    "工程・タスクは親プロジェクトまたは親工程を選択してから登録してください。"));
             return;
         }
 
@@ -89,12 +86,9 @@ public final class WbsEntryCreator {
                 protected void done() {
                     try {
                         get();
-                        JOptionPane.showMessageDialog(parent,
-                                AppMessages.get("wbs.message.registered", "タスクを登録しました。"));
-                    } catch (AppException e) {
-                        ErrorDialogUtil.showError(parent, e.getUserMessage());
+                        NoticeBar.info(parent, AppMessages.get("notice.saved", "保存しました"));
                     } catch (Exception ex) {
-                        ErrorDialogUtil.showError(parent,
+                        ErrorDialogUtil.showBackgroundError(parent, ex,
                                 AppMessages.get("wbs.error.register", "タスクの登録に失敗しました。"));
                         logger.error("タスク登録時の予期せぬエラー", ex);
                     }

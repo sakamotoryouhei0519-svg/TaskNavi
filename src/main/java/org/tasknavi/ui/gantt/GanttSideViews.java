@@ -1,12 +1,15 @@
 package org.tasknavi.ui.gantt;
 
-import org.tasknavi.AppTheme;
-import org.tasknavi.Task;
-import org.tasknavi.TaskHierarchyUtil;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.model.Task;
+import org.tasknavi.model.TaskHierarchyUtil;
 
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import java.awt.Color;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -26,6 +29,10 @@ public final class GanttSideViews {
         List<Task> cachedTasks();
 
         Integer selectedTaskId();
+
+        Integer hoveredTaskId();
+
+        void setHoveredTaskId(Integer taskId);
 
         int dayWidth();
 
@@ -63,11 +70,13 @@ public final class GanttSideViews {
                     int currentY = 0;
                     for (Task task : tasks) {
                         GanttPainter.drawTaskNameCell(
-                                g2, task, currentY, host.selectedTaskId(),
+                                g2, task, currentY, host.selectedTaskId(), host.hoveredTaskId(),
                                 GanttMetrics.TASK_NAME_WIDTH, GanttMetrics.ROW_HEIGHT);
-                        g2.setColor(new Color(230, 230, 230));
+                        g2.setStroke(new java.awt.BasicStroke(2f));
+                        g2.setColor(AppTheme.isDarkMode() ? new Color(71, 85, 105) : new Color(148, 163, 184));
                         g2.drawLine(0, currentY + GanttMetrics.ROW_HEIGHT,
                                 GanttMetrics.TASK_NAME_WIDTH, currentY + GanttMetrics.ROW_HEIGHT);
+                        g2.setStroke(new java.awt.BasicStroke(1f));
                         currentY += GanttMetrics.ROW_HEIGHT;
                     }
                 } finally {
@@ -84,6 +93,24 @@ public final class GanttSideViews {
         };
         panel.setBackground(AppTheme.PANEL_BG);
         panel.setOpaque(true);
+        panel.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                int row = e.getY() / GanttMetrics.ROW_HEIGHT;
+                java.util.List<Task> tasks = host.visibleTasks();
+                if (row < 0 || row >= tasks.size()) {
+                    host.setHoveredTaskId(null);
+                } else {
+                    host.setHoveredTaskId(tasks.get(row).getId());
+                }
+            }
+        });
+        panel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseExited(MouseEvent e) {
+                host.setHoveredTaskId(null);
+            }
+        });
         host.registerTaskNameColumn(panel);
         return panel;
     }
