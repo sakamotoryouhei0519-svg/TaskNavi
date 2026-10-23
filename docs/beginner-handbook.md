@@ -4,11 +4,11 @@
 1〜11章と [study-checklist.md](./study-checklist.md) は辞書です。最初から最後まで読まない。
 
 ## 1. このプロジェクトで最初に押さえること
-- 画面は Swing で作られている
-- レイアウトは MigLayout が中心
-- 画面ごとの役割がはっきり分かれている
-- UI は `TaskService` 経由でデータを扱い、DB 直接操作は `Dao` に閉じる
-- 画面間の同期は `TaskEventBus` で行う
+- 画面は Swing で作っています。Java に最初から入っている画面の部品です
+- 部品の並べ方は、ほとんど MigLayout で決めています
+- 画面ごとに、受け持つ仕事が分かれています
+- 画面はデータを `TaskService` に頼みます。データベースを触るのは `Dao` だけです
+- ある画面で変えたことは、`TaskEventBus` が他の画面に知らせます
 
 ## 2. 全体構成の考え方
 
@@ -20,90 +20,96 @@
 - `ui` は画面。中は WBS、カンバン、ガント、カレンダー、ログインに分かれる
 - `event` は画面への知らせ（`TaskEventBus`）
 
-## 3. 絶対に覚える単語
-- `JFrame` / `JDialog` / `JPanel`
-- `MigLayout`
-- `ActionListener`
-- `LocalDate`
-- `TaskService` / `TaskDao`
-- `persistence`（`TaskRowMapper` / `TaskHierarchySupport` / `TaskSearchDao` / `TaskCrudDao` / `TaskImportDao`）
-- `TaskEventBus`
-- `AppTheme` / `AppMessages`
-- `IconManager`
-- `SearchablePanel`
+## 3. よく出てくる名前
+- `JFrame` はウィンドウ、`JDialog` は小さな窓、`JPanel` は部品を入れる箱
+- `MigLayout` は部品の並べ方
+- `ActionListener` はボタンを押したときの処理
+- `LocalDate` は日付
+- `TaskService` は保存の窓口、`TaskDao` はデータベース
+- `persistence` の中の `TaskRowMapper` / `TaskHierarchySupport` / `TaskSearchDao` / `TaskCrudDao` / `TaskImportDao` は、データベースの読み書きを分担しています
+- `TaskEventBus` は他の画面への知らせ
+- `AppTheme` は色、`AppMessages` は画面の文言
+- `IconManager` はアイコン
+- `SearchablePanel` は、上の検索欄で絞り込める画面の印
 
 ## 4. MigLayout の見方
-- `fill` は領域いっぱいに広げる
-- `insets` は外側余白
-- `gap` は部品間の間隔
-- `wrap` は改行
-- `grow` は余白に合わせて伸びる
-- `align right/left/center` は寄せ方
+- `fill`: 使える場所いっぱいに広げる
+- `insets`: 外側の余白
+- `gap`: 部品と部品のすき間
+- `wrap`: そこで次の行に行く
+- `grow`: 余った場所に合わせて伸びる
+- `align right/left/center`: 右・左・真ん中に寄せる
 
 ## 5. 画面ごとの重要ポイント
-### LoginFrame / RegisterFrame / ResetPasswordFrame（`org.tasknavi.ui.auth`）
-- 認証画面のため、入力欄とボタン配置が重要
-- 認証ロジックは `AuthService`（試行制限付き）
-- 見た目の統一は `AppTheme` と `ui.auth.AuthFormWidgets` に寄せる
-- 登録入力ポリシーは `ui.auth.AuthPasswordPolicy`
+### LoginFrame / RegisterFrame / ResetPasswordFrame（`ui/auth`）
+- ログイン、新規登録、パスワード再設定の画面です
+- ログインの判定は `AuthService` です。何度も間違えると、しばらく試せなくなります
+- 見た目は `AppTheme` と `AuthFormWidgets` でそろえています
+- 登録できるパスワードの決まりは `AuthPasswordPolicy` です
 
 ### MainFrame
-- アプリ全体の土台
-- 上部ヘッダー（ユーザー・インポート/エクスポート・テーマ・ログアウト）とツールバー（検索・フィルタ）
-- メイン領域はタブ: WBS / カンバン / ガント / カレンダー
-- 最後に開いたタブは Preferences で記憶・次回起動時に復元する
-- グローバル検索は各タブの `SearchablePanel` に同期する
-- 適用中フィルタの要約表示は `MainGlobalSearchBar.describeFilters`
-- JSON エクスポートは全件か絞り込み結果かを選べる（`ui.TaskDataIoHelper`）
-- ヘッダー／検索バー／テーマ適用／ツールバーボタン／追加フローは `ui.MainHeaderBar`・`MainGlobalSearchBar`・`MainThemeSupport`・`MainToolbarButtons`・`MainTaskAddHelper` に分割
-- タブ装飾は `ui.MainTabChrome`
+- アプリ全体の土台です
+- いちばん上の帯（ヘッダー）に、ユーザー名・インポート／エクスポート・テーマ・ログアウトがあります。その下の帯（ツールバー）に、検索と絞り込みがあります
+- 真ん中はタブです: WBS / カンバン / ガント / カレンダー
+- 最後に開いたタブを覚えていて、次に起動したときもそのタブから始まります（`Preferences`）
+- 上の検索欄の文字は、各タブの `SearchablePanel` に渡ります
+- 今かかっている絞り込みの説明文は、`MainGlobalSearchBar.describeFilters` が作ります
+- JSON のエクスポートでは、全件か、絞り込んだ分だけかを選べます（`TaskDataIoHelper`）
+- MainFrame が長くならないよう、部品ごとに別のファイルにしています
+  - ヘッダー: `MainHeaderBar`
+  - 検索欄: `MainGlobalSearchBar`
+  - テーマの切り替え: `MainThemeSupport`
+  - ツールバーのボタン: `MainToolbarButtons`
+  - 追加の流れ: `MainTaskAddHelper`
+  - タブの見た目: `MainTabChrome`
 
 ### WbsPanel / KanbanPanel / GanttPanel / CalendarPanel
-- 主要業務画面（いずれも `TaskService` を受け取る）
-- 本体はそれぞれ `org.tasknavi.ui.wbs` / `ui.kanban` / `ui.gantt` / `ui.calendar` に配置
-- タスク一覧、状態、操作ボタンのつながりを見る
-- 表示更新は `refresh` 系と `TaskEventListener` に注目する
-- 期限超過は `Task.isOverdue()`（未完了かつ終了日が今日より前）。カレンダー／カンバンのカードで強調
-- WBS のツリー構築・フィルタ・DnD・詳細フォーム／登録は同パッケージ内に分割
-- カンバンのフィルタ・カード／列振り分けは同パッケージ内に分割
-- カレンダーのナビ／月・週ビュー／日別サイド／カードは同パッケージ内に分割
-- ガントの描画・ヒット・ドラッグ・サイド列は同パッケージ内に分割
-- ステータス前後移動は `util.TaskStatusCycle`
+- 仕事の中心になる4つの画面です。どれも `TaskService` を受け取ります
+- 置き場所は `ui/wbs`、`ui/kanban`、`ui/gantt`、`ui/calendar` です
+- 見るところは、タスクの一覧、状態、操作ボタンのつながりです
+- 画面の描き直しは、`refresh` で始まるメソッドと `TaskEventListener` を見ます
+- 期限切れは `Task.isOverdue()` です。終わっていなくて、終了日が今日より前なら期限切れです。カレンダーとカンバンのカードで目立たせます
+- どの画面も、1つのファイルに全部は書いていません。同じフォルダの中で分けています
+  - WBS: ツリーの組み立て、絞り込み、ドラッグでの並べ替え、右側の詳細、登録
+  - カンバン: 絞り込み、カード、列への振り分け
+  - カレンダー: 月や週の切り替え、月表示と週表示、日ごとの横の一覧、カード
+  - ガント: 線の描画、クリックした場所の判定、ドラッグ、横の列
+- 状態を1つ前・1つ後ろへ動かすのは `util/TaskStatusCycle` です
 
 ### TaskDialog
-- タスク作成・編集の中心（`org.tasknavi.ui.taskdialog.TaskDialog`）
-- 種別は `EntryType`（PROJECT / PHASE / TASK）
-- 日付入力は `DatePickerDialog` と連動する
-- 新規作成の組み立ては `TaskEntryFactory` も参照
-- 親選択肢／フォーム／保存検証は同パッケージ内のヘルパーに分割
+- タスクを作るときと直すときの窓です（`ui/taskdialog/TaskDialog`）
+- 種類は `EntryType` で、プロジェクト・フェーズ・タスクの3つです
+- 日付の欄は `DatePickerDialog` と一緒に動きます
+- 新しく作るタスクの中身は `TaskEntryFactory` も見ます
+- 親の選択肢、入力欄、保存前のチェックは、同じフォルダの別ファイルにしています
 
-### DatePickerDialog（`org.tasknavi.ui.DatePickerDialog`）
-- 日付選択の再利用部品
-- `LocalDate` の加減算と日付ボタン生成が重要
+### DatePickerDialog（`ui/DatePickerDialog`）
+- 日付を選ぶ小さな窓です。いろいろな画面で使い回します
+- 見るところは、`LocalDate` で月を進めたり戻したりするところと、日付のボタンを作るところです
 
-### 検索（`org.tasknavi.ui.MainGlobalSearchBar`）
-- 上の検索欄に文字を入れるたびに、今の画面を絞り込む
-- キーワードはタスク名に加え担当者にもマッチする（`TaskViewFilter`）
-- 各画面は `SearchablePanel.applySearchFilter` を実装する
+### 検索（`ui/MainGlobalSearchBar`）
+- 上の検索欄に1文字入れるたびに、今の画面を絞り込みます
+- タスク名だけでなく、担当者の名前でも見つかります（`TaskViewFilter`）
+- 各画面は `SearchablePanel` の `applySearchFilter` を持っています
 
-## 6. よく見るロジック
-- `selectedItem` でコンボボックスの値を取る
-- `setText` / `getText` で入力欄を扱う
-- `addActionListener` でクリック処理を書く
-- `setVisible(true)` でダイアログ表示
-- `dispose()` で閉じる
-- `LocalDate.parse()` で日付検証
-- ステータス等の表示文言は `AppMessages`（永続化キーは英語コード）
+## 6. よく見る書き方
+- `getSelectedItem()` で、コンボボックスで選ばれている項目を取る
+- `setText` で入力欄に文字を入れ、`getText` で取り出す
+- `addActionListener` で、ボタンを押したときの処理を登録する
+- `setVisible(true)` で窓を出す
+- `dispose()` で窓を閉じる
+- `LocalDate.parse()` で文字を日付に変える。変えられなければ、日付の書き方がおかしい
+- 状態などの画面の文字は `AppMessages` から取ります。データベースには `NOT_STARTED` のような英語のコードで保存します
 
-## 7. 事故りやすい点
-- `null` チェックを省くと落ちやすい
-- `JComboBox` の選択値（コード）と表示文字列がズレると不具合になる
-- レイアウトの `wrap` を忘れると部品が横に並び続ける
-- ダークモード対応では背景色と文字色の両方を見る
-- Panel から `TaskDao` を直接呼ばず、必ず `TaskService` 経由にする
-- 本番起動の `TaskService` 組み立ては `TaskService.createDefault()`（UI が `new TaskDao()` しない）
-- GitHub Actions（`.github/workflows/ci.yml`）で `mvn test` が走る。ローカルでも同じコマンドで確認する
-- 画面土台の回帰は `MainFrameSmokeTest`（タブ切替・検索クリア・テーマ切替）を見る
+## 7. まちがえやすいところ
+- `null` かどうかを確かめずに使うと、アプリが落ちます
+- `JComboBox` の中の値（コード）と、画面に出す文字がずれると、おかしな動きになります
+- `wrap` を忘れると、部品が横にずっと並びます
+- ダークモードでは、背景の色と文字の色の両方を確かめます
+- 画面から `TaskDao` を呼ばない。必ず `TaskService` を通します
+- 本番の `TaskService` は `TaskService.createDefault()` で作ります。画面が `new TaskDao()` することはありません
+- GitHub Actions（`.github/workflows/ci.yml`）で `mvn test` が動きます。自分のパソコンでも同じコマンドで確かめます
+- 画面の土台を壊していないかは `MainFrameSmokeTest` で確かめます。タブの切り替え、検索欄を空にすること、テーマの切り替えを試しています
 
 ## 8. ファイルの場所（辞書）
 
@@ -121,13 +127,13 @@
 | WBS | `ui/wbs/WbsPanel.java` |
 | データベース | `persistence/TaskDao.java` と `persistence/TaskCrudDao.java` |
 
-## 9. まず覚えるべき設計感覚
-- 画面は「表示するだけ」に寄せる
-- ユースケースは `TaskService`、永続化は `Dao` に寄せる
-- 共通処理は使い回す（`TaskBusinessRules` / `SearchFilterUtil` / `TaskViewFilter` など）
-- UI は `AppTheme`、文言は `AppMessages` に統一する
-- 確認や選択のダイアログは `AppDialog` を使う。タスク編集と同じ見た目になる
-- フォルダは `model` / `service` / `persistence` / `ui`。画面の中は WBS やガントでさらに分かれる
+## 9. 設計の決まり
+- 画面は、見せることと入力を受けることだけにします
+- 「追加する」「消す」などの仕事は `TaskService`、データベースへの読み書きは `Dao` に置きます
+- 何度も使う処理は1か所にまとめます（`TaskBusinessRules` / `SearchFilterUtil` / `TaskViewFilter` など）
+- 色は `AppTheme`、文言は `AppMessages` から取ります
+- 確認や選択の窓は `AppDialog` を使います。タスク編集の窓と同じ見た目になります
+- フォルダは `model` / `service` / `persistence` / `ui` です。画面のフォルダは、WBS やガントごとにさらに分かれます
 
 ## 10. 辞書の使い方
 
@@ -277,11 +283,19 @@ WBS でタスクを選ぶ。右側は読めるだけで、その場では名前�
 1. TaskNavi は、自分のパソコンで動くタスク管理です。WBS、カンバン、ガント、カレンダーで、同じタスクを見ます
 2. 画面は表示と入力だけです。保存は `TaskService`、データベースは `TaskDao`、画面の更新は `TaskEventBus` です
 3. 自分が直したところは、保存の失敗が画面下の帯に出ること、選択が残ること、保存は成功したあとだけ他の画面に知らせること、削除と並べ替えを途中で残さないことです
-4. 状態変更のルール（子がいるタスクは止める、進捗率を合わせる）は、3か所の画面に散らばっていたものを `TaskService.changeStatus` の1か所に集めました。全件の読み込みも、1回の変更で1回だけにして、4つの画面で使い回します。書き込みは必ず `TaskService` を通るので、書いたときに捨てれば古くなりません
+4. 状態を変えるルールは、カンバンとカレンダーの3か所にあったものを、`TaskService.changeStatus` の1か所に集めました。全件の読み込みも、1回の変更につき1回にしました
 5. テストは `mvn test` です。GitHub Actions でも同じテストが動きます
 6. ログインした人ごとに台帳が分かれます。同じパソコンでも、別のアカウントのタスクは見えません
 
-聞かれたら、操作Dの矢印を紙に書いて説明する。
+聞かれたら、操作Dの矢印を紙に書いて説明する。4番の続きを聞かれたら、11章の最後の約束（読み込みの使い回し）を話す。
+
+### 聞かれやすい質問
+
+1文で答えて、続きを聞かれたら話す。
+
+- **なぜ Swing ですか**: Java に最初から入っていて、他に何も入れずに画面を作れるからです。1台のパソコンで動くアプリなので、Web にする必要がありませんでした。保存中に画面が固まらないよう、裏側で動かす（`SwingWorker`）ことも入れています
+- **なぜ SQLite ですか**: データベースが1つのファイルで済み、サーバーを立てなくてよいからです。表の形を変えるときは Flyway を使い、`V1` から `V4` まで順番に当てています
+- **`UserRole` を保存しているのに、使っていないのはなぜですか**: 今は登録した人を全員「一般」で保存しています。どのボタンを管理者だけにするかを決めてから、画面に使う予定です。15章の「次にやること」に入れています
 
 ## 14. 直すときに最初に開くファイル
 
