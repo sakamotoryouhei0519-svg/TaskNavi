@@ -4,12 +4,11 @@ import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
 import org.tasknavi.model.Task;
 import org.tasknavi.service.TaskService;
+import org.tasknavi.ui.taskdialog.TaskDialogUiStyle;
 
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
@@ -50,7 +49,7 @@ public final class ProjectFilterDialog {
 
         JComboBox<String> projectCombo = new JComboBox<>(options);
         projectCombo.setSelectedIndex(0);
-        AppTheme.styleComboBox(projectCombo);
+        TaskDialogUiStyle.styleComboBox(projectCombo);
         FontMetrics metrics = projectCombo.getFontMetrics(projectCombo.getFont());
         int optionWidth = 320;
         for (String option : options) {
@@ -58,19 +57,19 @@ public final class ProjectFilterDialog {
         }
         projectCombo.setPreferredSize(new Dimension(Math.min(optionWidth, 720), 36));
 
-        JPanel dlgPanel = new JPanel(new MigLayout("fillx, insets 10, gap 10", "[grow]", "[][]"));
-        dlgPanel.add(new JLabel(AppMessages.get("project.switch.select", "表示するプロジェクトを選択してください:")), "wrap");
-        dlgPanel.add(projectCombo, "growx, h 32!");
+        JLabel selectLabel = new JLabel(AppMessages.get("project.switch.select", "表示するプロジェクトを選択してください:"));
+        selectLabel.setForeground(AppTheme.TEXT_PRIMARY);
 
-        int result = JOptionPane.showConfirmDialog(
-                SwingUtilities.getWindowAncestor(parent),
-                dlgPanel,
+        JPanel content = new JPanel(new MigLayout("fillx, insets 0, gap 10, wrap", "[grow,fill]"));
+        content.setOpaque(false);
+        content.add(selectLabel);
+        content.add(projectCombo, "growx, h 36!");
+
+        boolean confirmed = AppDialog.showForm(
+                parent,
                 AppMessages.get("project.switch.title", "既存プロジェクト切替"),
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE
-        );
-
-        if (result != JOptionPane.OK_OPTION) {
+                content);
+        if (!confirmed) {
             return new Result(false, null);
         }
 

@@ -5,7 +5,6 @@ import org.tasknavi.model.EntryType;
 import org.tasknavi.model.Task;
 import org.tasknavi.service.TaskService;
 
-import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 import java.awt.Component;
 
@@ -36,14 +35,7 @@ public final class TaskDeleteHelper {
         if (shown) {
             return;
         }
-        int choice = JOptionPane.showConfirmDialog(
-                parent,
-                message,
-                AppMessages.get("mainframe.delete.confirm.title"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE
-        );
-        if (choice == JOptionPane.YES_OPTION) {
+        if (AppDialog.confirm(parent, AppMessages.get("mainframe.delete.confirm.title"), message)) {
             delete(parent, taskService, selected);
         }
     }

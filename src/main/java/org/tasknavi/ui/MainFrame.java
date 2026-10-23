@@ -326,14 +326,11 @@ public class MainFrame extends JFrame {
     }
 
     private void handleLogout() {
-        int confirm = JOptionPane.showConfirmDialog(
+        boolean confirmed = AppDialog.confirm(
                 this,
-                AppMessages.get("mainframe.logout.confirm"),
                 AppMessages.get("mainframe.logout.confirm.title"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE
-        );
-        if (confirm == JOptionPane.YES_OPTION) {
+                AppMessages.get("mainframe.logout.confirm"));
+        if (confirmed) {
             UserSession.logout();
             this.dispose();
             SwingUtilities.invokeLater(() -> {

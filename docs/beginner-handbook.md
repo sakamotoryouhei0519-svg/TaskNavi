@@ -126,6 +126,7 @@
 - ユースケースは `TaskService`、永続化は `Dao` に寄せる
 - 共通処理は使い回す（`TaskBusinessRules` / `SearchFilterUtil` / `TaskViewFilter` など）
 - UI は `AppTheme`、文言は `AppMessages` に統一する
+- 確認や選択のダイアログは `AppDialog` を使う。タスク編集と同じ見た目になる
 - フォルダは `model` / `service` / `persistence` / `ui`。画面の中は WBS やガントでさらに分かれる
 
 ## 10. 辞書の使い方

@@ -8,7 +8,6 @@ import org.tasknavi.service.TaskService;
 import org.tasknavi.util.TaskViewFilter;
 
 import javax.swing.JFileChooser;
-import javax.swing.JOptionPane;
 import java.awt.Component;
 import java.io.File;
 import java.util.HashMap;
@@ -41,31 +40,23 @@ public final class TaskDataIoHelper {
 
         List<Task> toExport = all;
         if (filterActive && !filtered.isEmpty()) {
-            Object[] options = {
+            int choice = AppDialog.choose(
+                    parent,
+                    AppMessages.get("mainframe.export.dialog.title"),
+                    AppMessages.get("mainframe.export.choose.message", "エクスポート対象を選んでください。"),
                     AppMessages.format("mainframe.export.option.filtered", "絞り込み結果 ({0}件)", filtered.size()),
                     AppMessages.format("mainframe.export.option.all", "全件 ({0}件)", all.size()),
-                    AppMessages.get("common.cancel", "キャンセル")
-            };
-            int choice = JOptionPane.showOptionDialog(
-                    parent,
-                    AppMessages.get("mainframe.export.choose.message", "エクスポート対象を選んでください。"),
-                    AppMessages.get("mainframe.export.dialog.title"),
-                    JOptionPane.DEFAULT_OPTION,
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    options,
-                    options[0]);
-            if (choice == 2 || choice == JOptionPane.CLOSED_OPTION) {
+                    AppMessages.get("common.button.cancel", "キャンセル"));
+            if (choice != 0 && choice != 1) {
                 return;
             }
             toExport = choice == 0 ? filtered : all;
         } else if (filterActive && filtered.isEmpty()) {
-            int confirm = JOptionPane.showConfirmDialog(
+            boolean confirmed = AppDialog.confirm(
                     parent,
-                    AppMessages.get("mainframe.export.empty.filtered", "絞り込み結果が0件です。全件をエクスポートしますか？"),
                     AppMessages.get("mainframe.export.dialog.title"),
-                    JOptionPane.YES_NO_OPTION);
-            if (confirm != JOptionPane.YES_OPTION) {
+                    AppMessages.get("mainframe.export.empty.filtered", "絞り込み結果が0件です。全件をエクスポートしますか？"));
+            if (!confirmed) {
                 return;
             }
         }
@@ -102,15 +93,12 @@ public final class TaskDataIoHelper {
         int result = fileChooser.showOpenDialog(parent);
         if (result == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
-            int confirm = JOptionPane.showConfirmDialog(
+            boolean confirmed = AppDialog.confirm(
                     parent,
-                    AppMessages.get("mainframe.import.confirm"),
                     AppMessages.get("mainframe.import.confirm.title"),
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE
-            );
+                    AppMessages.get("mainframe.import.confirm"));
 
-            if (confirm == JOptionPane.YES_OPTION) {
+            if (confirmed) {
                 try {
                     List<Task> importedTasks = CsvUtil.importFromJson(selectedFile);
                     taskService.importTasks(importedTasks, false);
