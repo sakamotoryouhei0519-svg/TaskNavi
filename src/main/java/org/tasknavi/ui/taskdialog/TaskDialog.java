@@ -39,6 +39,7 @@ public class TaskDialog extends JDialog {
     private static final long serialVersionUID = 1L;
 
     private final TaskService taskService;
+    private final List<Task> allTasks;
 
     private static final String TYPE_PROJECT = EntryType.PROJECT.name();
     private static final String TYPE_PHASE = EntryType.PHASE.name();
@@ -73,6 +74,7 @@ public class TaskDialog extends JDialog {
     private TaskDialog(Frame parent, TaskService taskService, Task task, String defaultType, Integer defaultParentProjectId) {
         super(parent, TaskDialogTitles.forTask(task), true);
         this.taskService = Objects.requireNonNull(taskService, "taskService");
+        this.allTasks = taskService.getAllTasks();
         setLayout(new MigLayout("fill, insets 0, gap 0", "[grow]", "[grow][]"));
 
         AppTheme.styleTextField(nameField);
@@ -88,7 +90,7 @@ public class TaskDialog extends JDialog {
 
         TaskDialogUiStyle.styleComboBox(statusCombo);
         UiLabels.installStatusRenderer(statusCombo);
-        progressLocked = task != null && TaskHierarchyUtil.hasChildren(task.getId(), taskService.getAllTasks());
+        progressLocked = task != null && TaskHierarchyUtil.hasChildren(task.getId(), allTasks);
         if (task != null) {
             baselineProgress = task.getProgress();
             statusCombo.setSelectedItem(TaskStatus.fromString(task.getStatusCode()).name());
@@ -118,7 +120,7 @@ public class TaskDialog extends JDialog {
                 parentProjectCombo, parentTargetMap,
                 (String) typeCombo.getSelectedItem(),
                 defaultParentProjectId,
-                taskService.getAllTasks());
+                allTasks);
 
         LocalDate today = LocalDate.now();
         startDateField.setText(today.toString());
@@ -144,7 +146,7 @@ public class TaskDialog extends JDialog {
             }
             priorityCombo.setSelectedItem(task.getPriorityCode());
             if (task.getParentId() != null) {
-                Task rootProject = TaskHierarchyUtil.findRootProject(task, this.taskService.getAllTasks());
+                Task rootProject = TaskHierarchyUtil.findRootProject(task, allTasks);
                 if (rootProject != null) {
                     parentProjectCombo.setSelectedItem(rootProject.getName());
                 }
@@ -189,7 +191,6 @@ public class TaskDialog extends JDialog {
     }
 
     private void updateParentProjectVisibility() {
-        List<Task> allTasks = taskService.getAllTasks();
         parentTargetMap.clear();
         parentTargetMap.putAll(TaskDialogParentSupport.buildOptions(
                 (String) typeCombo.getSelectedItem(), allTasks));
@@ -282,7 +283,7 @@ public class TaskDialog extends JDialog {
 
     public Integer getParentProjectId() {
         Task selectedParent = TaskDialogParentSupport.selectedParent(parentProjectCombo, parentTargetMap);
-        return TaskDialogParentSupport.rootProjectId(selectedParent, taskService.getAllTasks());
+        return TaskDialogParentSupport.rootProjectId(selectedParent, allTasks);
     }
 
     public Integer getParentTaskId() {

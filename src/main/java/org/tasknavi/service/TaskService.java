@@ -9,6 +9,7 @@ import org.tasknavi.persistence.TaskDao;
 import org.tasknavi.event.TaskEvent;
 import org.tasknavi.event.TaskEventBus;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -17,6 +18,9 @@ import java.util.Objects;
  */
 public class TaskService {
     private final TaskDao taskDao;
+    private final Object snapshotLock = new Object();
+    private List<Task> snapshot;
+    private long snapshotVersion;
 
     public TaskService(TaskDao taskDao) {
         this.taskDao = taskDao;
@@ -31,8 +35,34 @@ public class TaskService {
         return new TaskService(new TaskDao(user.getId()));
     }
 
+    /**
+     * 全件を返す。タスクの書き込みは必ずこのクラスを通るので、次の書き込みまでは前に読んだ結果を使い回す。
+     * 受け取った側が書き換えても共有の結果が壊れないよう、毎回複製して渡す。
+     */
     public List<Task> getAllTasks() {
-        return taskDao.getAllTasks();
+        long version;
+        synchronized (snapshotLock) {
+            if (snapshot != null) {
+                return copyOf(snapshot);
+            }
+            version = snapshotVersion;
+        }
+        List<Task> loaded = taskDao.getAllTasks();
+        if (loaded == null) {
+            loaded = new ArrayList<>();
+        }
+        synchronized (snapshotLock) {
+            if (version == snapshotVersion) {
+                snapshot = copyOf(loaded);
+            }
+        }
+        return loaded;
+    }
+
+    /** データベースから読み直して、全画面に描き直させる。 */
+    public void reload() {
+        invalidateSnapshot();
+        TaskEventBus.getInstance().post(new TaskEvent(TaskEvent.Type.REFRESH_ALL, null));
     }
 
     public Task getTaskById(int id) {
@@ -40,7 +70,11 @@ public class TaskService {
     }
 
     public void updateTaskOrderIndex(int id, int index) {
-        taskDao.updateTaskOrderIndex(id, index);
+        try {
+            taskDao.updateTaskOrderIndex(id, index);
+        } finally {
+            invalidateSnapshot();
+        }
 
         Task task = taskDao.getTaskById(id);
         if (task != null) {
@@ -50,7 +84,11 @@ public class TaskService {
 
     /** 兄弟の並びを1回で保存し、成功したあとだけ画面へ知らせる。 */
     public void updateSiblingOrder(List<Task> orderedTasks) {
-        taskDao.updateSiblingOrder(orderedTasks);
+        try {
+            taskDao.updateSiblingOrder(orderedTasks);
+        } finally {
+            invalidateSnapshot();
+        }
         TaskEventBus.getInstance().post(new TaskEvent(TaskEvent.Type.REFRESH_ALL, null));
     }
 
@@ -69,7 +107,7 @@ public class TaskService {
      */
     public StatusChange changeStatus(int taskId, String newStatus) {
         Objects.requireNonNull(newStatus, "newStatus");
-        List<Task> allTasks = taskDao.getAllTasks();
+        List<Task> allTasks = getAllTasks();
         Task task = null;
         for (Task candidate : allTasks) {
             if (candidate.getId() == taskId) {
@@ -96,14 +134,23 @@ public class TaskService {
         if (tasks == null || tasks.isEmpty()) {
             return;
         }
-        taskDao.updateTasks(tasks);
+        try {
+            taskDao.updateTasks(tasks);
+        } finally {
+            invalidateSnapshot();
+        }
         for (Task task : tasks) {
             TaskEventBus.getInstance().post(new TaskEvent(TaskEvent.Type.TASK_UPDATED, task));
         }
     }
 
     public int addTask(Task task) {
-        int newId = taskDao.addTask(task);
+        int newId;
+        try {
+            newId = taskDao.addTask(task);
+        } finally {
+            invalidateSnapshot();
+        }
 
         Task created = taskDao.getTaskById(newId);
         if (created == null) {
@@ -122,7 +169,11 @@ public class TaskService {
                 ? existing
                 : new Task(taskId, "Deleted Task", null, 0, 0, 0, Task.STATUS_NOT_STARTED, null, null);
 
-        taskDao.deleteTask(taskId);
+        try {
+            taskDao.deleteTask(taskId);
+        } finally {
+            invalidateSnapshot();
+        }
         TaskEventBus.getInstance().post(new TaskEvent(TaskEvent.Type.TASK_DELETED, deleted));
     }
 
@@ -133,8 +184,27 @@ public class TaskService {
      * @param clearExisting 既存のタスクを全削除して置き換える場合は true
      */
     public void importTasks(List<Task> tasks, boolean clearExisting) {
-        taskDao.importTasks(tasks, clearExisting);
+        try {
+            taskDao.importTasks(tasks, clearExisting);
+        } finally {
+            invalidateSnapshot();
+        }
         TaskEventBus.getInstance().post(new TaskEvent(TaskEvent.Type.REFRESH_ALL, null));
+    }
+
+    private void invalidateSnapshot() {
+        synchronized (snapshotLock) {
+            snapshot = null;
+            snapshotVersion++;
+        }
+    }
+
+    private static List<Task> copyOf(List<Task> tasks) {
+        List<Task> copies = new ArrayList<>(tasks.size());
+        for (Task task : tasks) {
+            copies.add(task != null ? task.copy() : null);
+        }
+        return copies;
     }
 
     private static Task copyTaskWithId(Task source, int newId) {

@@ -52,6 +52,14 @@ public class Task {
         this(id, name, parentId, level, orderIndex, progress, status != null ? status.name() : null, startDate, endDate);
     }
 
+    /** 同じ内容の別インスタンス。共有している一覧を、受け取った側の書き換えから守る。 */
+    public Task copy() {
+        Task copy = new Task(id, name, parentId, level, orderIndex, progress, getStatus(), startDate, endDate);
+        copy.assignee = assignee;
+        copy.priority = priority;
+        return copy;
+    }
+
     /** 表示言語に依存しない永続化コード（NOT_STARTED 等）へ正規化する。 */
     public static String normalizeStatus(String status) {
         return TaskStatus.fromString(status).name();

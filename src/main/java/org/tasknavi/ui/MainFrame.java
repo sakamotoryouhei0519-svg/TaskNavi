@@ -5,7 +5,6 @@ import org.tasknavi.model.Task;
 import org.tasknavi.service.TaskService;
 import org.tasknavi.service.UserSession;
 import net.miginfocom.swing.MigLayout;
-import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.ui.auth.LoginFrame;
 import org.tasknavi.ui.calendar.CalendarPanel;
 import org.tasknavi.ui.gantt.GanttMetrics;
@@ -287,9 +286,7 @@ public class MainFrame extends JFrame {
                 AppMessages.get("mainframe.button.refresh"), IconManager.IconType.REFRESH,
                 Color.WHITE, AppTheme.PRIMARY, AppTheme.PRIMARY);
         refreshButton.putClientProperty("app.button.variant", "toolbar-outline-primary");
-        refreshButton.addActionListener(e ->
-                TaskEventBus.getInstance().post(
-                        new org.tasknavi.event.TaskEvent(org.tasknavi.event.TaskEvent.Type.REFRESH_ALL, null)));
+        refreshButton.addActionListener(e -> taskService.reload());
 
         leftActionGroup.add(addTaskButton);
         leftActionGroup.add(deleteButton);
