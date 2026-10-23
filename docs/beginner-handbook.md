@@ -252,12 +252,12 @@ WBS でタスクを選ぶ。右側は読めるだけで、その場では名前�
 
 カンバンでカードを別の列へ移す。カードの矢印ボタン（← →）でも、ドラッグでもよい。WBS に戻しても、状態が変わっていることを見る。
 
-1. `ui/kanban/KanbanPanel.java` で `changeTaskStatus` を検索する。矢印ボタンはここに来る
-2. その中で `taskService.updateTask` を呼んでいる行を見つける
-3. 子がいるタスクは、ここで状態を変えないことも、近くの `hasChildren` で見る
-4. ドラッグは、すぐ上の `moveTaskToStatus` に来る。中身は同じく `hasChildren` と `updateTask` だと見る
+1. `ui/kanban/KanbanPanel.java` で `changeTaskStatus` を検索する。矢印ボタンもドラッグも、ここに来る
+2. `TaskStatusChanger.change` を `Ctrl+クリック` し、裏側で `taskService.changeStatus` を呼んでいることを見る
+3. `service/TaskService.java` の `changeStatus` を開く。子がいれば `hasChildren` で止め、いなければ `updateTask` で保存している
+4. 子がいるタスクを動かすと、画面下の帯に理由が出ることを見る
 
-今日の終わり: 「カンバンも自分でデータベースを触らない。状態変更は `updateTask`」と言える。
+今日の終わり: 「カンバンも自分でデータベースを触らない。状態変更は `TaskService.changeStatus` で、中は `updateTask`」と言える。
 
 ### 10日目: 声に出して話す
 

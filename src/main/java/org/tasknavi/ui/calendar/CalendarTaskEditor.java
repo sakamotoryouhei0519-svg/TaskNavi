@@ -4,9 +4,8 @@ import org.tasknavi.AppException;
 import org.tasknavi.AppMessages;
 import org.tasknavi.ui.ErrorDialogUtil;
 import org.tasknavi.ui.NoticeBar;
+import org.tasknavi.ui.TaskStatusChanger;
 import org.tasknavi.model.Task;
-import org.tasknavi.model.TaskBusinessRules;
-import org.tasknavi.model.TaskHierarchyUtil;
 import org.tasknavi.ui.taskdialog.TaskDialog;
 import org.tasknavi.ui.TaskEntryFactory;
 import org.tasknavi.service.TaskService;
@@ -112,33 +111,9 @@ public final class CalendarTaskEditor {
     }
 
     public static void changeStatus(Component parent, TaskService taskService, Task task, String newStatus) {
-        if (task == null || newStatus == null) {
+        if (task == null) {
             return;
         }
-        if (TaskHierarchyUtil.hasChildren(task.getId(), taskService.getAllTasks())) {
-            return;
-        }
-        task.setStatus(newStatus);
-        task.setProgress(TaskBusinessRules.resolveProgress(newStatus, task.getProgress()));
-
-        SwingWorker<Void, Void> worker = new SwingWorker<>() {
-            @Override
-            protected Void doInBackground() {
-                taskService.updateTask(task);
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    get();
-                } catch (Exception e) {
-                    ErrorDialogUtil.showBackgroundError(parent, e,
-                            AppMessages.get("kanban.status.update.error", "ステータス更新中に予期せぬエラーが発生しました。"));
-                    logger.error("カレンダーステータス更新エラー", e);
-                }
-            }
-        };
-        worker.execute();
+        TaskStatusChanger.change(parent, taskService, task.getId(), newStatus);
     }
 }

@@ -567,8 +567,8 @@ WbsPanel コンストラクタ
 |------|----------|
 | 必読 | `ui/kanban/KanbanPanel.java` |
 | 関連 | `KanbanCardFactory` / `KanbanColumnSupport` / `KanbanTaskFilter` |
-| 関連 | `util/TaskStatusCycle.java` |
-| テスト | `KanbanTaskFilterTest` |
+| 関連 | `util/TaskStatusCycle.java` / `ui/TaskStatusChanger.java` / `service/TaskService.java` の `changeStatus` |
+| テスト | `KanbanTaskFilterTest` / `TaskServiceStatusChangeTest` |
 
 **コードの流れ（カンバンカード移動）:**
 
@@ -587,31 +587,35 @@ KanbanPanel コンストラクタ
 
 ユーザーがカードの矢印ボタン（← →）を押す
   → onStatusChange(task, newStatus)
-    → changeTaskStatus(task, newStatus)
-      → TaskHierarchyUtil.hasChildren(...) なら何もしない（子がいるタスクは状態を変えない）
-      → task.setStatus(newStatus) でステータス更新
-      → task.setProgress(TaskBusinessRules.resolveProgress(newStatus, task.getProgress()))
-      → SwingWorker.doInBackground() (バックグラウンドで保存)
-        → taskService.updateTask(task)
-          → TaskDao.updateTasks(List.of(task))
-            → TaskCrudDao.updateAll(tasks, ownerId)
-          → TaskEventBus.post(TASK_UPDATED, task)
-            → 各 Panel が refresh() を実行
-      → SwingWorker.done() (EDTで結果処理。失敗したときだけエラーを表示)
+    → changeTaskStatus(taskId, newStatus)
 
 ユーザーがカードを別のカラムにドラッグ＆ドロップ
   → onDrop(taskId, source)
     → KanbanColumnSupport.statusOf(source) でドロップ先のステータス取得
-    → moveTaskToStatus(taskId, status)
-      → taskService.getTaskById(taskId) でタスク取得
-      → 子がいなければ、上と同じく setStatus / setProgress / taskService.updateTask(task)
+    → changeTaskStatus(taskId, status)
+
+changeTaskStatus(taskId, newStatus)
+  → TaskStatusChanger.change(...)（カレンダーの矢印ボタンも同じ）
+    → SwingWorker.doInBackground() (バックグラウンドで保存)
+      → taskService.changeStatus(taskId, newStatus)
+        → 子がいれば HAS_CHILDREN を返して何もしない
+        → task.setStatus(newStatus)
+        → task.setProgress(TaskBusinessRules.resolveProgress(newStatus, task.getProgress()))
+        → updateTask(task)
+          → TaskDao.updateTasks(List.of(task))
+            → TaskCrudDao.updateAll(tasks, ownerId)
+          → TaskEventBus.post(TASK_UPDATED, task)
+            → 各 Panel が refresh() を実行
+    → SwingWorker.done() (EDTで結果処理)
+      → HAS_CHILDREN なら NoticeBar.info() で理由を表示
+      → 失敗したときはエラーを表示
 ```
 
 できたチェック:
 
-- [ ] 矢印ボタンは `changeTaskStatus()`、ドラッグは `moveTaskToStatus()` に来ると言える
-- [ ] どちらも `hasChildren` で子がいるタスクを止め、`taskService.updateTask()` で保存していると言える
-- [ ] `onDrop()` がドロップ先のステータスを取得して `moveTaskToStatus()` を呼び出していると言える
+- [ ] 矢印ボタンもドラッグも `changeTaskStatus()` に来ると言える
+- [ ] 子がいるタスクを止める判断と進捗率の計算は、画面ではなく `TaskService.changeStatus()` にあると言える
+- [ ] `onDrop()` がドロップ先のステータスを取得して `changeTaskStatus()` を呼び出していると言える
 - [ ] ステータス変更時に `TaskBusinessRules.resolveProgress()` で進捗率も更新されていると言える
 
 ### 操作L: カレンダーで月／週を切り替える

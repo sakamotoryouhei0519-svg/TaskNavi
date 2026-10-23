@@ -6,9 +6,8 @@ import org.tasknavi.AppMessages;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.ErrorDialogUtil;
 import org.tasknavi.ui.SearchablePanel;
+import org.tasknavi.ui.TaskStatusChanger;
 import org.tasknavi.model.Task;
-import org.tasknavi.model.TaskBusinessRules;
-import org.tasknavi.model.TaskHierarchyUtil;
 import org.tasknavi.service.TaskService;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
@@ -31,7 +30,7 @@ import java.util.Set;
  * カード形式で直感的に進捗管理を行う画面です。
  */
 public class KanbanPanel extends JPanel implements SearchablePanel {
-    private final TaskService taskService; // ★ TaskDao から TaskService に変更 (DI)
+    private final TaskService taskService;
     private final TaskEventListener taskEventListener = event -> {
         logger.info("Kanban: タスク変更イベントを検知しました -> {}", event.getType());
         refreshKanban();
@@ -76,14 +75,16 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
 
         @Override
         public void onStatusChange(Task task, String newStatus) {
-            changeTaskStatus(task, newStatus);
+            if (task != null) {
+                changeTaskStatus(task.getId(), newStatus);
+            }
         }
 
         @Override
         public void onDrop(int taskId, Component source) {
             String status = KanbanColumnSupport.statusOf(source);
             if (status != null) {
-                moveTaskToStatus(taskId, status);
+                changeTaskStatus(taskId, status);
             }
         }
 
@@ -344,7 +345,7 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
                 try {
                     String taskIdText = (String) support.getTransferable().getTransferData(DataFlavor.stringFlavor);
                     int taskId = Integer.parseInt(taskIdText);
-                    moveTaskToStatus(taskId, status);
+                    changeTaskStatus(taskId, status);
                     return true;
                 } catch (Exception e) {
                     return false;
@@ -353,35 +354,8 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         };
     }
 
-    private void moveTaskToStatus(int taskId, String targetStatus) {
-        if (targetStatus == null || targetStatus.isBlank()) {
-            return;
-        }
-
-        SwingWorker<Void, Void> worker = new SwingWorker<>() {
-            @Override
-            protected Void doInBackground() throws Exception {
-                Task task = taskService.getTaskById(taskId);
-                if (task != null && !TaskHierarchyUtil.hasChildren(task.getId(), taskService.getAllTasks())) {
-                    task.setStatus(targetStatus);
-                    task.setProgress(TaskBusinessRules.resolveProgress(targetStatus, task.getProgress()));
-                    taskService.updateTask(task);
-                }
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    get();
-                } catch (Exception e) {
-                    ErrorDialogUtil.showBackgroundError(KanbanPanel.this, e,
-                            AppMessages.get("kanban.status.change.error"));
-                    logger.error("ステータス変更時の予期せぬエラー", e);
-                }
-            }
-        };
-        worker.execute();
+    private void changeTaskStatus(int taskId, String newStatus) {
+        TaskStatusChanger.change(this, taskService, taskId, newStatus);
     }
 
     private void openEditDialog(Task task) {
@@ -407,35 +381,5 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
                 ErrorDialogUtil.showError(this, e.getUserMessage());
             }
         }
-    }
-
-    private void changeTaskStatus(Task task, String newStatus) {
-        if (task == null || newStatus == null) return;
-        if (TaskHierarchyUtil.hasChildren(task.getId(), taskService.getAllTasks())) {
-            return;
-        }
-
-        task.setStatus(newStatus);
-        task.setProgress(TaskBusinessRules.resolveProgress(newStatus, task.getProgress()));
-
-        SwingWorker<Void, Void> worker = new SwingWorker<>() {
-            @Override
-            protected Void doInBackground() throws Exception {
-                taskService.updateTask(task);
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    get();
-                } catch (Exception e) {
-                    ErrorDialogUtil.showBackgroundError(KanbanPanel.this, e,
-                            AppMessages.get("kanban.status.update.error"));
-                    logger.error("ステータス更新時の予期せぬエラー", e);
-                }
-            }
-        };
-        worker.execute();
     }
 }

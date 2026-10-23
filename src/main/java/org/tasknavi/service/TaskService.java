@@ -2,12 +2,15 @@ package org.tasknavi.service;
 
 import org.tasknavi.AppException;
 import org.tasknavi.model.Task;
+import org.tasknavi.model.TaskBusinessRules;
+import org.tasknavi.model.TaskHierarchyUtil;
 import org.tasknavi.model.User;
 import org.tasknavi.persistence.TaskDao;
 import org.tasknavi.event.TaskEvent;
 import org.tasknavi.event.TaskEventBus;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * タスクのユースケースをまとめるサービス層。
@@ -53,6 +56,37 @@ public class TaskService {
 
     public void updateTask(Task task) {
         updateTasks(List.of(task));
+    }
+
+    public enum StatusChange {
+        CHANGED,
+        HAS_CHILDREN,
+        NOT_FOUND
+    }
+
+    /**
+     * 状態を1件変え、進捗率も状態に合わせる。子がいるタスクは子の状態から決まるので変えない。
+     */
+    public StatusChange changeStatus(int taskId, String newStatus) {
+        Objects.requireNonNull(newStatus, "newStatus");
+        List<Task> allTasks = taskDao.getAllTasks();
+        Task task = null;
+        for (Task candidate : allTasks) {
+            if (candidate.getId() == taskId) {
+                task = candidate;
+                break;
+            }
+        }
+        if (task == null) {
+            return StatusChange.NOT_FOUND;
+        }
+        if (TaskHierarchyUtil.hasChildren(taskId, allTasks)) {
+            return StatusChange.HAS_CHILDREN;
+        }
+        task.setStatus(newStatus);
+        task.setProgress(TaskBusinessRules.resolveProgress(newStatus, task.getProgress()));
+        updateTask(task);
+        return StatusChange.CHANGED;
     }
 
     /**
