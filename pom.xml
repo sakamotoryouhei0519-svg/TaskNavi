@@ -13,7 +13,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- 配布用 exe に付ける版（jpackage は数字と . だけ受け付ける） -->
-        <app.version>1.0.0</app.version>
+        <app.version>1.1.0</app.version>
     </properties>
 
     <dependencies>
