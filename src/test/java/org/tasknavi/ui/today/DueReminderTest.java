@@ -28,7 +28,7 @@ class DueReminderTest {
 
     @AfterEach
     void restoreLocale() {
-        AppMessages.setLocale(Locale.JAPAN);
+        AppMessages.setLocale(Locale.getDefault());
     }
 
     @Test

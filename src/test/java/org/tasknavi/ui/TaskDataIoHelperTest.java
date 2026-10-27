@@ -1,17 +1,31 @@
 package org.tasknavi.ui;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.tasknavi.AppMessages;
 import org.tasknavi.io.TaskCsv;
 import org.tasknavi.model.Task;
 import org.tasknavi.model.TaskStatus;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TaskDataIoHelperTest {
+
+    @BeforeEach
+    void useJapanese() {
+        AppMessages.setLocale(Locale.JAPAN);
+    }
+
+    @AfterEach
+    void restoreLocale() {
+        AppMessages.setLocale(Locale.getDefault());
+    }
 
     private static Task task(int id, Integer parentId, int level, String name) {
         return new Task(id, name, parentId, level, 0, 0, TaskStatus.NOT_STARTED, null, null);
