@@ -180,6 +180,67 @@ class TeamProjectTest {
                 "変更より先に、コメントが付いたことを知らせる");
     }
 
+    @Test
+    void onlyTheWriterCanEditOrDeleteACommentAndTheOriginalStaysInHistory() throws Exception {
+        Path dir = root.resolve("p");
+        TeamProject tanaka = TeamProject.create(dir, "P", "pc-tanaka", "田中", NOW);
+        String id = tanaka.createTask(Map.of(TeamField.NAME, "設計", TeamField.ASSIGNEE, "田中"));
+        TeamProject suzuki = TeamProject.open(dir, "pc-suzuki", "鈴木", NOW);
+        suzuki.addComment(id, "明日やります");
+        suzuki.addComment(id, "まちがい");
+        tanaka.reload();
+        String first = tanaka.state().comments(id).get(0).eventId();
+        String second = tanaka.state().comments(id).get(1).eventId();
+        tanaka.takeNotices();
+
+        assertFalse(tanaka.canChange(tanaka.state().comments(id).get(0)));
+        assertThrows(IllegalArgumentException.class, () -> tanaka.editComment(id, first, "書き換え"));
+        assertThrows(IllegalArgumentException.class, () -> tanaka.deleteComment(id, first));
+
+        suzuki.editComment(id, first, "  あさってやります  ");
+        suzuki.deleteComment(id, second);
+        tanaka.reload();
+
+        TeamComment edited = tanaka.state().comments(id).get(0);
+        TeamComment deleted = tanaka.state().comments(id).get(1);
+        assertEquals("あさってやります", edited.text());
+        assertTrue(edited.edited());
+        assertTrue(deleted.deleted());
+        assertEquals("", deleted.text());
+        assertFalse(suzuki.canChange(suzuki.state().comments(id).get(1)), "消したものはもう直せない");
+        assertThrows(IllegalArgumentException.class, () -> suzuki.editComment(id, second, "やっぱり"));
+        assertTrue(tanaka.takeNotices().isEmpty(), "直す・消すは知らせない");
+
+        List<TeamHistory.Change> changes = tanaka.history().stream()
+                .filter(entry -> entry.op() == TeamEvent.Op.COMMENT_EDIT || entry.op() == TeamEvent.Op.COMMENT_DELETE)
+                .flatMap(entry -> entry.changes().stream())
+                .toList();
+        assertTrue(changes.contains(new TeamHistory.Change(TeamField.COMMENT, "明日やります", "あさってやります")));
+        assertTrue(changes.contains(new TeamHistory.Change(TeamField.COMMENT, "まちがい", null)));
+
+        List<String> lines = Files.readAllLines(TeamChangeLog.logFile(dir, "pc-suzuki"));
+        assertTrue(lines.get(lines.size() - 1).contains("\"v\":3"), "コメントだけ対応した版には更新を促す");
+    }
+
+    @Test
+    void changesToSomeoneElsesCommentAreIgnoredOnEveryPc() {
+        Instant at = NOW.instant();
+        TeamEvent create = new TeamEvent("e1", "t1", TeamEvent.Op.CREATE, 1, "pc-a", "田中", at,
+                Map.of(TeamField.NAME, "設計"), Map.of(), null);
+        TeamEvent comment = new TeamEvent("e2", "t1", TeamEvent.Op.COMMENT, 2, "pc-a", "田中", at,
+                Map.of(TeamField.COMMENT, "元の文"), Map.of(), null);
+        TeamEvent forgedEdit = new TeamEvent("e3", "t1", TeamEvent.Op.COMMENT_EDIT, 3, "pc-b", "鈴木", at,
+                Map.of(TeamField.COMMENT, "書き換え"), Map.of(), "e2");
+        TeamEvent forgedDelete = new TeamEvent("e4", "t1", TeamEvent.Op.COMMENT_DELETE, 4, "pc-b", "鈴木", at,
+                Map.of(), Map.of(), "e2");
+
+        TeamComment result = TeamReplay.replay(List.of(create, comment, forgedEdit, forgedDelete)).comments("t1").get(0);
+
+        assertEquals("元の文", result.text());
+        assertFalse(result.edited());
+        assertFalse(result.deleted());
+    }
+
     private static List<String> comments(TeamState state, String taskId) {
         return state.comments(taskId).stream().map(comment -> comment.author() + ": " + comment.text()).toList();
     }

@@ -39,6 +39,7 @@ public final class TeamReplay {
                 case DELETE -> applyDelete(entries, event, conflicts);
                 case RESTORE -> applyRestore(entries, event);
                 case COMMENT -> applyComment(entries, event);
+                case COMMENT_EDIT, COMMENT_DELETE -> applyCommentChange(entries, event);
             }
         }
 
@@ -49,7 +50,7 @@ public final class TeamReplay {
             versions.put(id, new TeamState.Version(
                     entry.lastEventId, Map.copyOf(entry.fieldEventId), entry.deleted, entry.parentId(), entry.name()));
             if (!entry.comments.isEmpty()) {
-                comments.put(id, List.copyOf(entry.comments));
+                comments.put(id, List.copyOf(entry.comments.values()));
             }
         });
         return new TeamState(tasks, conflicts, maxClock, versions, comments);
@@ -125,7 +126,29 @@ public final class TeamReplay {
         if (entry == null || text == null || text.isBlank()) {
             return;
         }
-        entry.comments.add(new TeamComment(event.eventId(), event.author(), event.at(), text));
+        entry.comments.putIfAbsent(event.eventId(),
+                new TeamComment(event.eventId(), event.author(), event.deviceId(), event.at(), text, false, false));
+    }
+
+    /**
+     * 書いた PC からの直す・消すだけを当てはめる。ほかの PC からの記録（ファイルを手で書き換えたなど）は無視するので、
+     * どの PC でも同じ結果になる。消したあとの直すも無視する。
+     */
+    private static void applyCommentChange(Map<String, Entry> entries, TeamEvent event) {
+        Entry entry = entries.get(event.taskId());
+        TeamComment comment = entry != null && event.baseEventId() != null
+                ? entry.comments.get(event.baseEventId()) : null;
+        if (comment == null || comment.deleted() || !comment.deviceId().equals(event.deviceId())) {
+            return;
+        }
+        if (event.op() == TeamEvent.Op.COMMENT_DELETE) {
+            entry.comments.put(comment.eventId(), comment.asDeleted());
+            return;
+        }
+        String text = event.values().get(TeamField.COMMENT);
+        if (text != null && !text.isBlank()) {
+            entry.comments.put(comment.eventId(), comment.withText(text));
+        }
     }
 
     private static void applyDelete(Map<String, Entry> entries, TeamEvent event, List<TeamConflict> conflicts) {
@@ -267,7 +290,8 @@ public final class TeamReplay {
         final Map<TeamField, String> values = new EnumMap<>(TeamField.class);
         final Map<TeamField, String> fieldEventId = new EnumMap<>(TeamField.class);
         final Map<TeamField, String> fieldAuthor = new EnumMap<>(TeamField.class);
-        final List<TeamComment> comments = new ArrayList<>();
+        /** コメントの記録 ID → コメント（書いた順）。 */
+        final Map<String, TeamComment> comments = new LinkedHashMap<>();
         String lastEventId;
         String updatedBy;
         Instant updatedAt;

@@ -39,6 +39,7 @@ public final class TeamHistory {
         ordered.sort(TeamEvent.ORDER);
 
         Map<String, Map<TeamField, String>> current = new HashMap<>();
+        Map<String, String> commentText = new HashMap<>();
         List<Entry> entries = new ArrayList<>(ordered.size());
         for (TeamEvent event : ordered) {
             Map<TeamField, String> values = current.computeIfAbsent(event.taskId(), id -> new EnumMap<>(TeamField.class));
@@ -62,7 +63,13 @@ public final class TeamHistory {
                     changes.add(new Change(field, before, after));
                 }
             } else if (event.op() == TeamEvent.Op.COMMENT) {
-                changes.add(new Change(TeamField.COMMENT, null, event.values().get(TeamField.COMMENT)));
+                String text = event.values().get(TeamField.COMMENT);
+                commentText.put(event.eventId(), text);
+                changes.add(new Change(TeamField.COMMENT, null, text));
+            } else if (event.op() == TeamEvent.Op.COMMENT_EDIT || event.op() == TeamEvent.Op.COMMENT_DELETE) {
+                String after = event.op() == TeamEvent.Op.COMMENT_EDIT ? event.values().get(TeamField.COMMENT) : null;
+                String before = commentText.put(event.baseEventId(), after);
+                changes.add(new Change(TeamField.COMMENT, before, after));
             }
             entries.add(new Entry(event.eventId(), event.op(), event.taskId(),
                     Objects.toString(values.get(TeamField.NAME), ""), event.author(), event.at(), List.copyOf(changes)));

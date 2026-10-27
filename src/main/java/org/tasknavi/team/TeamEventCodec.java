@@ -17,14 +17,19 @@ final class TeamEventCodec {
      * このアプリが読める一番新しい形。記録の形を変えたら（項目や Op を足したら）上げる。
      * 古い版のアプリは、自分より新しい形の行を読まずに更新を促す。
      */
-    static final int FORMAT = 2;
+    static final int FORMAT = 3;
 
     /**
-     * 行に書く形。古い版のアプリでも読める記録は古い形のまま書き、読めない記録（コメント）だけを上げる。
+     * 行に書く形。古い版のアプリでも読める記録は古い形のまま書き、読めない記録だけを上げる
+     * （2 = コメント、3 = コメントを直す・消す）。
      * 全部を上げると、更新していない人がタスクの変更まで読めなくなるため。
      */
     static int formatOf(TeamEvent event) {
-        return event.op() == TeamEvent.Op.COMMENT ? 2 : 1;
+        return switch (event.op()) {
+            case COMMENT -> 2;
+            case COMMENT_EDIT, COMMENT_DELETE -> 3;
+            default -> 1;
+        };
     }
 
     /** 自分より新しい版のアプリで書かれた行。 */

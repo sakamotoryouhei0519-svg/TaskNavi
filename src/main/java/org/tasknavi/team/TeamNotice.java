@@ -29,7 +29,7 @@ public record TeamNotice(Kind kind, String taskName, String author) {
         Map<String, TeamNotice> byTask = new LinkedHashMap<>();
         for (TeamEvent event : arrived) {
             Optional<TeamTask> task = state.find(event.taskId());
-            if (task.isEmpty()) {
+            if (task.isEmpty() || event.op() == TeamEvent.Op.COMMENT_EDIT || event.op() == TeamEvent.Op.COMMENT_DELETE) {
                 continue;
             }
             if (!Assignees.same(task.get().assignee(), myName)) {

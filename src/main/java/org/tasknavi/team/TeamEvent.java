@@ -28,8 +28,11 @@ public record TeamEvent(
         Map<TeamField, String> base,
         String baseEventId) {
 
-    /** RESTORE は削除したタスクを戻す。COMMENT はコメントを書き足す（値は変えないので重ならない）。 */
-    public enum Op { CREATE, UPDATE, DELETE, RESTORE, COMMENT }
+    /**
+     * RESTORE は削除したタスクを戻す。COMMENT はコメントを書き足す（値は変えないので重ならない）。
+     * COMMENT_EDIT / COMMENT_DELETE は、baseEventId で指したコメントを直す・消す。
+     */
+    public enum Op { CREATE, UPDATE, DELETE, RESTORE, COMMENT, COMMENT_EDIT, COMMENT_DELETE }
 
     /** 全員の PC で同じ順番になる並べ方。 */
     public static final Comparator<TeamEvent> ORDER = Comparator

@@ -464,9 +464,48 @@ public final class TeamProject {
         write(taskId, TeamEvent.Op.UPDATE, values, base, seenVersion.lastEventId());
     }
 
-    /** タスクにコメントを書き足す。値は変えないので、誰と同時に書いても重ならない。 */
+    /** タスクにコメントを書き足す。タスクの値は変えないので、誰と同時に書いても重ならない。 */
     public synchronized void addComment(String taskId, String text) throws IOException {
         requireLive(taskId);
+        write(taskId, TeamEvent.Op.COMMENT, Map.of(TeamField.COMMENT, requireCommentText(text)), Map.of(), null);
+    }
+
+    /** この PC で書いた、まだ消していないコメントか（直す・消すができるのはこれだけ）。 */
+    public boolean canChange(TeamComment comment) {
+        return comment != null && !comment.deleted() && deviceId.equals(comment.deviceId());
+    }
+
+    /** 自分のコメントを直す。元の文は変更履歴に残る。 */
+    public synchronized void editComment(String taskId, String commentId, String text) throws IOException {
+        TeamComment comment = requireOwnComment(taskId, commentId);
+        String body = requireCommentText(text);
+        if (body.equals(comment.text())) {
+            return;
+        }
+        write(taskId, TeamEvent.Op.COMMENT_EDIT, Map.of(TeamField.COMMENT, body), Map.of(), commentId);
+    }
+
+    /** 自分のコメントを消す。一覧には「削除されました」と残り、元の文は変更履歴に残る。 */
+    public synchronized void deleteComment(String taskId, String commentId) throws IOException {
+        requireOwnComment(taskId, commentId);
+        write(taskId, TeamEvent.Op.COMMENT_DELETE, Map.of(), Map.of(), commentId);
+    }
+
+    private TeamComment requireOwnComment(String taskId, String commentId) {
+        requireLive(taskId);
+        TeamComment comment = state.comments(taskId).stream()
+                .filter(each -> each.eventId().equals(commentId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("コメントが見つかりません"));
+        if (!canChange(comment)) {
+            throw new IllegalArgumentException(comment.deleted()
+                    ? "このコメントはもう消されています"
+                    : "直したり消したりできるのは、この PC で書いた自分のコメントだけです");
+        }
+        return comment;
+    }
+
+    private static String requireCommentText(String text) {
         String body = text == null ? "" : text.strip();
         if (body.isEmpty()) {
             throw new IllegalArgumentException("コメントを入力してください");
@@ -474,7 +513,7 @@ public final class TeamProject {
         if (body.length() > MAX_COMMENT_LENGTH) {
             throw new IllegalArgumentException("コメントは " + MAX_COMMENT_LENGTH + " 文字までです");
         }
-        write(taskId, TeamEvent.Op.COMMENT, Map.of(TeamField.COMMENT, body), Map.of(), null);
+        return body;
     }
 
     /** 子孫も含めて削除する（子から先に記録）。 */

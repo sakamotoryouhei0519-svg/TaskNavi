@@ -8,12 +8,13 @@ import org.tasknavi.team.TeamComment;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TaskCommentsPanelTest {
+
+    private static final LocalDateTime AT = LocalDateTime.of(2026, 10, 27, 9, 5);
 
     @BeforeEach
     void useJapanese() {
@@ -26,21 +27,27 @@ class TaskCommentsPanelTest {
     }
 
     @Test
-    void showsAuthorAndTimeAboveEachCommentOldestFirst() {
-        List<TeamComment> comments = List.of(
-                comment("鈴木", LocalDateTime.of(2026, 10, 27, 9, 5), "見ておきます"),
-                comment("田中", LocalDateTime.of(2026, 10, 27, 14, 30), "ありがとう\n明日直します"));
+    void showsAuthorAndTimeAboveTheText() {
+        TeamComment comment = comment("ありがとう\n明日直します", false, false);
 
-        assertEquals("鈴木  10/27 09:05\n見ておきます\n\n田中  10/27 14:30\nありがとう\n明日直します",
-                TaskCommentsPanel.format(comments));
+        assertEquals("鈴木  10/27 09:05", TaskCommentsPanel.headerText(comment));
+        assertEquals("ありがとう\n明日直します", TaskCommentsPanel.bodyText(comment));
     }
 
     @Test
-    void saysSoWhenThereAreNoComments() {
-        assertEquals("まだコメントはありません", TaskCommentsPanel.format(List.of()));
+    void marksEditedComments() {
+        assertEquals("鈴木  10/27 09:05  （編集済み）", TaskCommentsPanel.headerText(comment("直した文", true, false)));
     }
 
-    private static TeamComment comment(String author, LocalDateTime at, String text) {
-        return new TeamComment("e-" + author, author, at.atZone(ZoneId.systemDefault()).toInstant(), text);
+    @Test
+    void deletedCommentsSaySoInsteadOfTheText() {
+        TeamComment comment = comment("", true, true);
+
+        assertEquals("鈴木  10/27 09:05", TaskCommentsPanel.headerText(comment));
+        assertEquals("（削除されました）", TaskCommentsPanel.bodyText(comment));
+    }
+
+    private static TeamComment comment(String text, boolean edited, boolean deleted) {
+        return new TeamComment("e1", "鈴木", "pc-suzuki", AT.atZone(ZoneId.systemDefault()).toInstant(), text, edited, deleted);
     }
 }
