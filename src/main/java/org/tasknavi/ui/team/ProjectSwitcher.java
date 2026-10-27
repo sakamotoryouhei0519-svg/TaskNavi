@@ -35,8 +35,6 @@ public final class ProjectSwitcher {
 
     private static final String CHECK = "✓  ";
     private static final String NO_CHECK = "     ";
-    private static final Color OK_COLOR = new Color(22, 163, 74);
-    private static final Color WARN_COLOR = new Color(234, 88, 12);
     private static final DateTimeFormatter CHECKED_AT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final TeamSession session;
@@ -59,7 +57,7 @@ public final class ProjectSwitcher {
         syncButton.addActionListener(e -> session.reload());
         conflictButton.setFont(AppTheme.FONT_BOLD);
         conflictButton.setForeground(Color.WHITE);
-        conflictButton.setBackground(WARN_COLOR);
+        conflictButton.setBackground(AppTheme.FILL_WARNING);
         conflictButton.setOpaque(true);
         conflictButton.setFocusPainted(false);
         conflictButton.setBorder(new EmptyBorder(3, 10, 3, 10));
@@ -108,19 +106,19 @@ public final class ProjectSwitcher {
             syncButton.setForeground(AppTheme.TEXT_MUTED);
         } else if (project.newerFormatLines() > 0) {
             syncButton.setText(AppMessages.get("project.sync.newer", "アプリの更新が必要"));
-            syncButton.setIcon(new Dot(WARN_COLOR));
-            syncButton.setForeground(WARN_COLOR);
+            syncButton.setIcon(new Dot(AppTheme.warning()));
+            syncButton.setForeground(AppTheme.warning());
         } else if (project.unreadableLines() > 0) {
             syncButton.setText(AppMessages.get("project.sync.partial", "一部を同期中"));
-            syncButton.setIcon(new Dot(WARN_COLOR));
+            syncButton.setIcon(new Dot(AppTheme.warning()));
             syncButton.setForeground(AppTheme.TEXT_MUTED);
         } else if (session.lastCheckFailed()) {
             syncButton.setText(AppMessages.get("project.sync.failed", "共有フォルダを読めません"));
-            syncButton.setIcon(new Dot(WARN_COLOR));
-            syncButton.setForeground(WARN_COLOR);
+            syncButton.setIcon(new Dot(AppTheme.warning()));
+            syncButton.setForeground(AppTheme.warning());
         } else {
             syncButton.setText(AppMessages.get("project.sync.ok", "同期中"));
-            syncButton.setIcon(new Dot(OK_COLOR));
+            syncButton.setIcon(new Dot(AppTheme.success()));
             syncButton.setForeground(AppTheme.TEXT_MUTED);
         }
         String tooltip = AppMessages.format("project.sync.tooltip",

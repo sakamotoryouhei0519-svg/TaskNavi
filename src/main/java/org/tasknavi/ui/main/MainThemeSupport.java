@@ -47,7 +47,7 @@ public final class MainThemeSupport {
                 styleButton(button);
             } else if (child instanceof JRadioButton radio) {
                 radio.setBackground(AppTheme.isDarkMode() ? AppTheme.PANEL_BG : Color.WHITE);
-                radio.setForeground(AppTheme.isDarkMode() ? new Color(226, 232, 240) : AppTheme.TEXT_PRIMARY);
+                radio.setForeground(AppTheme.textStrong());
                 radio.setOpaque(false);
             } else if (child instanceof JComboBox<?> combo) {
                 AppTheme.styleComboBox(combo);
@@ -97,7 +97,7 @@ public final class MainThemeSupport {
 
     private static void styleButton(JButton button) {
         Object variant = button.getClientProperty("app.button.variant");
-        Color dangerColor = new Color(220, 38, 38);
+        Color dangerColor = AppTheme.danger();
 
         if ("toolbar-primary".equals(variant)) {
             button.setBackground(AppTheme.PRIMARY);
@@ -106,20 +106,20 @@ public final class MainThemeSupport {
             return;
         }
         if ("toolbar-outline-danger".equals(variant)) {
-            button.setBackground(Color.WHITE);
+            button.setBackground(AppTheme.controlBackground());
             button.setForeground(dangerColor);
             button.setBorder(AppTheme.createRoundedBorder(dangerColor, 8, 2, 2, 2, 2));
             return;
         }
         if ("toolbar-outline-primary".equals(variant)) {
-            button.setBackground(Color.WHITE);
+            button.setBackground(AppTheme.controlBackground());
             button.setForeground(AppTheme.PRIMARY);
             button.setBorder(AppTheme.createRoundedBorder(AppTheme.PRIMARY, 8, 2, 2, 2, 2));
             return;
         }
         if ("header".equals(variant) || "toolbar-outline".equals(variant)
                 || "secondary".equals(variant) || "toolbar".equals(variant)) {
-            button.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+            button.setBackground(AppTheme.controlBackground());
             button.setForeground(AppTheme.TEXT_PRIMARY);
             button.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 8, 2, 2, 2, 2));
             return;

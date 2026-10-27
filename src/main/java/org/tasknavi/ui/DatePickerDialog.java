@@ -9,7 +9,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.Insets;
@@ -71,9 +70,9 @@ public class DatePickerDialog extends JDialog {
                 JLabel lblDay = new JLabel(days[i], SwingConstants.CENTER);
                 lblDay.setFont(new Font("SansSerif", Font.BOLD, 12));
                 if (i == 0) {
-                    lblDay.setForeground(AppTheme.isDarkMode() ? new Color(248, 113, 113) : new Color(220, 38, 38));
+                    lblDay.setForeground(AppTheme.sundayText());
                 } else if (i == 6) {
-                    lblDay.setForeground(AppTheme.isDarkMode() ? new Color(96, 165, 250) : new Color(37, 99, 235));
+                    lblDay.setForeground(AppTheme.saturdayText());
                 } else {
                     lblDay.setForeground(AppTheme.TEXT_PRIMARY);
                 }

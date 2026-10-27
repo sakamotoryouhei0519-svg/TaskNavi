@@ -21,8 +21,8 @@ public final class TaskDialogUiStyle {
     public static void styleComboBox(JComboBox<String> combo) {
         AppTheme.styleComboBox(combo);
         combo.setFont(AppTheme.FONT_MAIN);
-        combo.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
-        combo.setForeground(AppTheme.isDarkMode() ? new Color(226, 232, 240) : AppTheme.TEXT_PRIMARY);
+        combo.setBackground(AppTheme.controlBackground());
+        combo.setForeground(AppTheme.textStrong());
 
         combo.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -55,11 +55,11 @@ public final class TaskDialogUiStyle {
             return;
         }
         if (isSelected) {
-            c.setBackground(new Color(96, 165, 250));
+            c.setBackground(AppTheme.PRIMARY);
             c.setForeground(Color.WHITE);
         } else {
-            c.setBackground(new Color(30, 41, 59));
-            c.setForeground(new Color(226, 232, 240));
+            c.setBackground(AppTheme.controlBackground());
+            c.setForeground(AppTheme.textStrong());
         }
     }
 }

@@ -154,11 +154,11 @@ final class TeamHistoryDialog {
 
     private static Color opColor(TeamEvent.Op op) {
         return switch (op) {
-            case CREATE -> new Color(22, 163, 74);
-            case UPDATE -> new Color(37, 99, 235);
-            case DELETE -> new Color(220, 38, 38);
-            case RESTORE -> new Color(147, 51, 234);
-            case COMMENT -> new Color(13, 148, 136);
+            case CREATE -> AppTheme.FILL_SUCCESS;
+            case UPDATE -> AppTheme.FILL_INFO;
+            case DELETE -> AppTheme.FILL_DANGER;
+            case RESTORE -> AppTheme.FILL_ACCENT;
+            case COMMENT -> AppTheme.FILL_TEAL;
         };
     }
 

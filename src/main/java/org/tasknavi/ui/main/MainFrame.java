@@ -402,17 +402,16 @@ public class MainFrame extends JFrame {
         addTaskButton.addActionListener(e -> handleAdd());
         addTaskButton.setToolTipText(AppMessages.get("mainframe.tooltip.add"));
 
-        Color dangerColor = new Color(220, 38, 38);
         JButton deleteButton = MainToolbarButtons.create(
                 AppMessages.get("mainframe.button.delete"), IconManager.IconType.DELETE,
-                Color.WHITE, dangerColor, dangerColor);
+                AppTheme.controlBackground(), AppTheme.danger(), AppTheme.danger());
         deleteButton.putClientProperty("app.button.variant", "toolbar-outline-danger");
         deleteButton.addActionListener(e -> handleDeleteSelectedItem());
         deleteButton.setToolTipText(AppMessages.get("mainframe.tooltip.delete"));
 
         JButton refreshButton = MainToolbarButtons.create(
                 AppMessages.get("mainframe.button.refresh"), IconManager.IconType.REFRESH,
-                Color.WHITE, AppTheme.PRIMARY, AppTheme.PRIMARY);
+                AppTheme.controlBackground(), AppTheme.PRIMARY, AppTheme.PRIMARY);
         refreshButton.putClientProperty("app.button.variant", "toolbar-outline-primary");
         refreshButton.addActionListener(e -> {
             teamSession.reload();

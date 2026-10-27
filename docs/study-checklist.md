@@ -871,23 +871,27 @@ MainFrame コンストラクタ
     → themeToggleButton.addActionListener(e -> toggleTheme())
 
 ユーザーがテーマ切り替えボタンをクリック
-  → toggleTheme()
-    → AppTheme.toggleDarkMode()
-      → darkMode = !darkMode (フラグ反転)
+  → AppTheme.setDarkMode(toggle.isSelected())
+      → setTheme() で PRIMARY / BACKGROUND / TEXT_PRIMARY などを入れ替える
+      → applySwingDefaults() で新しく開く窓の既定色も入れ替える
       → Preferences.userNodeForPackage() で設定保存
-    → MainThemeSupport.updateViewTheme(getActiveComponent())
-      → AppTheme.applyTheme(component) でテーマ適用
-        → Look & Feel を更新
-        → 背景色、前景色、フォントなどを設定
-        → component.revalidate() で再レイアウト
-        → component.repaint() で再描画
+  → applyThemeToWindow()
+    → 各タブに MainThemeSupport.updateViewTheme(component)
+      → 背景色・文字色を設定し、各画面の updateTheme() で描き直す
     → MainTabChrome.updateTabTextColors(mainTabbedPane) でタブ色更新
 ```
 
+色の決まり:
+
+- 画面のファイルに `new Color(...)` を直接書かない。ライトとダークで変わる色は `AppTheme` のメソッドから取る（`cardBackground()`・`controlBackground()`・`textStrong()`・`danger()`・`warning()`・`success()`・`progressTrack()`・`gridLine()`・`sundayText()` / `saturdayText()` など）
+- 白い文字を載せる札やボタンの塗りは、ライトとダークで同じ `AppTheme.FILL_*` を使う
+- `static final` に色を入れない。テーマを切り替えても変わらなくなるため
+
 できたチェック:
 
-- [ ] `AppTheme.toggleDarkMode()` がフラグを反転してPreferencesに保存していると言える
-- [ ] `MainThemeSupport.updateViewTheme()` がアクティブなコンポーネントのテーマを更新していると言える
+- [ ] `AppTheme.setDarkMode()` が色を入れ替えて Preferences に保存していると言える
+- [ ] `MainThemeSupport.updateViewTheme()` がタブの中身のテーマを更新していると言える
+- [ ] 色をメソッドで取る理由（テーマを切り替えたときに追いつくため）を言える
 
 ---
 

@@ -35,7 +35,7 @@ public final class CalendarDailySideSupport {
 
     public static Header createHeader(Runnable onAddTask) {
         JPanel panel = new JPanel(new MigLayout("fillx, insets 10 12 10 12, gap 8", "[grow][right]"));
-        panel.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+        panel.setBackground(AppTheme.controlBackground());
         panel.setBorder(BorderFactory.createCompoundBorder(
                 AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 10, 1, 1, 1, 1),
                 new EmptyBorder(2, 4, 2, 4)
@@ -133,7 +133,7 @@ public final class CalendarDailySideSupport {
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(AppTheme.isDarkMode() ? new Color(30, 58, 95) : new Color(219, 234, 254));
+                g2.setColor(AppTheme.infoBackground());
                 int arc = Math.max(getHeight(), 1);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), arc, arc);
             } finally {

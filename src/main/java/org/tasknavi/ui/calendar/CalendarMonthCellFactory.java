@@ -45,7 +45,7 @@ public final class CalendarMonthCellFactory {
             List<Task> tasksForDay,
             Actions actions) {
         JPanel cell = new JPanel(new BorderLayout(0, 4));
-        Color cellBg = AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE;
+        Color cellBg = AppTheme.controlBackground();
         if (!isCurrentMonth) {
             cellBg = AppTheme.isDarkMode() ? new Color(20, 29, 44) : new Color(248, 250, 252);
         }
@@ -53,7 +53,7 @@ public final class CalendarMonthCellFactory {
         cell.setBackground(restingBg);
 
         Border todayBorder = BorderFactory.createCompoundBorder(
-                AppTheme.createRoundedBorder(new Color(59, 130, 246), 8, 2, 2, 2, 2),
+                AppTheme.createRoundedBorder(AppTheme.PRIMARY, 8, 2, 2, 2, 2),
                 new EmptyBorder(3, 4, 3, 4)
         );
         Border normalBorder = BorderFactory.createCompoundBorder(
@@ -78,15 +78,15 @@ public final class CalendarMonthCellFactory {
 
         if (isToday) {
             lblDayNumber.setOpaque(true);
-            lblDayNumber.setBackground(new Color(59, 130, 246));
+            lblDayNumber.setBackground(AppTheme.STATUS_IN_PROGRESS);
             lblDayNumber.setForeground(Color.WHITE);
             lblDayNumber.setBorder(BorderFactory.createEmptyBorder(1, 5, 1, 5));
         } else if (!isCurrentMonth) {
             lblDayNumber.setForeground(AppTheme.TEXT_MUTED);
         } else if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
-            lblDayNumber.setForeground(new Color(239, 68, 68));
+            lblDayNumber.setForeground(AppTheme.sundayText());
         } else if (date.getDayOfWeek() == DayOfWeek.SATURDAY) {
-            lblDayNumber.setForeground(new Color(59, 130, 246));
+            lblDayNumber.setForeground(AppTheme.saturdayText());
         } else {
             lblDayNumber.setForeground(AppTheme.TEXT_PRIMARY);
         }
@@ -151,7 +151,7 @@ public final class CalendarMonthCellFactory {
         Color statusColor = AppTheme.getStatusColor(task.getStatusCode());
         Color statusSoft = AppTheme.getStatusSoftColor(task.getStatusCode());
 
-        badge.setBackground(AppTheme.isDarkMode() ? new Color(42, 50, 61) : statusSoft);
+        badge.setBackground(AppTheme.isDarkMode() ? AppTheme.cardBackground() : statusSoft);
         badge.setBorder(BorderFactory.createCompoundBorder(
                 AppTheme.createRoundedBorder(statusColor, 4, 1, 1, 1, 1),
                 new EmptyBorder(1, 4, 1, 4)
@@ -164,7 +164,7 @@ public final class CalendarMonthCellFactory {
 
         JLabel nameLbl = new JLabel(task.getName());
         nameLbl.setFont(AppTheme.FONT_SMALL.deriveFont(10f));
-        nameLbl.setForeground(AppTheme.isDarkMode() ? new Color(226, 232, 240) : AppTheme.TEXT_PRIMARY);
+        nameLbl.setForeground(AppTheme.textStrong());
 
         JLabel progLbl = new JLabel(task.getProgress() + "%");
         progLbl.setFont(AppTheme.FONT_SMALL.deriveFont(Font.BOLD, 9f));

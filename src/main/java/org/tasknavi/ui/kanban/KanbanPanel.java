@@ -400,12 +400,12 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
     private void updateHeaderLabelTheme(JLabel headerLabel, String title) {
         Color headerBg;
         if (AppTheme.isDarkMode()) {
-            headerBg = new Color(30, 41, 59);
+            headerBg = AppTheme.controlBackground();
         } else {
             headerBg = AppTheme.getStatusSoftColor(title);
         }
         headerLabel.setBackground(headerBg);
-        headerLabel.setForeground(AppTheme.isDarkMode() ? new Color(226, 232, 240) : AppTheme.TEXT_PRIMARY);
+        headerLabel.setForeground(AppTheme.textStrong());
     }
 
     public void updateTheme() {

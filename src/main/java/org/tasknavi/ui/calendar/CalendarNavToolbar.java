@@ -107,7 +107,7 @@ public final class CalendarNavToolbar {
         btn.setFont(AppTheme.FONT_MAIN.deriveFont(Font.BOLD, 12f));
         btn.setFocusPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setBackground(AppTheme.isDarkMode() ? new Color(42, 50, 61) : Color.WHITE);
+        btn.setBackground(AppTheme.cardBackground());
         btn.setForeground(AppTheme.TEXT_PRIMARY);
         btn.setBorder(null);
         btn.setMargin(new Insets(4, 10, 4, 10));

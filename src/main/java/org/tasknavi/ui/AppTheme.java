@@ -76,6 +76,14 @@ public class AppTheme {
     public static final Color STATUS_IN_PROGRESS_SOFT = new Color(219, 234, 254);
     public static final Color STATUS_COMPLETED_SOFT = new Color(220, 252, 231);
 
+    // 白い文字を載せる塗り（札やボタン）。ライトとダークで同じ。
+    public static final Color FILL_SUCCESS = new Color(22, 163, 74);
+    public static final Color FILL_INFO = new Color(37, 99, 235);
+    public static final Color FILL_DANGER = new Color(220, 38, 38);
+    public static final Color FILL_WARNING = new Color(234, 88, 12);
+    public static final Color FILL_ACCENT = new Color(147, 51, 234);
+    public static final Color FILL_TEAL = new Color(13, 148, 136);
+
     public static Theme getCurrentTheme() { return currentTheme; }
     public static boolean isDarkMode() { return currentTheme == DARK_THEME; }
 
@@ -113,25 +121,17 @@ public class AppTheme {
 
     public static void setDarkMode(boolean darkMode) { setTheme(darkMode ? DARK_THEME : LIGHT_THEME); }
 
+    /** ライトとダークで同じ色。 */
     public static Color getPriorityColor(String priorityLabel) {
         Priority priority = Priority.fromString(priorityLabel);
-        if (isDarkMode()) {
-            if (priority == Priority.HIGH) return new Color(248, 113, 113);
-            if (priority == Priority.LOW) return new Color(148, 163, 184);
-            return new Color(96, 165, 250); // MEDIUM
-        }
         if (priority == Priority.HIGH) return PRIORITY_HIGH;
         if (priority == Priority.LOW) return PRIORITY_LOW;
         return PRIORITY_MEDIUM;
     }
 
+    /** ライトとダークで同じ色。 */
     public static Color getStatusColor(String status) {
         TaskStatus s = TaskStatus.fromString(status);
-        if (isDarkMode()) {
-            if (s == TaskStatus.NOT_STARTED) return new Color(148, 163, 184);
-            if (s == TaskStatus.COMPLETED) return new Color(34, 197, 94);
-            return new Color(59, 130, 246);
-        }
         if (s == TaskStatus.NOT_STARTED) return STATUS_NOT_STARTED;
         if (s == TaskStatus.COMPLETED) return STATUS_COMPLETED;
         return STATUS_IN_PROGRESS;
@@ -150,6 +150,78 @@ public class AppTheme {
 
     public static Color selectedFill() {
         return isDarkMode() ? new Color(30, 64, 110) : new Color(219, 234, 254);
+    }
+
+    /** カード（カンバン・カレンダー・今日・重なった変更）の地。 */
+    public static Color cardBackground() {
+        return isDarkMode() ? new Color(42, 50, 61) : Color.WHITE;
+    }
+
+    /** ボタン・検索欄・カレンダーのマスなど、操作する部品の地。 */
+    public static Color controlBackground() {
+        return isDarkMode() ? new Color(30, 41, 59) : Color.WHITE;
+    }
+
+    /** タスク名や見出しなど、はっきり読ませる文字。 */
+    public static Color textStrong() {
+        return isDarkMode() ? new Color(226, 232, 240) : TEXT_PRIMARY;
+    }
+
+    /** 押せない部品の文字。 */
+    public static Color textDisabled() {
+        return isDarkMode() ? new Color(148, 163, 184) : new Color(100, 116, 139);
+    }
+
+    /** 期限切れ・削除・入力の誤り。 */
+    public static Color danger() {
+        return isDarkMode() ? new Color(248, 113, 113) : new Color(220, 38, 38);
+    }
+
+    /** 今日まで・アプリの更新が必要など、気づいてほしいもの。 */
+    public static Color warning() {
+        return isDarkMode() ? new Color(251, 146, 60) : new Color(234, 88, 12);
+    }
+
+    /** 同期できている、など。 */
+    public static Color success() {
+        return isDarkMode() ? new Color(74, 222, 128) : new Color(22, 163, 74);
+    }
+
+    /** 進捗バーの、まだ進んでいない部分。 */
+    public static Color progressTrack() {
+        return isDarkMode() ? new Color(51, 65, 85) : new Color(226, 232, 240);
+    }
+
+    /** ガントの日の区切りなどの罫線。 */
+    public static Color gridLine() {
+        return isDarkMode() ? new Color(71, 85, 105) : new Color(148, 163, 184);
+    }
+
+    /** お知らせ（情報）の地と文字。 */
+    public static Color infoBackground() {
+        return isDarkMode() ? new Color(30, 58, 95) : new Color(219, 234, 254);
+    }
+
+    public static Color infoForeground() {
+        return isDarkMode() ? new Color(226, 232, 240) : new Color(15, 23, 42);
+    }
+
+    /** お知らせ（エラー）の地と文字。 */
+    public static Color errorBackground() {
+        return isDarkMode() ? new Color(127, 29, 29) : new Color(254, 226, 226);
+    }
+
+    public static Color errorForeground() {
+        return isDarkMode() ? new Color(254, 226, 226) : new Color(127, 29, 29);
+    }
+
+    /** カレンダー・ガント・日付選択の日曜と土曜の文字。 */
+    public static Color sundayText() {
+        return danger();
+    }
+
+    public static Color saturdayText() {
+        return isDarkMode() ? new Color(96, 165, 250) : new Color(37, 99, 235);
     }
 
     public static Color getPrioritySoftColor(String priority) {
@@ -171,7 +243,7 @@ public class AppTheme {
 
     /** 新しく開くダイアログも、現在のテーマで十分なコントラストを持たせます。 */
     public static void applySwingDefaults() {
-        Color buttonFace = isDarkMode() ? new Color(30, 41, 59) : Color.WHITE;
+        Color buttonFace = controlBackground();
         UIManager.put("Panel.background", PANEL_BG);
         UIManager.put("Label.foreground", TEXT_PRIMARY);
         UIManager.put("Button.background", buttonFace);

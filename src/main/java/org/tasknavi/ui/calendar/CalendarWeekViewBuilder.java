@@ -13,7 +13,6 @@ import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -77,7 +76,7 @@ public final class CalendarWeekViewBuilder {
         colWrapper.setMinimumSize(new Dimension(130, 200));
 
         JPanel colHeader = new JPanel(new BorderLayout(4, 2));
-        colHeader.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+        colHeader.setBackground(AppTheme.controlBackground());
 
         if (isSelected) {
             colHeader.setBorder(BorderFactory.createCompoundBorder(
@@ -86,7 +85,7 @@ public final class CalendarWeekViewBuilder {
             ));
         } else if (isToday) {
             colHeader.setBorder(BorderFactory.createCompoundBorder(
-                    AppTheme.createRoundedBorder(new Color(59, 130, 246), 8, 2, 2, 2, 2),
+                    AppTheme.createRoundedBorder(AppTheme.PRIMARY, 8, 2, 2, 2, 2),
                     new EmptyBorder(6, 8, 6, 8)
             ));
         } else {
@@ -99,9 +98,9 @@ public final class CalendarWeekViewBuilder {
         JLabel titleLbl = new JLabel(String.format("%d/%d (%s)", date.getMonthValue(), date.getDayOfMonth(), dayName));
         titleLbl.setFont(AppTheme.FONT_HEADER.deriveFont(Font.BOLD, 12f));
         if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
-            titleLbl.setForeground(new Color(239, 68, 68));
+            titleLbl.setForeground(AppTheme.sundayText());
         } else if (date.getDayOfWeek() == DayOfWeek.SATURDAY) {
-            titleLbl.setForeground(new Color(59, 130, 246));
+            titleLbl.setForeground(AppTheme.saturdayText());
         } else {
             titleLbl.setForeground(AppTheme.TEXT_PRIMARY);
         }

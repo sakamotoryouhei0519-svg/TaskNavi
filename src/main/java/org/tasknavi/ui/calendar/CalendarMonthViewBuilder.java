@@ -46,13 +46,13 @@ public final class CalendarMonthViewBuilder {
 
         String[] dayNames = UiLabels.weekdaysSundayFirst();
         Color[] dayColors = {
-                new Color(239, 68, 68),
+                AppTheme.sundayText(),
                 AppTheme.TEXT_PRIMARY,
                 AppTheme.TEXT_PRIMARY,
                 AppTheme.TEXT_PRIMARY,
                 AppTheme.TEXT_PRIMARY,
                 AppTheme.TEXT_PRIMARY,
-                new Color(59, 130, 246)
+                AppTheme.saturdayText()
         };
 
         for (int i = 0; i < 7; i++) {
@@ -60,7 +60,7 @@ public final class CalendarMonthViewBuilder {
             lblDay.setFont(AppTheme.FONT_HEADER.deriveFont(Font.BOLD, 12f));
             lblDay.setForeground(dayColors[i]);
             lblDay.setOpaque(true);
-            lblDay.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+            lblDay.setBackground(AppTheme.controlBackground());
             lblDay.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 8, 1, 1, 1, 1));
             headerPanel.add(lblDay);
         }

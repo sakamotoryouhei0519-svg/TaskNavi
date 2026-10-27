@@ -54,11 +54,11 @@ public final class KanbanCardFactory {
 
     public static JPanel create(Task task, Actions actions) {
         JPanel card = new JPanel(new BorderLayout(10, 8));
-        Color baseBg = AppTheme.isDarkMode() ? new Color(42, 50, 61) : new Color(255, 255, 255);
+        Color baseBg = AppTheme.cardBackground();
         card.setBackground(baseBg);
 
         Color statusColor = AppTheme.getStatusColor(task.getStatusCode());
-        Color borderColor = task.isOverdue() ? new Color(220, 38, 38) : statusColor;
+        Color borderColor = task.isOverdue() ? AppTheme.danger() : statusColor;
         Border normalBorder = BorderFactory.createCompoundBorder(
                 AppTheme.createRoundedBorder(borderColor, 12, task.isOverdue() ? 2 : 1, task.isOverdue() ? 2 : 1, task.isOverdue() ? 2 : 1, task.isOverdue() ? 2 : 1),
                 new EmptyBorder(10, 12, 10, 12)
@@ -161,11 +161,11 @@ public final class KanbanCardFactory {
 
         JLabel nameLabel = new JLabel(task.getName());
         nameLabel.setFont(AppTheme.FONT_HEADER);
-        nameLabel.setForeground(AppTheme.isDarkMode() ? new Color(226, 232, 240) : AppTheme.TEXT_PRIMARY);
+        nameLabel.setForeground(AppTheme.textStrong());
 
         JLabel progressLabel = new JLabel(task.getProgress() + "%");
         progressLabel.setFont(AppTheme.FONT_MAIN);
-        progressLabel.setForeground(AppTheme.isDarkMode() ? new Color(96, 165, 250) : AppTheme.PRIMARY);
+        progressLabel.setForeground(AppTheme.PRIMARY);
 
         JPanel topPanel = new JPanel(new BorderLayout(8, 0));
         topPanel.setOpaque(false);
@@ -175,7 +175,7 @@ public final class KanbanCardFactory {
         String assigneeText = "\uD83D\uDC64 " + (task.getAssignee() != null ? task.getAssignee() : AppMessages.get("label.unset"));
         JLabel assigneeLabel = new JLabel(assigneeText);
         assigneeLabel.setFont(AppTheme.FONT_MAIN);
-        assigneeLabel.setForeground(AppTheme.isDarkMode() ? new Color(148, 163, 184) : AppTheme.TEXT_MUTED);
+        assigneeLabel.setForeground(AppTheme.TEXT_MUTED);
 
         JPanel centerPanel = new JPanel(new MigLayout("fillx, insets 0, gap 6, wrap", "[grow,fill]", "[]"));
         centerPanel.setOpaque(false);
@@ -223,7 +223,7 @@ public final class KanbanCardFactory {
         button.setOpaque(true);
         button.setContentAreaFilled(true);
         button.setBorderPainted(true);
-        button.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+        button.setBackground(AppTheme.controlBackground());
         button.setForeground(AppTheme.TEXT_PRIMARY);
         button.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 8, 2, 2, 2, 2));
         return button;
@@ -242,7 +242,7 @@ public final class KanbanCardFactory {
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     int trackHeight = 6;
                     int y = (getHeight() - trackHeight) / 2;
-                    g2.setColor(new Color(230, 232, 236));
+                    g2.setColor(AppTheme.progressTrack());
                     g2.fillRoundRect(0, y, getWidth(), trackHeight, trackHeight, trackHeight);
                     int fillWidth = (int) Math.round(getWidth() * Math.min(100, Math.max(0, progress)) / 100.0);
                     if (fillWidth > 0) {

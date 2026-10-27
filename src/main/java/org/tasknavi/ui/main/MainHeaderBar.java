@@ -112,7 +112,7 @@ public final class MainHeaderBar {
         button.putClientProperty("app.button.variant", "header");
         button.setFont(AppTheme.FONT_HEADER.deriveFont(Font.BOLD, 13f));
         button.setIconTextGap(6);
-        button.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+        button.setBackground(AppTheme.controlBackground());
         button.setForeground(AppTheme.TEXT_PRIMARY);
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));

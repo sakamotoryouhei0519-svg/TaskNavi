@@ -122,8 +122,8 @@ public final class NoticeBar extends JPanel {
         AppTheme.styleDialogSecondaryButton(noButton);
         noButton.setVisible(kind == Kind.CONFIRM);
         actions.setVisible(hasButton);
-        Color background = kind == Kind.ERROR ? errorBackground() : infoBackground();
-        Color foreground = kind == Kind.ERROR ? errorForeground() : infoForeground();
+        Color background = kind == Kind.ERROR ? AppTheme.errorBackground() : AppTheme.infoBackground();
+        Color foreground = kind == Kind.ERROR ? AppTheme.errorForeground() : AppTheme.infoForeground();
         setBackground(background);
         setForeground(foreground);
         messageLabel.setForeground(foreground);
@@ -161,22 +161,6 @@ public final class NoticeBar extends JPanel {
                 .replace(">", "&gt;")
                 .replace("\n", "<br>");
         return "<html>" + escaped + "</html>";
-    }
-
-    private static Color infoBackground() {
-        return AppTheme.isDarkMode() ? new Color(30, 58, 95) : new Color(219, 234, 254);
-    }
-
-    private static Color infoForeground() {
-        return AppTheme.isDarkMode() ? new Color(226, 232, 240) : new Color(15, 23, 42);
-    }
-
-    private static Color errorBackground() {
-        return AppTheme.isDarkMode() ? new Color(127, 29, 29) : new Color(254, 226, 226);
-    }
-
-    private static Color errorForeground() {
-        return AppTheme.isDarkMode() ? new Color(254, 226, 226) : new Color(127, 29, 29);
     }
 
     private enum Kind {

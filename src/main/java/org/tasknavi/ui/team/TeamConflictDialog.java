@@ -16,7 +16,6 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Dimension;
@@ -122,7 +121,7 @@ final class TeamConflictDialog {
 
     private static JPanel card(TeamConflictGroup group, String taskName, Runnable onRestore, Runnable onAcknowledge) {
         JPanel card = new JPanel(new MigLayout("fillx, insets 10 14 10 14, gap 4, wrap", "[grow,fill]", ""));
-        card.setBackground(AppTheme.isDarkMode() ? new Color(42, 50, 61) : Color.WHITE);
+        card.setBackground(AppTheme.cardBackground());
         card.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 10, 1, 1, 1, 1));
 
         String shownName = taskName != null && !taskName.isBlank() ? taskName : group.taskName();

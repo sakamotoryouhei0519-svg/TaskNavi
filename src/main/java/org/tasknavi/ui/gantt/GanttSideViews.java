@@ -6,7 +6,6 @@ import org.tasknavi.ui.AppTheme;
 
 import javax.swing.JComponent;
 import javax.swing.JPanel;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Graphics;
@@ -73,7 +72,7 @@ public final class GanttSideViews {
                                 g2, task, currentY, host.selectedTaskId(), host.hoveredTaskId(),
                                 GanttMetrics.TASK_NAME_WIDTH, GanttMetrics.ROW_HEIGHT);
                         g2.setStroke(new java.awt.BasicStroke(2f));
-                        g2.setColor(AppTheme.isDarkMode() ? new Color(71, 85, 105) : new Color(148, 163, 184));
+                        g2.setColor(AppTheme.gridLine());
                         g2.drawLine(0, currentY + GanttMetrics.ROW_HEIGHT,
                                 GanttMetrics.TASK_NAME_WIDTH, currentY + GanttMetrics.ROW_HEIGHT);
                         g2.setStroke(new java.awt.BasicStroke(1f));

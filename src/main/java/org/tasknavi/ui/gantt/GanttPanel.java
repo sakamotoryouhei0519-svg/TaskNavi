@@ -408,7 +408,7 @@ public class GanttPanel extends JPanel implements SearchablePanel {
                     selectedTaskId != null && selectedTaskId.equals(task.getId()),
                     dragStart, dragEnd);
             g2.setStroke(new BasicStroke(2f));
-            g2.setColor(AppTheme.isDarkMode() ? new Color(71, 85, 105) : new Color(148, 163, 184));
+            g2.setColor(AppTheme.gridLine());
             g2.drawLine(0, currentY + GanttMetrics.ROW_HEIGHT - 1, getWidth(), currentY + GanttMetrics.ROW_HEIGHT - 1);
             g2.setStroke(new BasicStroke(1f));
             currentY += GanttMetrics.ROW_HEIGHT;

@@ -135,7 +135,7 @@ public final class AuthFormWidgets {
     }
 
     public static Color errorColor() {
-        return AppTheme.isDarkMode() ? new Color(248, 113, 113) : new Color(220, 38, 38);
+        return AppTheme.danger();
     }
 
     public static JButton createPrimaryButton(String text) {

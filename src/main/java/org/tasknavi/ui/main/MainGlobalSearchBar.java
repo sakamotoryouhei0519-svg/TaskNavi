@@ -206,11 +206,11 @@ public final class MainGlobalSearchBar {
 
     public void updateTheme() {
         if (searchContainerPanel != null) {
-            searchContainerPanel.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+            searchContainerPanel.setBackground(AppTheme.controlBackground());
             searchContainerPanel.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 8, 1, 1, 1, 1));
         }
         if (txtGlobalSearch != null) {
-            txtGlobalSearch.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+            txtGlobalSearch.setBackground(AppTheme.controlBackground());
             txtGlobalSearch.setForeground(AppTheme.TEXT_PRIMARY);
             txtGlobalSearch.setCaretColor(AppTheme.TEXT_PRIMARY);
         }
@@ -269,7 +269,7 @@ public final class MainGlobalSearchBar {
                 || (currentGlobalStatus != null && !AppMessages.isFilterAll(currentGlobalStatus));
         filterSummaryLabel.setText(active ? text : " ");
         filterSummaryLabel.setForeground(active
-                ? (AppTheme.isDarkMode() ? new Color(96, 165, 250) : AppTheme.PRIMARY)
+                ? (AppTheme.PRIMARY)
                 : AppTheme.TEXT_MUTED);
         filterSummaryLabel.setToolTipText(active ? text : null);
     }
@@ -346,7 +346,7 @@ public final class MainGlobalSearchBar {
 
         JMenuItem clearItem = new JMenuItem(AppMessages.get("mainframe.filter.menu.clear"));
         clearItem.setFont(AppTheme.FONT_MAIN.deriveFont(12f));
-        clearItem.setForeground(new Color(220, 38, 38));
+        clearItem.setForeground(AppTheme.danger());
         clearItem.setBackground(AppTheme.PANEL_BG);
         clearItem.setOpaque(true);
         clearItem.addActionListener(e -> {

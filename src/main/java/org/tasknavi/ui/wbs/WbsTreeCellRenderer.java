@@ -48,11 +48,7 @@ public class WbsTreeCellRenderer extends DefaultTreeCellRenderer {
         setBackgroundNonSelectionColor(new Color(0, 0, 0, 0));
         setBackgroundSelectionColor(new Color(0, 0, 0, 0));
 
-        if (AppTheme.isDarkMode()) {
-            setForeground(new Color(226, 232, 240));
-        } else {
-            setForeground(AppTheme.TEXT_PRIMARY);
-        }
+        setForeground(AppTheme.textStrong());
 
         if (value instanceof DefaultMutableTreeNode node) {
             Task task = context.taskFor(node);
@@ -73,7 +69,7 @@ public class WbsTreeCellRenderer extends DefaultTreeCellRenderer {
             String status = task != null ? task.getStatusCode() : Task.STATUS_NOT_STARTED;
             setBackground(AppTheme.getStatusSoftColor(status));
             setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, AppTheme.PRIMARY));
-            setForeground(AppTheme.isDarkMode() ? new Color(226, 232, 240) : AppTheme.TEXT_PRIMARY);
+            setForeground(AppTheme.textStrong());
         } else if (sel) {
             setOpaque(true);
             setBackground(AppTheme.selectedFill());

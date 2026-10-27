@@ -43,12 +43,12 @@ public final class CalendarTaskCardFactory {
 
     public static JPanel create(Task task, boolean isCompact, Actions actions) {
         JPanel card = new JPanel(new BorderLayout(8, 6));
-        Color baseBg = AppTheme.isDarkMode() ? new Color(42, 50, 61) : Color.WHITE;
+        Color baseBg = AppTheme.cardBackground();
         card.setBackground(baseBg);
 
         Color statusColor = AppTheme.getStatusColor(task.getStatusCode());
         Color accent = task.isOverdue()
-                ? new Color(220, 38, 38)
+                ? AppTheme.danger()
                 : AppTheme.BORDER_COLOR;
         Border normalBorder = BorderFactory.createCompoundBorder(
                 AppTheme.createRoundedBorder(accent, 10, task.isOverdue() ? 2 : 1, task.isOverdue() ? 2 : 1, task.isOverdue() ? 2 : 1, task.isOverdue() ? 2 : 1),
@@ -92,7 +92,7 @@ public final class CalendarTaskCardFactory {
 
         JLabel nameLabel = new JLabel(task.getName());
         nameLabel.setFont(AppTheme.FONT_HEADER.deriveFont(Font.BOLD, isCompact ? 11f : 12f));
-        nameLabel.setForeground(AppTheme.isDarkMode() ? new Color(226, 232, 240) : AppTheme.TEXT_PRIMARY);
+        nameLabel.setForeground(AppTheme.textStrong());
 
         JLabel progressLabel = new JLabel(task.getProgress() + "%");
         progressLabel.setFont(AppTheme.FONT_MAIN.deriveFont(Font.BOLD, isCompact ? 10f : 11f));
@@ -137,7 +137,7 @@ public final class CalendarTaskCardFactory {
             JLabel dateRangeLabel = new JLabel(dateText);
             dateRangeLabel.setFont(AppTheme.FONT_SMALL.deriveFont(10f));
             dateRangeLabel.setForeground(task.isOverdue()
-                    ? new Color(220, 38, 38)
+                    ? AppTheme.danger()
                     : AppTheme.TEXT_MUTED);
             centerPanel.add(dateRangeLabel);
         }
@@ -179,7 +179,7 @@ public final class CalendarTaskCardFactory {
         button.setOpaque(true);
         button.setContentAreaFilled(true);
         button.setBorderPainted(true);
-        button.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+        button.setBackground(AppTheme.controlBackground());
         button.setForeground(AppTheme.TEXT_PRIMARY);
         button.setBorder(AppTheme.createRoundedBorder(AppTheme.BORDER_COLOR, 8, 2, 2, 2, 2));
         return button;
@@ -198,7 +198,7 @@ public final class CalendarTaskCardFactory {
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     int trackHeight = 4;
                     int y = (getHeight() - trackHeight) / 2;
-                    g2.setColor(AppTheme.isDarkMode() ? new Color(60, 70, 85) : new Color(226, 232, 240));
+                    g2.setColor(AppTheme.progressTrack());
                     g2.fillRoundRect(0, y, getWidth(), trackHeight, trackHeight, trackHeight);
                     int fillWidth = (int) Math.round(getWidth() * Math.min(100, Math.max(0, progress)) / 100.0);
                     if (fillWidth > 0) {

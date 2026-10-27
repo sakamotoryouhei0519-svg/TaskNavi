@@ -303,7 +303,7 @@ public final class WbsDetailForm {
             int height = 8;
             int y = (getHeight() - height) / 2;
             int width = Math.max(0, getWidth() - 1);
-            g2.setColor(AppTheme.isDarkMode() ? new Color(51, 65, 85) : new Color(226, 232, 240));
+            g2.setColor(AppTheme.progressTrack());
             g2.fillRoundRect(0, y, width, height, height, height);
             int filled = (int) Math.round(width * (percent / 100.0));
             if (filled > 0) {

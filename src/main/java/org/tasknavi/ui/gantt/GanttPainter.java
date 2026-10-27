@@ -49,12 +49,12 @@ public final class GanttPainter {
                 }
 
                 int groupWidth = Math.max(1, monthDaysCount * dayWidth);
-                g2.setColor(AppTheme.isDarkMode() ? new Color(30, 41, 59) : new Color(240, 243, 248));
+                g2.setColor(AppTheme.isDarkMode() ? AppTheme.controlBackground() : new Color(240, 243, 248));
                 g2.fillRect(currentMonthStartX, offsetY, groupWidth, 22);
                 g2.setColor(AppTheme.BORDER_COLOR);
                 g2.drawRect(currentMonthStartX, offsetY, groupWidth, 22);
 
-                g2.setColor(AppTheme.isDarkMode() ? new Color(226, 232, 240) : AppTheme.TEXT_PRIMARY);
+                g2.setColor(AppTheme.textStrong());
                 g2.setFont(new Font("SansSerif", Font.BOLD, 11));
                 String yearMonthStr = currentMonth.format(DateTimeFormatter.ofPattern(
                         AppMessages.get("gantt.date.format.yearmonth", "yyyy年 M月")));
@@ -79,13 +79,7 @@ public final class GanttPainter {
 
             Color bgHeader;
             if (AppTheme.isDarkMode()) {
-                if (isToday) {
-                    bgHeader = new Color(71, 85, 105);
-                } else if (isSaturday || isSunday) {
-                    bgHeader = new Color(30, 41, 59);
-                } else {
-                    bgHeader = new Color(30, 41, 59);
-                }
+                bgHeader = isToday ? AppTheme.gridLine() : AppTheme.controlBackground();
             } else {
                 if (isToday) {
                     bgHeader = new Color(255, 243, 205);
@@ -112,11 +106,7 @@ public final class GanttPainter {
                 int dateFontSize = dayWidth >= 26 ? 10 : 9;
                 int weekdayFontSize = dayWidth >= 28 ? 9 : 8;
                 g2.setFont(new Font("SansSerif", Font.PLAIN, dateFontSize));
-                if (AppTheme.isDarkMode()) {
-                    g2.setColor(isSunday ? new Color(248, 113, 113) : (isSaturday ? new Color(96, 165, 250) : new Color(226, 232, 240)));
-                } else {
-                    g2.setColor(isSunday ? new Color(210, 50, 50) : (isSaturday ? new Color(30, 100, 200) : AppTheme.TEXT_PRIMARY));
-                }
+                g2.setColor(isSunday ? AppTheme.sundayText() : isSaturday ? AppTheme.saturdayText() : AppTheme.textStrong());
                 String dayText = String.valueOf(date.getDayOfMonth());
                 FontMetrics dayMetrics = g2.getFontMetrics();
                 int dayTextX = x + Math.max(2, (dayWidth - dayMetrics.stringWidth(dayText)) / 2);
@@ -173,7 +163,7 @@ public final class GanttPainter {
         g2.setStroke(new BasicStroke(2f));
         for (int i = 0; i < totalDays; i++) {
             int x = i * dayWidth;
-            g2.setColor(AppTheme.isDarkMode() ? new Color(71, 85, 105) : new Color(148, 163, 184));
+            g2.setColor(AppTheme.gridLine());
             g2.drawLine(x, startY, x, endY);
         }
         g2.setStroke(new BasicStroke(1f));
@@ -195,14 +185,12 @@ public final class GanttPainter {
             rowBg = AppTheme.selectedFill();
         } else if (hovered) {
             rowBg = AppTheme.hoverFill();
-        } else if (AppTheme.isDarkMode()) {
-            rowBg = new Color(30, 41, 59);
         } else {
-            rowBg = Color.WHITE;
+            rowBg = AppTheme.controlBackground();
         }
         g2.setColor(rowBg);
         g2.fillRect(0, y, taskNameWidth, rowHeight);
-        g2.setColor(AppTheme.isDarkMode() ? new Color(71, 85, 105) : new Color(148, 163, 184));
+        g2.setColor(AppTheme.gridLine());
         g2.fillRect(0, y + rowHeight - 2, taskNameWidth, 2);
         g2.setStroke(new BasicStroke(2f));
         g2.setColor(AppTheme.BORDER_COLOR);
@@ -212,7 +200,7 @@ public final class GanttPainter {
         int indent = 10 + (Math.max(0, task.getLevel() - 1) * 15);
 
         g2.setFont(task.getLevel() == 1 ? AppTheme.FONT_HEADER : AppTheme.FONT_MAIN);
-        g2.setColor(AppTheme.isDarkMode() ? new Color(226, 232, 240) : AppTheme.TEXT_PRIMARY);
+        g2.setColor(AppTheme.textStrong());
         g2.drawString(task.getName(), indent, y + 24);
     }
 
@@ -275,10 +263,10 @@ public final class GanttPainter {
 
         if (isDragging) {
             g2.setStroke(new BasicStroke(2.5f));
-            g2.setColor(new Color(255, 110, 0));
+            g2.setColor(AppTheme.FILL_WARNING);
         } else if (isSelected) {
             g2.setStroke(new BasicStroke(2.5f));
-            g2.setColor(new Color(30, 120, 255));
+            g2.setColor(AppTheme.PRIMARY);
         } else {
             g2.setStroke(new BasicStroke(1.2f));
             g2.setColor(mainColor.darker());

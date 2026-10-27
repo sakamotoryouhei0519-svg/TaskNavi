@@ -72,7 +72,7 @@ final class AppThemeControls {
         JButton button = new JButton(text);
         button.putClientProperty("app.button.variant", "secondary");
         button.setFont(AppTheme.FONT_MAIN);
-        button.setBackground(AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE);
+        button.setBackground(AppTheme.controlBackground());
         button.setForeground(AppTheme.TEXT_PRIMARY);
         button.setUI(new javax.swing.plaf.basic.BasicButtonUI());
         button.setFocusPainted(false);
@@ -111,7 +111,7 @@ final class AppThemeControls {
         if (button == null) {
             return;
         }
-        Color face = AppTheme.isDarkMode() ? new Color(30, 41, 59) : Color.WHITE;
+        Color face = AppTheme.controlBackground();
         button.setUI(new DialogButtonUI(10));
         button.setFont(AppTheme.FONT_MAIN);
         button.setOpaque(false);
@@ -141,7 +141,7 @@ final class AppThemeControls {
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.putClientProperty("dialog.fill", selected);
         if (selected) {
-            button.setBackground(AppTheme.isDarkMode() ? new Color(51, 65, 85) : Color.WHITE);
+            button.setBackground(AppTheme.isDarkMode() ? AppTheme.hoverFill() : Color.WHITE);
             button.setForeground(AppTheme.TEXT_PRIMARY);
         } else {
             button.setForeground(AppTheme.TEXT_MUTED);
@@ -150,15 +150,10 @@ final class AppThemeControls {
 
     static void applyTextColors(JTextComponent component) {
         component.setBackground(AppTheme.getCurrentTheme().textFieldBackground());
-        if (AppTheme.isDarkMode()) {
-            component.setForeground(new Color(226, 232, 240));
-            component.setCaretColor(Color.WHITE);
-            component.setDisabledTextColor(new Color(100, 116, 139));
-        } else {
-            component.setForeground(AppTheme.getCurrentTheme().textFieldForeground());
-            component.setCaretColor(Color.BLACK);
-            component.setDisabledTextColor(new Color(148, 163, 184));
-        }
+        component.setForeground(AppTheme.isDarkMode()
+                ? AppTheme.textStrong() : AppTheme.getCurrentTheme().textFieldForeground());
+        component.setCaretColor(AppTheme.isDarkMode() ? Color.WHITE : Color.BLACK);
+        component.setDisabledTextColor(AppTheme.textDisabled());
         component.setSelectionColor(AppTheme.selectedFill());
         component.setSelectedTextColor(component.getForeground());
     }
@@ -321,7 +316,7 @@ final class AppThemeControls {
                 return;
             }
             FontMetrics metrics = b.getFontMetrics(b.getFont());
-            g.setColor(AppTheme.isDarkMode() ? new Color(148, 163, 184) : new Color(100, 116, 139));
+            g.setColor(AppTheme.textDisabled());
             BasicGraphicsUtils.drawStringUnderlineCharAt(
                     b, (Graphics2D) g, text, -1, textRect.x, textRect.y + metrics.getAscent());
         }

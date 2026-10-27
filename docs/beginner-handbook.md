@@ -141,6 +141,7 @@
 - `JComboBox` の中の値（コード）と、画面に出す文字がずれると、おかしな動きになります
 - `wrap` を忘れると、部品が横にずっと並びます
 - ダークモードでは、背景の色と文字の色の両方を確かめます。複数行の入力欄は `AppTheme.createStyledTextAreaScroll` で作ると、他の入力欄と同じ色になります
+- 画面のファイルに `new Color(...)` を直接書きません。ライトとダークで変わる色は `AppTheme.cardBackground()`・`textStrong()`・`danger()`・`progressTrack()` などのメソッドから取ります。色を `static final` の定数に入れると、テーマを切り替えても古い色のまま残ります（カンバンの進捗バーの溝がダークモードで白く光っていたのはこれです）。白い文字を載せる札の塗りだけは、どちらのテーマでも同じ `AppTheme.FILL_*` です
 - 縦にスクロールする一覧や詳細は、`WidthTrackingPanel` の上に置きます。置かないと、長い名前で横にはみ出し、右端のボタンが切れます。縮めてよい文字には MigLayout で `wmin 0` を付けます
 - 窓は 960×560 より小さくできません（`UiConstants.WINDOW_MIN_WIDTH_MAIN`）。画面を直したら、この大きさでも切れないか確かめます
 - 画面から `TaskDao` を呼ばない。必ず `TaskService` を通します

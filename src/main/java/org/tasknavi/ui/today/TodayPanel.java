@@ -55,8 +55,6 @@ public class TodayPanel extends JPanel implements SearchablePanel {
 
     private static final long serialVersionUID = 1L;
     private static final Logger logger = LoggerFactory.getLogger(TodayPanel.class);
-    private static final Color OVERDUE_COLOR = new Color(220, 38, 38);
-    private static final Color TODAY_COLOR = new Color(234, 88, 12);
     private static final String PREF_ONLY_MINE = "today.onlyMine";
 
     /** 1 行分。ID はプロジェクトごとの番号なので、どのプロジェクトのタスクかと組で扱う。 */
@@ -135,9 +133,9 @@ public class TodayPanel extends JPanel implements SearchablePanel {
         listPanel.add(titleRow, "gapbottom 8");
 
         int shown = 0;
-        shown += addSection(AppMessages.get("today.section.overdue", "期限切れ"), OVERDUE_COLOR,
+        shown += addSection(AppMessages.get("today.section.overdue", "期限切れ"), AppTheme.danger(),
                 overdue, today, showProject);
-        shown += addSection(AppMessages.get("today.section.today", "今日まで"), TODAY_COLOR,
+        shown += addSection(AppMessages.get("today.section.today", "今日まで"), AppTheme.warning(),
                 dueToday, today, showProject);
         shown += addSection(AppMessages.format("today.section.upcoming", "{0}日以内", DueTasks.UPCOMING_DAYS),
                 AppTheme.PRIMARY, upcoming, today, showProject);
@@ -217,7 +215,7 @@ public class TodayPanel extends JPanel implements SearchablePanel {
     private JPanel createRow(Entry entry, LocalDate today, boolean showProject) {
         Task task = entry.task();
         TaskService service = entry.source().service();
-        Color baseBg = AppTheme.isDarkMode() ? new Color(42, 50, 61) : Color.WHITE;
+        Color baseBg = AppTheme.cardBackground();
 
         JPanel row = new JPanel(new BorderLayout(12, 0));
         row.setBackground(isSelected(entry) ? AppTheme.selectedFill() : baseBg);
@@ -244,7 +242,7 @@ public class TodayPanel extends JPanel implements SearchablePanel {
 
         JLabel detailLabel = new JLabel(describe(task, entry.parent(), today));
         detailLabel.setFont(AppTheme.FONT_MAIN);
-        detailLabel.setForeground(task.isOverdue() ? OVERDUE_COLOR : AppTheme.TEXT_MUTED);
+        detailLabel.setForeground(task.isOverdue() ? AppTheme.danger() : AppTheme.TEXT_MUTED);
 
         JPanel text = new JPanel(new MigLayout("insets 0, gap 2, wrap", "[grow,fill]", ""));
         text.setOpaque(false);
