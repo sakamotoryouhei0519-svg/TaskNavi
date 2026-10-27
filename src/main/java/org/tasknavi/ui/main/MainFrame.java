@@ -6,6 +6,7 @@ import org.tasknavi.AppVersion;
 import org.tasknavi.model.Task;
 import org.tasknavi.service.TaskService;
 import org.tasknavi.service.UserSession;
+import org.tasknavi.team.TeamNotice;
 import org.tasknavi.team.TeamProject;
 import org.tasknavi.team.TeamSettings;
 import org.tasknavi.ui.AppDialog;
@@ -37,6 +38,7 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.prefs.Preferences;
 
@@ -114,6 +116,13 @@ public class MainFrame extends JFrame {
             @Override
             public void statusChanged() {
                 projectSwitcher.refresh();
+            }
+
+            @Override
+            public void noticesArrived(Map<String, List<TeamNotice>> byProject) {
+                if (dueReminder != null) {
+                    dueReminder.showNotices(byProject);
+                }
             }
         });
 

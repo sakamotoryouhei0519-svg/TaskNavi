@@ -9,10 +9,13 @@ import org.tasknavi.persistence.TaskStore;
 import org.tasknavi.service.DueTasks;
 import org.tasknavi.service.TaskService;
 import org.tasknavi.service.TaskSource;
+import org.tasknavi.team.TeamNotice;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -75,6 +78,30 @@ class DueReminderTest {
                 DueReminder.buildMessage(DueReminder.dueAcross(sources, TODAY, true), TODAY));
         assertEquals("期限切れ 1件 / 今日まで 2件",
                 DueReminder.buildMessage(DueReminder.dueAcross(sources, TODAY, false), TODAY));
+    }
+
+    @Test
+    void noticeMessageNamesTheTaskWhenThereIsOnlyOne() {
+        Map<String, List<TeamNotice>> one = new LinkedHashMap<>();
+        one.put("新システム開発", List.of(new TeamNotice(TeamNotice.Kind.ASSIGNED, "設計", "鈴木")));
+        Map<String, List<TeamNotice>> changed = new LinkedHashMap<>();
+        changed.put("新システム開発", List.of(new TeamNotice(TeamNotice.Kind.CHANGED, "設計", "鈴木")));
+
+        assertEquals("鈴木さんが「設計」をあなたの担当にしました（新システム開発）", DueReminder.buildNoticeMessage(one));
+        assertEquals("鈴木さんがあなたの担当の「設計」を変えました（新システム開発）", DueReminder.buildNoticeMessage(changed));
+        assertNull(DueReminder.buildNoticeMessage(Map.of()));
+    }
+
+    @Test
+    void noticeMessageCountsWhenThereAreSeveral() {
+        Map<String, List<TeamNotice>> many = new LinkedHashMap<>();
+        many.put("新システム開発", List.of(
+                new TeamNotice(TeamNotice.Kind.ASSIGNED, "設計", "鈴木"),
+                new TeamNotice(TeamNotice.Kind.CHANGED, "実装", "佐藤")));
+        many.put("社内研修", List.of(new TeamNotice(TeamNotice.Kind.CHANGED, "資料", "鈴木")));
+
+        assertEquals("あなたの担当のタスクに 3 件の変更があります（新システム開発、社内研修）",
+                DueReminder.buildNoticeMessage(many));
     }
 
     /** 読むだけの保存先。 */

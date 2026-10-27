@@ -18,9 +18,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -56,6 +58,10 @@ public final class TeamProject {
     private volatile int unreadableLines;
     private volatile int newerFormatLines;
     private String fingerprint = "";
+    /** 読み込んだことのある記録の ID。最初の読み込みまでは null（開いたときの分は知らせない）。 */
+    private Set<String> knownEventIds;
+    /** ほかの PC から届いて、まだ {@link #takeNotices()} していない変更。 */
+    private final List<TeamEvent> arrived = new ArrayList<>();
 
     private TeamProject(Path dir, String name, String deviceId, String author, Clock clock) {
         if (!TeamChangeLog.isValidDeviceId(deviceId)) {
@@ -232,6 +238,14 @@ public final class TeamProject {
     public synchronized TeamState reload() throws IOException {
         fingerprint = TeamChangeLog.fingerprint(dir);
         TeamChangeLog.ReadResult result = TeamChangeLog.readAll(dir);
+        Set<String> ids = new HashSet<>();
+        for (TeamEvent event : result.events()) {
+            if (ids.add(event.eventId()) && knownEventIds != null && !knownEventIds.contains(event.eventId())
+                    && !deviceId.equals(event.deviceId())) {
+                arrived.add(event);
+            }
+        }
+        knownEventIds = ids;
         events.clear();
         events.addAll(result.events());
         unreadableLines = result.unreadableLines();
@@ -350,6 +364,16 @@ public final class TeamProject {
         events.addAll(batch);
         state = TeamReplay.replay(events);
         return ids;
+    }
+
+    /**
+     * 前回呼んでから、ほかの人が自分（表示名）を担当にした・自分の担当のタスクを変えたもの。
+     * 開いたときにすでにあった記録は含めない。
+     */
+    public synchronized List<TeamNotice> takeNotices() {
+        List<TeamNotice> notices = TeamNotice.forMe(arrived, state, author);
+        arrived.clear();
+        return notices;
     }
 
     /** 担当者が name のタスクの数。 */

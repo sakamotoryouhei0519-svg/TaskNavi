@@ -89,6 +89,33 @@ class TeamProjectTest {
     }
 
     @Test
+    void noticesTellWhenOthersAssignOrChangeMyTasks() throws Exception {
+        Path dir = root.resolve("p");
+        TeamProject tanaka = TeamProject.create(dir, "P", "pc-tanaka", "田中", NOW);
+        TeamProject suzuki = TeamProject.open(dir, "pc-suzuki", "鈴木", NOW);
+        String before = tanaka.createTask(Map.of(TeamField.NAME, "前からある", TeamField.ASSIGNEE, "田中"));
+        TeamProject reopened = TeamProject.open(dir, "pc-tanaka", "田中", NOW);
+        assertTrue(reopened.takeNotices().isEmpty(), "開いたときにすでにあった記録は知らせない");
+
+        suzuki.reload();
+        String design = suzuki.createTask(Map.of(TeamField.NAME, "設計", TeamField.ASSIGNEE, "田中"));
+        suzuki.createTask(Map.of(TeamField.NAME, "鈴木の作業", TeamField.ASSIGNEE, "鈴木"));
+        reopened.reload();
+
+        assertEquals(List.of(new TeamNotice(TeamNotice.Kind.ASSIGNED, "設計", "鈴木")), reopened.takeNotices());
+        assertTrue(reopened.takeNotices().isEmpty(), "一度渡したら消える");
+
+        suzuki.updateTask(before, Map.of(TeamField.END, "2026-11-30"));
+        suzuki.updateTask(design, Map.of(TeamField.PROGRESS, "30"));
+        reopened.updateTask(design, Map.of(TeamField.STATUS, "IN_PROGRESS"));
+        reopened.reload();
+
+        assertEquals(List.of(
+                new TeamNotice(TeamNotice.Kind.CHANGED, "前からある", "鈴木"),
+                new TeamNotice(TeamNotice.Kind.CHANGED, "設計", "鈴木")), reopened.takeNotices());
+    }
+
+    @Test
     void sameFieldEditedOfflineByBothKeepsOneAndRecordsTheOther() throws Exception {
         Pair pair = sharedTask("設計");
         pair.tanaka.updateTask(pair.taskId, Map.of(TeamField.NAME, "基本設計"));

@@ -10,6 +10,7 @@ import org.tasknavi.service.UserSession;
 import org.tasknavi.team.GoogleDriveFolders;
 import org.tasknavi.team.TeamConflictGroup;
 import org.tasknavi.team.TeamField;
+import org.tasknavi.team.TeamNotice;
 import org.tasknavi.team.TeamProject;
 import org.tasknavi.team.TeamSettings;
 import org.tasknavi.team.TeamState;
@@ -59,6 +60,9 @@ public final class TeamSession {
 
         /** 開いていない共有プロジェクト（「今日」と期限の通知に使う）を読み込んだ、または中身が変わった。 */
         void otherProjectsChanged();
+
+        /** ほかの人が自分を担当にした・自分の担当のタスクを変えた。キーはプロジェクト名（届いた順）。 */
+        void noticesArrived(Map<String, List<TeamNotice>> byProject);
     }
 
     private final TeamSettings settings;
@@ -439,12 +443,26 @@ public final class TeamSession {
                     logger.debug("共有フォルダの確認に失敗しました: {}", other.directory(), e);
                 }
             }
+            Map<String, List<TeamNotice>> notices = new LinkedHashMap<>();
+            List<TeamProject> all = new ArrayList<>(otherList);
+            if (opened != null) {
+                all.add(0, opened);
+            }
+            for (TeamProject each : all) {
+                List<TeamNotice> taken = each.takeNotices();
+                if (!taken.isEmpty()) {
+                    notices.put(each.name(), taken);
+                }
+            }
             boolean finalFailed = failed;
             boolean finalOthersChanged = othersChanged;
             SwingUtilities.invokeLater(() -> {
                 polling = false;
                 if (finalOthersChanged) {
                     fireOthersChanged();
+                }
+                if (!notices.isEmpty() && listener != null) {
+                    listener.noticesArrived(notices);
                 }
                 if (opened == null || project != opened) {
                     return;

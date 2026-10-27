@@ -4,6 +4,7 @@ import org.tasknavi.AppMessages;
 import org.tasknavi.service.DueTasks;
 import org.tasknavi.service.TaskService;
 import org.tasknavi.service.TaskSource;
+import org.tasknavi.team.TeamNotice;
 import org.tasknavi.ui.AppIcon;
 
 import javax.swing.SwingUtilities;
@@ -15,6 +16,7 @@ import java.awt.TrayIcon;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -22,6 +24,7 @@ import java.util.function.Supplier;
  * 自分だけのタスクと、最近開いた共有プロジェクトのタスクをまとめて数える。共有プロジェクトは「今日」タブの
  * 「自分の担当だけ」に合わせる。
  * 日付が変わったら全画面を描き直させ、期限切れの表示を新しい日付に合わせる。
+ * ほかの人が自分を担当にしたときや、自分の担当のタスクを変えたときも、同じアイコンから知らせる。
  */
 public final class DueReminder {
 
@@ -104,6 +107,34 @@ public final class DueReminder {
             parts.add(AppMessages.format("reminder.tomorrow", "明日まで {0}件", tomorrow));
         }
         return parts.isEmpty() ? null : String.join(" / ", parts);
+    }
+
+    /** ほかの人が自分を担当にした・自分の担当のタスクを変えたことを知らせる。 */
+    public void showNotices(Map<String, List<TeamNotice>> byProject) {
+        String message = buildNoticeMessage(byProject);
+        if (message != null && trayIcon != null) {
+            trayIcon.displayMessage("TaskNavi", message, TrayIcon.MessageType.INFO);
+        }
+    }
+
+    /** 1 件ならタスク名と人を、2 件以上なら件数とプロジェクト名を出す。知らせることがなければ null。 */
+    static String buildNoticeMessage(Map<String, List<TeamNotice>> byProject) {
+        int total = byProject.values().stream().mapToInt(List::size).sum();
+        if (total == 0) {
+            return null;
+        }
+        if (total > 1) {
+            return AppMessages.format("notice.many", "あなたの担当のタスクに {0} 件の変更があります（{1}）",
+                    total, String.join("、", byProject.keySet()));
+        }
+        Map.Entry<String, List<TeamNotice>> only = byProject.entrySet().stream()
+                .filter(entry -> !entry.getValue().isEmpty()).findFirst().orElseThrow();
+        TeamNotice notice = only.getValue().get(0);
+        return notice.kind() == TeamNotice.Kind.ASSIGNED
+                ? AppMessages.format("notice.assigned", "{0}さんが「{1}」をあなたの担当にしました（{2}）",
+                        notice.author(), notice.taskName(), only.getKey())
+                : AppMessages.format("notice.changed", "{0}さんがあなたの担当の「{1}」を変えました（{2}）",
+                        notice.author(), notice.taskName(), only.getKey());
     }
 
     private void installTrayIcon() {

@@ -922,6 +922,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | 「今日」タブと期限の通知を全プロジェクトで出す | `ProjectSources.all` → `TaskSource` の一覧 → `TodayPanel.collect` / `DueReminder.dueAcross` → `DueTasks.merge`（プロジェクトごとに作ってからつなぐ） |
 | 「自分の担当だけ」 | `TodayPanel.onlyMine`（切り替えを覚える）→ `TaskSource.isMine`（表示名と担当者を比べる）→ `DueTasks.of(..., include)` |
 | 表示名を変えたら担当者も直す | `TeamSession.changeDisplayName` → `askReassign`（件数を数えて聞く）→ `TeamProject.reassign`（1回で書く）/ 比べ方は `Assignees.same` |
+| 自分の担当が変わったら通知 | `TeamProject.reload`（届いた記録を取っておく）→ `TeamSession.poll` → `takeNotices` → `TeamNotice.forMe`（担当にした／変えた）→ `MainFrame.noticesArrived` → `DueReminder.showNotices` |
 | アプリの版と、新しい版の記録 | `AppVersion.current`（manifest の版）/ `TeamEventCodec.NewerFormatException` → `TeamChangeLog.ReadResult.newerFormatLines` → `ProjectSwitcher.refresh`（「アプリの更新が必要」） |
 | 最近のプロジェクトも裏で開いて見張る | `TeamSession.loadOthers` / `poll` → `Listener.otherProjectsChanged` → `ProjectSources.invalidate` + `TaskService.reload` |
 | 共有プロジェクトへのまとめての取り込み | `TeamTaskStore.importTasks` → `TeamProject.importTasks`（全部チェックしてから）→ `TeamChangeLog.appendAll`（1回で書く） |
