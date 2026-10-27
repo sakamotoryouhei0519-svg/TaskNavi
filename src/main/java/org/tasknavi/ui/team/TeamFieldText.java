@@ -23,6 +23,7 @@ final class TeamFieldText {
             case PRIORITY -> AppMessages.get("team.field.priority", "優先度");
             case PROGRESS -> AppMessages.get("team.field.progress", "進捗");
             case MEMO -> AppMessages.get("team.field.memo", "メモ");
+            case COMMENT -> AppMessages.get("team.field.comment", "コメント");
             default -> field.key();
         };
     }
@@ -35,7 +36,7 @@ final class TeamFieldText {
             case STATUS -> AppMessages.statusDisplay(value);
             case PRIORITY -> Priority.fromString(value).getLabel();
             case PROGRESS -> value + "%";
-            case MEMO -> {
+            case MEMO, COMMENT -> {
                 String oneLine = value.replace('\n', ' ').strip();
                 yield oneLine.length() > MEMO_PREVIEW ? oneLine.substring(0, MEMO_PREVIEW) + "…" : oneLine;
             }

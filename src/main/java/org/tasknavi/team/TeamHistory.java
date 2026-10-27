@@ -61,6 +61,8 @@ public final class TeamHistory {
                     }
                     changes.add(new Change(field, before, after));
                 }
+            } else if (event.op() == TeamEvent.Op.COMMENT) {
+                changes.add(new Change(TeamField.COMMENT, null, event.values().get(TeamField.COMMENT)));
             }
             entries.add(new Entry(event.eventId(), event.op(), event.taskId(),
                     Objects.toString(values.get(TeamField.NAME), ""), event.author(), event.at(), List.copyOf(changes)));

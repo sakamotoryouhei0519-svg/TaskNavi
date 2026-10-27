@@ -38,14 +38,21 @@ public final class TeamReplay {
                 case UPDATE -> applyUpdate(entries, event, conflicts);
                 case DELETE -> applyDelete(entries, event, conflicts);
                 case RESTORE -> applyRestore(entries, event);
+                case COMMENT -> applyComment(entries, event);
             }
         }
 
         List<TeamTask> tasks = visibleTasks(entries, conflicts);
         Map<String, TeamState.Version> versions = new HashMap<>();
-        entries.forEach((id, entry) -> versions.put(id, new TeamState.Version(
-                entry.lastEventId, Map.copyOf(entry.fieldEventId), entry.deleted, entry.parentId(), entry.name())));
-        return new TeamState(tasks, conflicts, maxClock, versions);
+        Map<String, List<TeamComment>> comments = new HashMap<>();
+        entries.forEach((id, entry) -> {
+            versions.put(id, new TeamState.Version(
+                    entry.lastEventId, Map.copyOf(entry.fieldEventId), entry.deleted, entry.parentId(), entry.name()));
+            if (!entry.comments.isEmpty()) {
+                comments.put(id, List.copyOf(entry.comments));
+            }
+        });
+        return new TeamState(tasks, conflicts, maxClock, versions, comments);
     }
 
     /** 同じ記録が二重に届いても（ファイルの複製など）1 回だけ数える。 */
@@ -106,6 +113,19 @@ public final class TeamReplay {
         entry.deleted = false;
         entry.deletedBy = null;
         entry.touch(event);
+    }
+
+    /**
+     * 削除済みのタスクにも付ける（戻したときに一緒に戻る）。タスクの版（lastEventId）は進めない。
+     * 進めると、コメントを見ずに削除した人の削除が「変更と重なった」ことになるため。
+     */
+    private static void applyComment(Map<String, Entry> entries, TeamEvent event) {
+        Entry entry = entries.get(event.taskId());
+        String text = event.values().get(TeamField.COMMENT);
+        if (entry == null || text == null || text.isBlank()) {
+            return;
+        }
+        entry.comments.add(new TeamComment(event.eventId(), event.author(), event.at(), text));
     }
 
     private static void applyDelete(Map<String, Entry> entries, TeamEvent event, List<TeamConflict> conflicts) {
@@ -247,6 +267,7 @@ public final class TeamReplay {
         final Map<TeamField, String> values = new EnumMap<>(TeamField.class);
         final Map<TeamField, String> fieldEventId = new EnumMap<>(TeamField.class);
         final Map<TeamField, String> fieldAuthor = new EnumMap<>(TeamField.class);
+        final List<TeamComment> comments = new ArrayList<>();
         String lastEventId;
         String updatedBy;
         Instant updatedAt;

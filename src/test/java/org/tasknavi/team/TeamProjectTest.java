@@ -116,6 +116,75 @@ class TeamProjectTest {
     }
 
     @Test
+    void commentsWrittenAtTheSameTimeAreAllKeptWithoutConflicts() throws Exception {
+        Path dir = root.resolve("p");
+        TeamProject tanaka = TeamProject.create(dir, "P", "pc-tanaka", "田中", NOW);
+        String id = tanaka.createTask(Map.of(TeamField.NAME, "設計"));
+        TeamProject suzuki = TeamProject.open(dir, "pc-suzuki", "鈴木", NOW);
+
+        tanaka.addComment(id, "  画面の案を共有しました  ");
+        suzuki.addComment(id, "見ておきます");
+        tanaka.reload();
+        suzuki.reload();
+
+        // 互いを見ずに書いたので clock は同じ。端末 ID の順に並ぶ。
+        List<String> expected = List.of("鈴木: 見ておきます", "田中: 画面の案を共有しました");
+        assertEquals(expected, comments(tanaka.state(), id));
+        assertEquals(expected, comments(suzuki.state(), id), "どの PC でも同じ順");
+        assertTrue(tanaka.state().conflicts().isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> tanaka.addComment(id, "   "));
+    }
+
+    @Test
+    void deletingWithoutSeeingACommentIsNotAConflictAndRestoreBringsItBack() throws Exception {
+        Path dir = root.resolve("p");
+        TeamProject tanaka = TeamProject.create(dir, "P", "pc-tanaka", "田中", NOW);
+        String id = tanaka.createTask(Map.of(TeamField.NAME, "設計"));
+        TeamProject suzuki = TeamProject.open(dir, "pc-suzuki", "鈴木", NOW);
+
+        tanaka.addComment(id, "これは不要かも");
+        suzuki.deleteTask(id);
+        tanaka.reload();
+
+        assertTrue(tanaka.state().conflicts().isEmpty(), "コメントはタスクの値を変えないので、削除と重ならない");
+        tanaka.restoreTask(id);
+        assertEquals(List.of("田中: これは不要かも"), comments(tanaka.state(), id));
+        assertEquals(TeamEvent.Op.COMMENT, tanaka.history().stream()
+                .filter(entry -> entry.op() == TeamEvent.Op.COMMENT).findFirst().orElseThrow().op());
+    }
+
+    @Test
+    void onlyCommentLinesUseTheNewerFormatSoOlderAppsStillReadTaskChanges() throws Exception {
+        Path dir = root.resolve("p");
+        TeamProject tanaka = TeamProject.create(dir, "P", "pc-tanaka", "田中", NOW);
+        String id = tanaka.createTask(Map.of(TeamField.NAME, "設計"));
+        tanaka.addComment(id, "メモ");
+
+        List<String> lines = Files.readAllLines(TeamChangeLog.logFile(dir, "pc-tanaka"));
+        assertTrue(lines.get(0).contains("\"v\":1"), lines.get(0));
+        assertTrue(lines.get(1).contains("\"v\":2"), lines.get(1));
+    }
+
+    @Test
+    void aCommentOnMyTaskIsNoticedAsAComment() throws Exception {
+        Path dir = root.resolve("p");
+        TeamProject tanaka = TeamProject.create(dir, "P", "pc-tanaka", "田中", NOW);
+        String id = tanaka.createTask(Map.of(TeamField.NAME, "設計", TeamField.ASSIGNEE, "田中"));
+        TeamProject suzuki = TeamProject.open(dir, "pc-suzuki", "鈴木", NOW);
+
+        suzuki.addComment(id, "確認お願いします");
+        suzuki.updateTask(id, Map.of(TeamField.PROGRESS, "50"));
+        tanaka.reload();
+
+        assertEquals(List.of(new TeamNotice(TeamNotice.Kind.COMMENTED, "設計", "鈴木")), tanaka.takeNotices(),
+                "変更より先に、コメントが付いたことを知らせる");
+    }
+
+    private static List<String> comments(TeamState state, String taskId) {
+        return state.comments(taskId).stream().map(comment -> comment.author() + ": " + comment.text()).toList();
+    }
+
+    @Test
     void sameFieldEditedOfflineByBothKeepsOneAndRecordsTheOther() throws Exception {
         Pair pair = sharedTask("設計");
         pair.tanaka.updateTask(pair.taskId, Map.of(TeamField.NAME, "基本設計"));

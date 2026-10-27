@@ -13,8 +13,19 @@ import java.util.Map;
  * {@link TeamEvent} と JSON 1 行の相互変換。
  */
 final class TeamEventCodec {
-    /** 記録の形を変えたら（項目や Op を足したら）上げる。古い版のアプリは、上がった行を読まずに更新を促す。 */
-    static final int FORMAT = 1;
+    /**
+     * このアプリが読める一番新しい形。記録の形を変えたら（項目や Op を足したら）上げる。
+     * 古い版のアプリは、自分より新しい形の行を読まずに更新を促す。
+     */
+    static final int FORMAT = 2;
+
+    /**
+     * 行に書く形。古い版のアプリでも読める記録は古い形のまま書き、読めない記録（コメント）だけを上げる。
+     * 全部を上げると、更新していない人がタスクの変更まで読めなくなるため。
+     */
+    static int formatOf(TeamEvent event) {
+        return event.op() == TeamEvent.Op.COMMENT ? 2 : 1;
+    }
 
     /** 自分より新しい版のアプリで書かれた行。 */
     static final class NewerFormatException extends IllegalArgumentException {
@@ -30,7 +41,7 @@ final class TeamEventCodec {
 
     static String toLine(TeamEvent event) {
         JsonObject json = new JsonObject();
-        json.addProperty("v", FORMAT);
+        json.addProperty("v", formatOf(event));
         json.addProperty("id", event.eventId());
         json.addProperty("task", event.taskId());
         json.addProperty("op", event.op().name());

@@ -128,7 +128,7 @@ final class TeamHistoryDialog {
         row.add(head, "wmin 0");
 
         for (TeamHistory.Change change : entry.changes()) {
-            String text = entry.op() == TeamEvent.Op.CREATE
+            String text = entry.op() == TeamEvent.Op.CREATE || entry.op() == TeamEvent.Op.COMMENT
                     ? AppMessages.format("team.history.set", "{0}: {1}",
                     TeamFieldText.label(change.field()), TeamFieldText.value(change.field(), change.after()))
                     : AppMessages.format("team.history.change", "{0}: {1} → {2}",
@@ -148,6 +148,7 @@ final class TeamHistoryDialog {
             case UPDATE -> AppMessages.get("team.history.op.update", "変更");
             case DELETE -> AppMessages.get("team.history.op.delete", "削除");
             case RESTORE -> AppMessages.get("team.history.op.restore", "戻す");
+            case COMMENT -> AppMessages.get("team.history.op.comment", "コメント");
         };
     }
 
@@ -157,6 +158,7 @@ final class TeamHistoryDialog {
             case UPDATE -> new Color(37, 99, 235);
             case DELETE -> new Color(220, 38, 38);
             case RESTORE -> new Color(147, 51, 234);
+            case COMMENT -> new Color(13, 148, 136);
         };
     }
 

@@ -14,7 +14,9 @@ public enum TeamField {
     STATUS("status"),
     PRIORITY("priority"),
     PROGRESS("progress"),
-    MEMO("memo");
+    MEMO("memo"),
+    /** COMMENT の記録だけに書く。タスクの値ではない。 */
+    COMMENT("comment");
 
     private final String key;
 

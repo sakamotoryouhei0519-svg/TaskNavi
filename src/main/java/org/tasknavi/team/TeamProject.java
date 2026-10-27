@@ -44,6 +44,7 @@ public final class TeamProject {
     public static final String PROJECT_FILE = "project.json";
     public static final String MEMBERS_DIR = "members";
     public static final int MAX_LEVEL = 3;
+    public static final int MAX_COMMENT_LENGTH = 2000;
     private static final int PROJECT_FORMAT = 1;
 
     private final Path dir;
@@ -430,6 +431,7 @@ public final class TeamProject {
         Map<TeamField, String> changes = new EnumMap<>(TeamField.class);
         changes.putAll(requested);
         changes.remove(TeamField.LEVEL);
+        changes.remove(TeamField.COMMENT);
         if (changes.containsKey(TeamField.PARENT)) {
             String newParent = changes.get(TeamField.PARENT);
             newParent = newParent == null || newParent.isBlank() ? null : newParent;
@@ -460,6 +462,19 @@ public final class TeamProject {
             return;
         }
         write(taskId, TeamEvent.Op.UPDATE, values, base, seenVersion.lastEventId());
+    }
+
+    /** タスクにコメントを書き足す。値は変えないので、誰と同時に書いても重ならない。 */
+    public synchronized void addComment(String taskId, String text) throws IOException {
+        requireLive(taskId);
+        String body = text == null ? "" : text.strip();
+        if (body.isEmpty()) {
+            throw new IllegalArgumentException("コメントを入力してください");
+        }
+        if (body.length() > MAX_COMMENT_LENGTH) {
+            throw new IllegalArgumentException("コメントは " + MAX_COMMENT_LENGTH + " 文字までです");
+        }
+        write(taskId, TeamEvent.Op.COMMENT, Map.of(TeamField.COMMENT, body), Map.of(), null);
     }
 
     /** 子孫も含めて削除する（子から先に記録）。 */
@@ -618,6 +633,7 @@ public final class TeamProject {
             case PRIORITY -> task.priority().name();
             case PROGRESS -> String.valueOf(task.progress());
             case MEMO -> task.memo();
+            case COMMENT -> null;
         };
     }
 }

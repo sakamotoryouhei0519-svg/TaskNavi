@@ -930,6 +930,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | WBS で親を変える（深さは並べるときに決める） | `TeamProject.requireMovable` / `TeamReplay.visibleTasks`（`cycleTop` で輪をほどく） |
 | 重なった変更の確認と戻す | `TeamSession.showConflicts` → `TeamConflictDialog` → `TeamConflictGroup` / `TeamProject.restoreTask` / `TeamSettings.acknowledge` |
 | チームの変更履歴 | `TeamSession.showHistory` → `TeamProject.history` → `TeamHistory.build` → `TeamHistoryDialog` |
+| タスクのコメント | `TaskDialog.commentsFor` → `TaskCommentsPanel.submit` → `TeamProject.addComment`（`COMMENT` の記録を足す）→ `TeamReplay.applyComment` → `TeamState.comments` / 行の形は `TeamEventCodec.formatOf` |
 | 置き場所の初期値（共有ドライブ → マイドライブ） | `TeamSession.defaultLocation` → `team/GoogleDriveFolders` |
 | 1台で2人目として起動する | `Main` → `TeamSettings.applyLaunchArguments`（`--team-profile=名前`）→ `TeamSettings.userDefault` |
 | 同じ PC で2つ起動しても記録が壊れない | `TeamChangeLog.append`（PC 内のファイルでロック）/ `TeamChangeLogConcurrencyTest` |

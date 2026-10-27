@@ -10,12 +10,14 @@ import java.util.Optional;
  * @param tasks     一覧に出すタスク（親 → 子の順）
  * @param conflicts 重なった変更
  * @param maxClock  読んだ記録の clock の最大値
+ * @param comments  タスクの ID ごとのコメント（古い順）
  */
 public record TeamState(
         List<TeamTask> tasks,
         List<TeamConflict> conflicts,
         long maxClock,
-        Map<String, Version> versions) {
+        Map<String, Version> versions,
+        Map<String, List<TeamComment>> comments) {
 
     /**
      * タスクごとの「今の値を書いた記録」。削除済みのタスクも含む。
@@ -31,10 +33,15 @@ public record TeamState(
         tasks = List.copyOf(tasks);
         conflicts = List.copyOf(conflicts);
         versions = Map.copyOf(versions);
+        comments = Map.copyOf(comments);
     }
 
     public static TeamState empty() {
-        return new TeamState(List.of(), List.of(), 0, Map.of());
+        return new TeamState(List.of(), List.of(), 0, Map.of(), Map.of());
+    }
+
+    public List<TeamComment> comments(String taskId) {
+        return comments.getOrDefault(taskId, List.of());
     }
 
     public Optional<TeamTask> find(String taskId) {

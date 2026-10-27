@@ -130,11 +130,14 @@ public final class DueReminder {
         Map.Entry<String, List<TeamNotice>> only = byProject.entrySet().stream()
                 .filter(entry -> !entry.getValue().isEmpty()).findFirst().orElseThrow();
         TeamNotice notice = only.getValue().get(0);
-        return notice.kind() == TeamNotice.Kind.ASSIGNED
-                ? AppMessages.format("notice.assigned", "{0}さんが「{1}」をあなたの担当にしました（{2}）",
-                        notice.author(), notice.taskName(), only.getKey())
-                : AppMessages.format("notice.changed", "{0}さんがあなたの担当の「{1}」を変えました（{2}）",
-                        notice.author(), notice.taskName(), only.getKey());
+        return switch (notice.kind()) {
+            case ASSIGNED -> AppMessages.format("notice.assigned", "{0}さんが「{1}」をあなたの担当にしました（{2}）",
+                    notice.author(), notice.taskName(), only.getKey());
+            case COMMENTED -> AppMessages.format("notice.commented", "{0}さんがあなたの担当の「{1}」にコメントしました（{2}）",
+                    notice.author(), notice.taskName(), only.getKey());
+            case CHANGED -> AppMessages.format("notice.changed", "{0}さんがあなたの担当の「{1}」を変えました（{2}）",
+                    notice.author(), notice.taskName(), only.getKey());
+        };
     }
 
     private void installTrayIcon() {

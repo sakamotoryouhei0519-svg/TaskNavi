@@ -11,13 +11,14 @@ import java.util.Optional;
 /**
  * ほかの人の変更のうち、自分に知らせるもの。1 つのタスクにつき 1 件にまとめる。
  *
- * @param kind     自分が担当になったか、自分の担当のタスクが変わったか
+ * @param kind     自分が担当になったか、自分の担当のタスクにコメントが付いたか、変わったか
  * @param taskName タスク名（今の名前）
- * @param author   最後に変えた人の表示名
+ * @param author   そうした人の表示名
  */
 public record TeamNotice(Kind kind, String taskName, String author) {
 
-    public enum Kind { ASSIGNED, CHANGED }
+    /** 知らせる強さの順。1 つのタスクに何件届いても、一番強いもの 1 件にまとめる。 */
+    public enum Kind { ASSIGNED, COMMENTED, CHANGED }
 
     /**
      * @param arrived ほかの PC から新しく届いた変更（届いた順）
@@ -31,14 +32,18 @@ public record TeamNotice(Kind kind, String taskName, String author) {
             if (task.isEmpty()) {
                 continue;
             }
+            if (!Assignees.same(task.get().assignee(), myName)) {
+                continue;
+            }
             boolean assignedNow = event.values().containsKey(TeamField.ASSIGNEE)
                     && Assignees.same(event.values().get(TeamField.ASSIGNEE), myName);
-            boolean mine = Assignees.same(task.get().assignee(), myName);
+            Kind kind = assignedNow ? Kind.ASSIGNED
+                    : event.op() == TeamEvent.Op.COMMENT ? Kind.COMMENTED : Kind.CHANGED;
+            if (kind == Kind.CHANGED && event.op() == TeamEvent.Op.CREATE) {
+                continue;
+            }
             TeamNotice previous = byTask.get(event.taskId());
-            if (assignedNow && mine) {
-                byTask.put(event.taskId(), new TeamNotice(Kind.ASSIGNED, task.get().name(), event.author()));
-            } else if (mine && event.op() != TeamEvent.Op.CREATE) {
-                Kind kind = previous != null ? previous.kind() : Kind.CHANGED;
+            if (previous == null || kind.compareTo(previous.kind()) <= 0) {
                 byTask.put(event.taskId(), new TeamNotice(kind, task.get().name(), event.author()));
             }
         }

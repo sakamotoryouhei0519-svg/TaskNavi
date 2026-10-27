@@ -8,16 +8,19 @@ import org.tasknavi.model.TaskBusinessRules;
 import org.tasknavi.model.TaskHierarchyUtil;
 import org.tasknavi.model.TaskStatus;
 import org.tasknavi.service.TaskService;
+import org.tasknavi.team.TeamTaskStore;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.DialogFit;
 import org.tasknavi.ui.DialogKeys;
 import org.tasknavi.ui.NoticeBar;
 import org.tasknavi.ui.UiLabels;
+import org.tasknavi.ui.team.TaskCommentsPanel;
 import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
@@ -76,7 +79,18 @@ public class TaskDialog extends JDialog {
 
     private TaskDialog(Frame parent, TaskService taskService, Task task, String defaultType, Integer defaultParentProjectId) {
         this(parent, Objects.requireNonNull(taskService, "taskService").getAllTasks(),
-                task, defaultType, defaultParentProjectId, taskService.assigneeOptions());
+                task, defaultType, defaultParentProjectId, taskService.assigneeOptions(), commentsFor(taskService, task));
+    }
+
+    /** コメントは共有プロジェクトの、すでにあるタスクだけ。 */
+    private static JComponent commentsFor(TaskService taskService, Task task) {
+        if (task != null && taskService.currentStore() instanceof TeamTaskStore store) {
+            String uuid = store.uuidOf(task.getId());
+            if (uuid != null) {
+                return new TaskCommentsPanel(store.project(), uuid);
+            }
+        }
+        return null;
     }
 
     /**
@@ -87,6 +101,11 @@ public class TaskDialog extends JDialog {
      */
     public TaskDialog(Frame parent, List<Task> allTasks, Task task, String defaultType,
                       Integer defaultParentProjectId, List<String> assigneeOptions) {
+        this(parent, allTasks, task, defaultType, defaultParentProjectId, assigneeOptions, null);
+    }
+
+    private TaskDialog(Frame parent, List<Task> allTasks, Task task, String defaultType,
+                       Integer defaultParentProjectId, List<String> assigneeOptions, JComponent comments) {
         super(parent, TaskDialogTitles.forTask(task), true);
         this.allTasks = allTasks != null ? allTasks : List.of();
         setLayout(new MigLayout("fill, insets 0, gap 0", "[grow]", "[grow][]"));
@@ -173,6 +192,12 @@ public class TaskDialog extends JDialog {
             priorityCombo.setSelectedItem(Task.DEFAULT_PRIORITY);
         }
 
+        if (comments != null) {
+            JLabel commentsLabel = new JLabel(AppMessages.get("dialog.label.comments", "コメント") + ":");
+            commentsLabel.setForeground(AppTheme.TEXT_PRIMARY);
+            form.formPanel().add(commentsLabel, "align right top, gaptop 6");
+            form.formPanel().add(comments, "growx, wrap");
+        }
         add(form.formPanel(), "grow, wrap");
         add(buttons.panel(), "grow");
         setBackground(AppTheme.BACKGROUND);
