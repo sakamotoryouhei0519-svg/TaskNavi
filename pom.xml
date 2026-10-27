@@ -101,6 +101,10 @@
                                     <!-- メイン関数があるクラスを指定 -->
                                     <mainClass>org.tasknavi.Main</mainClass>
                                 </manifest>
+                                <!-- 画面とログに出す版（AppVersion が読む） -->
+                                <manifestEntries>
+                                    <Implementation-Version>${app.version}</Implementation-Version>
+                                </manifestEntries>
                             </archive>
                         </configuration>
                     </execution>

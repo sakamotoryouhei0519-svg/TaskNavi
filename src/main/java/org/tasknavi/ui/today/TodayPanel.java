@@ -20,6 +20,7 @@ import org.tasknavi.util.TaskViewFilter;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -43,10 +44,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.prefs.Preferences;
 
 /**
  * 期限切れ・今日まで・7日以内の未完了タスクを並べる画面。
  * 自分だけのタスクと、最近開いた共有プロジェクトのタスクをまとめて出すので、毎朝ここを開けば今日やることが分かる。
+ * 共有プロジェクトは、初めは自分の担当だけを出す（右上の切り替えで全員分にできる）。
  */
 public class TodayPanel extends JPanel implements SearchablePanel {
 
@@ -54,6 +57,7 @@ public class TodayPanel extends JPanel implements SearchablePanel {
     private static final Logger logger = LoggerFactory.getLogger(TodayPanel.class);
     private static final Color OVERDUE_COLOR = new Color(220, 38, 38);
     private static final Color TODAY_COLOR = new Color(234, 88, 12);
+    private static final String PREF_ONLY_MINE = "today.onlyMine";
 
     /** 1 行分。ID はプロジェクトごとの番号なので、どのプロジェクトのタスクかと組で扱う。 */
     private record Entry(TaskSource source, Task task, Task parent) {
@@ -122,7 +126,13 @@ public class TodayPanel extends JPanel implements SearchablePanel {
                 today.format(DateTimeFormatter.ofPattern("M/d (E)", AppMessages.getLocale()))));
         title.setFont(AppTheme.FONT_TITLE);
         title.setForeground(AppTheme.TEXT_PRIMARY);
-        listPanel.add(title, "gapbottom 8");
+        JPanel titleRow = new JPanel(new MigLayout("insets 0, fillx", "[grow][]", "[]"));
+        titleRow.setOpaque(false);
+        titleRow.add(title);
+        if (all.stream().anyMatch(source -> source.myName() != null)) {
+            titleRow.add(onlyMineToggle());
+        }
+        listPanel.add(titleRow, "gapbottom 8");
 
         int shown = 0;
         shown += addSection(AppMessages.get("today.section.overdue", "期限切れ"), OVERDUE_COLOR,
@@ -164,7 +174,7 @@ public class TodayPanel extends JPanel implements SearchablePanel {
         for (Task task : tasks) {
             byId.put(task.getId(), task);
         }
-        DueTasks due = DueTasks.of(tasks, today);
+        DueTasks due = DueTasks.of(tasks, today, onlyMine() ? source::isMine : task -> true);
         Function<Task, Entry> entry = task -> new Entry(source, task, byId.get(task.getParentId()));
         due.overdue().stream().filter(task -> visibleIds.contains(task.getId())).map(entry).forEach(overdue::add);
         due.dueToday().stream().filter(task -> visibleIds.contains(task.getId())).map(entry).forEach(dueToday::add);
@@ -271,6 +281,26 @@ public class TodayPanel extends JPanel implements SearchablePanel {
             }
         });
         return row;
+    }
+
+    /** 共有プロジェクトで、自分の担当（と担当者が空のもの）だけを出すか。期限の通知も同じ設定で数える。 */
+    static boolean onlyMine() {
+        return Preferences.userNodeForPackage(TodayPanel.class).getBoolean(PREF_ONLY_MINE, true);
+    }
+
+    private JCheckBox onlyMineToggle() {
+        JCheckBox toggle = new JCheckBox(AppMessages.get("today.onlyMine", "自分の担当だけ"), onlyMine());
+        toggle.setFont(AppTheme.FONT_MAIN);
+        toggle.setForeground(AppTheme.TEXT_PRIMARY);
+        toggle.setOpaque(false);
+        toggle.setFocusable(false);
+        toggle.setToolTipText(AppMessages.get("today.onlyMine.tooltip",
+                "共有プロジェクトでは、担当者が自分の表示名か空のタスクだけを出します"));
+        toggle.addActionListener(e -> {
+            Preferences.userNodeForPackage(TodayPanel.class).putBoolean(PREF_ONLY_MINE, toggle.isSelected());
+            refreshToday();
+        });
+        return toggle;
     }
 
     private static JLabel projectTag(TaskSource source) {

@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * 期限で分けた、今日見るべきタスク。
@@ -25,6 +26,13 @@ public record DueTasks(List<Task> overdue, List<Task> dueToday, List<Task> upcom
             .thenComparing(task -> task.getName() != null ? task.getName() : "");
 
     public static DueTasks of(List<Task> tasks, LocalDate today) {
+        return of(tasks, today, task -> true);
+    }
+
+    /**
+     * @param include 入れるタスク（自分の担当だけなど）。親子の判定は全件で行い、そのあとで当てる
+     */
+    public static DueTasks of(List<Task> tasks, LocalDate today, Predicate<Task> include) {
         List<Task> overdue = new ArrayList<>();
         List<Task> dueToday = new ArrayList<>();
         List<Task> upcoming = new ArrayList<>();
@@ -42,7 +50,7 @@ public record DueTasks(List<Task> overdue, List<Task> dueToday, List<Task> upcom
         LocalDate lastUpcoming = today.plusDays(UPCOMING_DAYS);
         for (Task task : tasks) {
             if (task == null || task.isCompleted() || task.getEndDate() == null
-                    || parentIds.contains(task.getId())) {
+                    || parentIds.contains(task.getId()) || !include.test(task)) {
                 continue;
             }
             LocalDate end = task.getEndDate();

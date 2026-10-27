@@ -14,6 +14,7 @@ import java.util.Map;
 
 /**
  * 「今日」と期限の通知が見る、全部のプロジェクト。今選んでいるもの・自分だけのタスク・最近開いた共有プロジェクトの順。
+ * 共有プロジェクトには、自分の担当を見分けるためにチームの表示名を付ける。
  * 今選んでいないプロジェクトは、それぞれ専用の TaskService で読み書きする（選んでいるものとは番号が別のため）。
  */
 final class ProjectSources {
@@ -29,14 +30,17 @@ final class ProjectSources {
 
     List<TaskSource> all() {
         String personal = AppMessages.get("project.personal", "自分だけのタスク");
+        String me = session.displayName();
         TeamProject current = session.project();
         List<TaskSource> result = new ArrayList<>();
-        result.add(new TaskSource(current != null ? current.name() : personal, true, taskService));
         if (current != null) {
+            result.add(new TaskSource(current.name(), true, taskService, me));
             result.add(new TaskSource(personal, false, serviceFor(taskService.personalStore())));
+        } else {
+            result.add(new TaskSource(personal, true, taskService));
         }
         for (TeamProject other : session.otherProjects()) {
-            result.add(new TaskSource(other.name(), false, serviceFor(session.storeOf(other))));
+            result.add(new TaskSource(other.name(), false, serviceFor(session.storeOf(other)), me));
         }
         return result;
     }

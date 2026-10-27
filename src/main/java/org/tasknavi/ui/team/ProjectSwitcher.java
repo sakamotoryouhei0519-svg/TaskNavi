@@ -2,6 +2,7 @@ package org.tasknavi.ui.team;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
+import org.tasknavi.AppVersion;
 import org.tasknavi.team.TeamProject;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.team.TeamSession;
@@ -105,6 +106,10 @@ public final class ProjectSwitcher {
             syncButton.setText(AppMessages.get("team.loading", "読み込み中…"));
             syncButton.setIcon(new Dot(AppTheme.TEXT_MUTED));
             syncButton.setForeground(AppTheme.TEXT_MUTED);
+        } else if (project.newerFormatLines() > 0) {
+            syncButton.setText(AppMessages.get("project.sync.newer", "アプリの更新が必要"));
+            syncButton.setIcon(new Dot(WARN_COLOR));
+            syncButton.setForeground(WARN_COLOR);
         } else if (project.unreadableLines() > 0) {
             syncButton.setText(AppMessages.get("project.sync.partial", "一部を同期中"));
             syncButton.setIcon(new Dot(WARN_COLOR));
@@ -125,6 +130,11 @@ public final class ProjectSwitcher {
             tooltip = AppMessages.format("team.unreadable",
                     "同期の途中で読めなかった記録が {0} 行あります。少し待ってから読み直してください。",
                     project.unreadableLines()) + " " + tooltip;
+        }
+        if (project.newerFormatLines() > 0) {
+            tooltip = AppMessages.format("team.newerFormat",
+                    "新しい版の TaskNavi で書かれた記録が {0} 行あり、この版（{1}）では読めません。アプリを新しくしてください。",
+                    project.newerFormatLines(), AppVersion.current()) + " " + tooltip;
         }
         syncButton.setToolTipText(tooltip);
 

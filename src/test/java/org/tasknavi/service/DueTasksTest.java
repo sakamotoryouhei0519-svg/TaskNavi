@@ -73,6 +73,20 @@ class DueTasksTest {
     }
 
     @Test
+    void onlyMineStillTreatsParentsOfOthersTasksAsParents() {
+        Task parent = task(1, "親", null, TODAY, Task.STATUS_IN_PROGRESS);
+        Task othersChild = task(2, "鈴木さんの子", 1, TODAY, Task.STATUS_IN_PROGRESS);
+        othersChild.setAssignee("鈴木");
+        Task mine = task(3, "自分の", null, TODAY, Task.STATUS_NOT_STARTED);
+        mine.setAssignee("田中");
+        TaskSource source = new TaskSource("共有", true, null, "田中");
+
+        DueTasks due = DueTasks.of(List.of(parent, othersChild, mine), TODAY, source::isMine);
+
+        assertEquals(List.of("自分の"), names(due.dueToday()), "子を持つ親は、子が自分の担当でなくても出さない");
+    }
+
+    @Test
     void emptyWhenNothingIsDue() {
         assertTrue(DueTasks.of(null, TODAY).isEmpty());
         assertTrue(DueTasks.of(List.of(), TODAY).isEmpty());

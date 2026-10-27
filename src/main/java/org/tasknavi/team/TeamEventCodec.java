@@ -13,7 +13,17 @@ import java.util.Map;
  * {@link TeamEvent} と JSON 1 行の相互変換。
  */
 final class TeamEventCodec {
+    /** 記録の形を変えたら（項目や Op を足したら）上げる。古い版のアプリは、上がった行を読まずに更新を促す。 */
     static final int FORMAT = 1;
+
+    /** 自分より新しい版のアプリで書かれた行。 */
+    static final class NewerFormatException extends IllegalArgumentException {
+        private static final long serialVersionUID = 1L;
+
+        NewerFormatException(int format) {
+            super("新しい版のアプリで書かれた記録です: v=" + format);
+        }
+    }
 
     private TeamEventCodec() {
     }
@@ -46,7 +56,7 @@ final class TeamEventCodec {
             JsonObject json = JsonParser.parseString(line).getAsJsonObject();
             int format = json.has("v") ? json.get("v").getAsInt() : FORMAT;
             if (format > FORMAT) {
-                throw new IllegalArgumentException("新しい版のアプリで書かれた記録です: v=" + format);
+                throw new NewerFormatException(format);
             }
             return new TeamEvent(
                     requiredString(json, "id"),

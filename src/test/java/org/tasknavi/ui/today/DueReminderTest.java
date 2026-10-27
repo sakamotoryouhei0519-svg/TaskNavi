@@ -56,9 +56,25 @@ class DueReminderTest {
 
         DueTasks due = DueReminder.dueAcross(List.of(
                 new TaskSource("自分だけのタスク", true, personal),
-                new TaskSource("新システム開発", false, shared)), TODAY);
+                new TaskSource("新システム開発", false, shared)), TODAY, false);
 
         assertEquals("期限切れ 1件 / 今日まで 2件", DueReminder.buildMessage(due, TODAY));
+    }
+
+    @Test
+    void onlyMineCountsSharedTasksOfMineOrNoOne() {
+        Task mine = task(1, TODAY);
+        mine.setAssignee("田中");
+        Task others = task(2, TODAY);
+        others.setAssignee("鈴木");
+        Task nobodys = task(3, TODAY.minusDays(1));
+        TaskService shared = new TaskService(new FixedStore(List.of(mine, others, nobodys)));
+        List<TaskSource> sources = List.of(new TaskSource("新システム開発", true, shared, "田中"));
+
+        assertEquals("期限切れ 1件 / 今日まで 1件",
+                DueReminder.buildMessage(DueReminder.dueAcross(sources, TODAY, true), TODAY));
+        assertEquals("期限切れ 1件 / 今日まで 2件",
+                DueReminder.buildMessage(DueReminder.dueAcross(sources, TODAY, false), TODAY));
     }
 
     /** 読むだけの保存先。 */

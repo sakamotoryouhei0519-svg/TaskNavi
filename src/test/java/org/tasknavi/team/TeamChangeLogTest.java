@@ -55,14 +55,16 @@ class TeamChangeLogTest {
     }
 
     @Test
-    void recordsFromNewerFormatAreCountedAsUnreadable() throws Exception {
+    void recordsFromNewerFormatAreCountedApartFromBrokenLines() throws Exception {
         Path file = TeamChangeLog.logFile(dir, "pc-b");
         Files.createDirectories(file.getParent());
-        Files.writeString(file, "{\"v\":99,\"id\":\"x\",\"task\":\"t\",\"op\":\"CREATE\",\"clock\":1,\"device\":\"pc-b\"}\n");
+        Files.writeString(file, "{\"v\":99,\"id\":\"x\",\"task\":\"t\",\"op\":\"CREATE\",\"clock\":1,\"device\":\"pc-b\"}\n"
+                + "{\"v\":1,\"id\":\"y\",\"ta\n");
 
         TeamChangeLog.ReadResult result = TeamChangeLog.readAll(dir);
 
         assertEquals(0, result.events().size());
+        assertEquals(1, result.newerFormatLines());
         assertEquals(1, result.unreadableLines());
     }
 

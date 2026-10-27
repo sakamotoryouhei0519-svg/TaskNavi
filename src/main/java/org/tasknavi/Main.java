@@ -35,7 +35,7 @@ public class Main {
     private static final int SPLASH_DELAY_MS = 1000;
 
     public static void main(String[] args) {
-        logger.info("TaskNavi を起動します（Java {} / {} {}）",
+        logger.info("TaskNavi {} を起動します（Java {} / {} {}）", AppVersion.current(),
                 System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.version"));
         TeamSettings.applyLaunchArguments(args);
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {

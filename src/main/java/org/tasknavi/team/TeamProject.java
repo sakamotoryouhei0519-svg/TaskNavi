@@ -53,6 +53,7 @@ public final class TeamProject {
     private volatile TeamState state = TeamState.empty();
     private volatile List<TeamMember> members = List.of();
     private volatile int unreadableLines;
+    private volatile int newerFormatLines;
     private String fingerprint = "";
 
     private TeamProject(Path dir, String name, String deviceId, String author, Clock clock) {
@@ -212,6 +213,11 @@ public final class TeamProject {
         return unreadableLines;
     }
 
+    /** 直近の読み込みで、新しい版のアプリで書かれていて読めなかった行の数（アプリを新しくするまで直らない）。 */
+    public int newerFormatLines() {
+        return newerFormatLines;
+    }
+
     /** 新しい順の変更履歴。 */
     public List<TeamHistory.Entry> history() {
         List<TeamEvent> copy;
@@ -228,6 +234,7 @@ public final class TeamProject {
         events.clear();
         events.addAll(result.events());
         unreadableLines = result.unreadableLines();
+        newerFormatLines = result.newerFormatLines();
         state = TeamReplay.replay(events);
         members = readMembers();
         return state;

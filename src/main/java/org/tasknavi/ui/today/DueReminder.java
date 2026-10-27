@@ -19,7 +19,8 @@ import java.util.function.Supplier;
 
 /**
  * 起動時と日付が変わったときに、期限切れ・今日まで・明日までの件数を Windows の通知で知らせる。
- * 自分だけのタスクと、最近開いた共有プロジェクトのタスクをまとめて数える。
+ * 自分だけのタスクと、最近開いた共有プロジェクトのタスクをまとめて数える。共有プロジェクトは「今日」タブの
+ * 「自分の担当だけ」に合わせる。
  * 日付が変わったら全画面を描き直させ、期限切れの表示を新しい日付に合わせる。
  */
 public final class DueReminder {
@@ -69,17 +70,19 @@ public final class DueReminder {
         if (dayChanged) {
             taskService.reload();
         }
-        String message = buildMessage(dueAcross(sources.get(), today), today);
+        String message = buildMessage(dueAcross(sources.get(), today, TodayPanel.onlyMine()), today);
         if (message != null && trayIcon != null) {
             trayIcon.displayMessage("TaskNavi", message, TrayIcon.MessageType.INFO);
         }
     }
 
-    static DueTasks dueAcross(List<TaskSource> sources, LocalDate today) {
+    /** @param onlyMine 共有プロジェクトは自分の担当（と担当者が空のもの）だけ数える */
+    static DueTasks dueAcross(List<TaskSource> sources, LocalDate today, boolean onlyMine) {
         List<DueTasks> parts = new ArrayList<>();
         for (TaskSource source : sources) {
             try {
-                parts.add(DueTasks.of(source.service().getAllTasks(), today));
+                parts.add(DueTasks.of(source.service().getAllTasks(), today,
+                        onlyMine ? source::isMine : task -> true));
             } catch (RuntimeException e) {
                 logger.warn("「{}」のタスクを数えられませんでした", source.name(), e);
             }

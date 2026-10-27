@@ -2,6 +2,7 @@ package org.tasknavi.ui.main;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
+import org.tasknavi.AppVersion;
 import org.tasknavi.model.Task;
 import org.tasknavi.service.TaskService;
 import org.tasknavi.service.UserSession;
@@ -68,7 +69,8 @@ public class MainFrame extends JFrame {
         this.globalSearchBar = new MainGlobalSearchBar(this::getActiveComponent);
 
         String profile = TeamSettings.profile();
-        setTitle(AppMessages.get("mainframe.title.full") + (profile.isEmpty() ? "" : " [" + profile + "]"));
+        setTitle(AppMessages.get("mainframe.title.full") + "  (" + AppVersion.current() + ")"
+                + (profile.isEmpty() ? "" : " [" + profile + "]"));
         setIconImages(AppIcon.windowIcons());
         setMinimumSize(new Dimension(UiConstants.WINDOW_MIN_WIDTH_MAIN, UiConstants.WINDOW_MIN_HEIGHT_MAIN));
         Rectangle screen = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();

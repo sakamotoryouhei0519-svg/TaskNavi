@@ -920,6 +920,8 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | チームの自動の読み直し | `TeamSession.poll`（5秒ごと）→ `TeamProject.reloadIfChanged` → `TeamChangeLog.fingerprint` → `Listener.dataChanged` → `TaskService.reload` |
 | 共有プロジェクトを全タブに出す | `ProjectSwitcher` → `TeamSession.Listener.projectChanged` → `TaskService.useStore(teamSession.storeOf(...))` |
 | 「今日」タブと期限の通知を全プロジェクトで出す | `ProjectSources.all` → `TaskSource` の一覧 → `TodayPanel.collect` / `DueReminder.dueAcross` → `DueTasks.merge`（プロジェクトごとに作ってからつなぐ） |
+| 「自分の担当だけ」 | `TodayPanel.onlyMine`（切り替えを覚える）→ `TaskSource.isMine`（表示名と担当者を比べる）→ `DueTasks.of(..., include)` |
+| アプリの版と、新しい版の記録 | `AppVersion.current`（manifest の版）/ `TeamEventCodec.NewerFormatException` → `TeamChangeLog.ReadResult.newerFormatLines` → `ProjectSwitcher.refresh`（「アプリの更新が必要」） |
 | 最近のプロジェクトも裏で開いて見張る | `TeamSession.loadOthers` / `poll` → `Listener.otherProjectsChanged` → `ProjectSources.invalidate` + `TaskService.reload` |
 | 共有プロジェクトへのまとめての取り込み | `TeamTaskStore.importTasks` → `TeamProject.importTasks`（全部チェックしてから）→ `TeamChangeLog.appendAll`（1回で書く） |
 | 共有のタスクを画面の番号で扱う・見ていた版と比べる | `TeamTaskStore`（`idOf` / `Task.revision` → `seenState`）→ `TeamProject.updateTask(id, 変更, 見ていた状態)` |
@@ -929,7 +931,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | 置き場所の初期値（共有ドライブ → マイドライブ） | `TeamSession.defaultLocation` → `team/GoogleDriveFolders` |
 | 1台で2人目として起動する | `Main` → `TeamSettings.applyLaunchArguments`（`--team-profile=名前`）→ `TeamSettings.userDefault` |
 | 同じ PC で2つ起動しても記録が壊れない | `TeamChangeLog.append`（PC 内のファイルでロック）/ `TeamChangeLogConcurrencyTest` |
-| テスト | `TaskOverdueTest` / `MainGlobalSearchBarDescribeTest` / `TaskDaoIntegrationTest` / `TeamProjectTest` / `TeamChangeLogTest` / `TeamSettingsTest` / `TeamTaskStoreTest` / `DueTasksTest` / `DueReminderTest` |
+| テスト | `TaskOverdueTest` / `MainGlobalSearchBarDescribeTest` / `TaskDaoIntegrationTest` / `TeamProjectTest` / `TeamChangeLogTest` / `TeamSettingsTest` / `TeamTaskStoreTest` / `DueTasksTest` / `DueReminderTest` / `TaskSourceTest` |
 
 ---
 

@@ -25,12 +25,18 @@ public final class TeamChangeLog {
     private static final Pattern DEVICE_ID = Pattern.compile("[A-Za-z0-9_-]{1,64}");
 
     /**
-     * @param unreadableLines 同期途中や壊れていて読めなかった行の数
+     * @param unreadableLines  同期途中や壊れていて読めなかった行の数
+     * @param newerFormatLines 新しい版のアプリで書かれていて、この版では読めない行の数（待っても読めない）
      */
-    public record ReadResult(List<TeamEvent> events, int unreadableLines) {
+    public record ReadResult(List<TeamEvent> events, int unreadableLines, int newerFormatLines) {
         public ReadResult {
             events = List.copyOf(events);
         }
+    }
+
+    private static final class Skipped {
+        int unreadable;
+        int newerFormat;
     }
 
     private TeamChangeLog() {
@@ -51,16 +57,16 @@ public final class TeamChangeLog {
     public static ReadResult readAll(Path projectDir) throws IOException {
         Path dir = projectDir.resolve(CHANGES_DIR);
         List<TeamEvent> events = new ArrayList<>();
-        int unreadable = 0;
+        Skipped skipped = new Skipped();
         if (!Files.isDirectory(dir)) {
-            return new ReadResult(events, 0);
+            return new ReadResult(events, 0, 0);
         }
         try (DirectoryStream<Path> files = Files.newDirectoryStream(dir, "*" + EXTENSION)) {
             for (Path file : files) {
-                unreadable += readFile(file, events);
+                readFile(file, events, skipped);
             }
         }
-        return new ReadResult(events, unreadable);
+        return new ReadResult(events, skipped.unreadable, skipped.newerFormat);
     }
 
     /**
@@ -85,20 +91,20 @@ public final class TeamChangeLog {
         return String.join("\n", parts);
     }
 
-    private static int readFile(Path file, List<TeamEvent> out) throws IOException {
+    private static void readFile(Path file, List<TeamEvent> out, Skipped skipped) throws IOException {
         String text = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
-        int unreadable = 0;
         for (String line : text.split("\r?\n")) {
             if (line.isBlank()) {
                 continue;
             }
             try {
                 out.add(TeamEventCodec.fromLine(line));
+            } catch (TeamEventCodec.NewerFormatException e) {
+                skipped.newerFormat++;
             } catch (IllegalArgumentException e) {
-                unreadable++;
+                skipped.unreadable++;
             }
         }
-        return unreadable;
     }
 
     /**
