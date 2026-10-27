@@ -9,7 +9,7 @@ import java.time.Instant;
  * @param deviceId 書いた PC。表示名は変えられるので、自分のコメントかどうかはこちらで決める
  * @param at       書いた時刻（編集しても変えない）
  * @param edited   あとから編集したか
- * @param deleted  消したか。消したコメントも、並び順を保つため一覧には残す
+ * @param deleted  削除したか。削除したコメントも、並び順を保つため一覧には残す
  */
 public record TeamComment(String eventId, String author, String deviceId, Instant at, String text,
                           boolean edited, boolean deleted) {

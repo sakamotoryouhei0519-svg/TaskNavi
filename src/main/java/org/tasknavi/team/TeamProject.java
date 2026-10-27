@@ -470,7 +470,7 @@ public final class TeamProject {
         write(taskId, TeamEvent.Op.COMMENT, Map.of(TeamField.COMMENT, requireCommentText(text)), Map.of(), null);
     }
 
-    /** この PC で書いた、まだ消していないコメントか（編集・消すができるのはこれだけ）。 */
+    /** この PC で書いた、まだ削除していないコメントか（編集・削除ができるのはこれだけ）。 */
     public boolean canChange(TeamComment comment) {
         return comment != null && !comment.deleted() && deviceId.equals(comment.deviceId());
     }
@@ -485,7 +485,7 @@ public final class TeamProject {
         write(taskId, TeamEvent.Op.COMMENT_EDIT, Map.of(TeamField.COMMENT, body), Map.of(), commentId);
     }
 
-    /** 自分のコメントを消す。一覧には「削除されました」と残り、元の文は変更履歴に残る。 */
+    /** 自分のコメントを削除する。一覧には「削除されました」と残り、元の文は変更履歴に残る。 */
     public synchronized void deleteComment(String taskId, String commentId) throws IOException {
         requireOwnComment(taskId, commentId);
         write(taskId, TeamEvent.Op.COMMENT_DELETE, Map.of(), Map.of(), commentId);
@@ -499,8 +499,8 @@ public final class TeamProject {
                 .orElseThrow(() -> new IllegalArgumentException("コメントが見つかりません"));
         if (!canChange(comment)) {
             throw new IllegalArgumentException(comment.deleted()
-                    ? "このコメントはもう消されています"
-                    : "編集したり消したりできるのは、この PC で書いた自分のコメントだけです");
+                    ? "このコメントはもう削除されています"
+                    : "編集・削除できるのは、この PC で書いた自分のコメントだけです");
         }
         return comment;
     }

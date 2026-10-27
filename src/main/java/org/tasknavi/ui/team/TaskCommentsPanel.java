@@ -34,8 +34,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * 共有プロジェクトのタスクのコメント欄。書く・編集・消すは、すぐ共有フォルダに書き足す（編集画面の「保存」とは別）。
- * 編集・消すは、この PC で書いた自分のコメントだけ。
+ * 共有プロジェクトのタスクのコメント欄。書く・編集・削除は、すぐ共有フォルダに書き足す（編集画面の「保存」とは別）。
+ * 編集・削除は、この PC で書いた自分のコメントだけ。
  */
 public final class TaskCommentsPanel extends JPanel {
 
@@ -82,7 +82,7 @@ public final class TaskCommentsPanel extends JPanel {
 
         AppTheme.styleTextField(input);
         input.setToolTipText(AppMessages.get("comment.input.hint",
-                "Enter で書き込みます。自分のコメントは、あとから編集したり消したりできます"));
+                "Enter で書き込みます。自分のコメントは、あとから編集・削除できます"));
         input.addActionListener(e -> submit());
         AppTheme.styleDialogSecondaryButton(post);
         post.addActionListener(e -> submit());
@@ -127,7 +127,7 @@ public final class TaskCommentsPanel extends JPanel {
         row.add(mutedLabel(headerText(comment)), "wmin 0");
         if (project.canChange(comment)) {
             row.add(linkButton(AppMessages.get("comment.edit", "編集"), AppTheme.PRIMARY, () -> startEditing(comment)));
-            row.add(linkButton(AppMessages.get("comment.delete", "消す"), AppTheme.danger(), () -> confirmDelete(comment)));
+            row.add(linkButton(AppMessages.get("comment.delete", "削除"), AppTheme.danger(), () -> confirmDelete(comment)));
         } else {
             row.add(new JLabel(), "span 2");
         }
@@ -195,8 +195,8 @@ public final class TaskCommentsPanel extends JPanel {
     }
 
     private void confirmDelete(TeamComment comment) {
-        if (!AppDialog.confirm(this, AppMessages.get("comment.delete.title", "コメントを消す"),
-                AppMessages.get("comment.delete.confirm", "このコメントを消しますか？一覧には「削除されました」と残ります。"))) {
+        if (!AppDialog.confirm(this, AppMessages.get("comment.delete.title", "コメントを削除"),
+                AppMessages.get("comment.delete.confirm", "このコメントを削除しますか？一覧には「削除されました」と残ります。"))) {
             return;
         }
         if (comment.eventId().equals(editingId)) {
