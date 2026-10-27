@@ -260,6 +260,8 @@ public class AppTheme {
         UIManager.put("TextField.caretForeground", TEXT_PRIMARY);
         UIManager.put("ComboBox.background", PANEL_BG);
         UIManager.put("ComboBox.foreground", TEXT_PRIMARY);
+        UIManager.put("ComboBox.disabledBackground", PANEL_BG);
+        UIManager.put("ComboBox.disabledForeground", textDisabled());
         UIManager.put("List.background", PANEL_BG);
         UIManager.put("List.foreground", TEXT_PRIMARY);
         UIManager.put("Table.background", PANEL_BG);

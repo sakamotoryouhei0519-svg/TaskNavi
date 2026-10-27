@@ -6,6 +6,7 @@ import org.tasknavi.team.TeamComment;
 import org.tasknavi.team.TeamProject;
 import org.tasknavi.ui.AppDialog;
 import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.InputHint;
 import org.tasknavi.ui.NoticeBar;
 import org.tasknavi.ui.WidthTrackingPanel;
 
@@ -22,6 +23,7 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -48,7 +50,16 @@ public final class TaskCommentsPanel extends JPanel {
     private final String taskId;
     private final JPanel list = new WidthTrackingPanel(new MigLayout("fillx, insets 6, gap 0, wrap", "[grow,fill]", "[]8"));
     private final JScrollPane scroll = new JScrollPane(list);
-    private final JTextField input = new JTextField(20);
+    private final JTextField input = new JTextField(20) {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            InputHint.paint(this, g, editingId == null
+                    ? AppMessages.get("comment.input.placeholder", "連絡・相談・途中経過など") : null);
+        }
+    };
     private final JButton post = new JButton(AppMessages.get("comment.post", "書く"));
     private final JButton cancel = new JButton(AppMessages.get("comment.cancel", "やめる"));
     /** 直しているコメントの記録 ID。書いているときは null。 */
@@ -62,6 +73,7 @@ public final class TaskCommentsPanel extends JPanel {
 
         Color background = AppTheme.getCurrentTheme().textFieldBackground();
         list.setBackground(background);
+        scroll.setBackground(background);
         scroll.getViewport().setBackground(background);
         scroll.setBorder(AppTheme.createFieldBorder());
         scroll.getVerticalScrollBar().setUnitIncrement(16);
@@ -78,8 +90,8 @@ public final class TaskCommentsPanel extends JPanel {
         cancel.addActionListener(e -> stopEditing());
         cancel.setVisible(false);
         add(input, "growx");
-        add(post);
-        add(cancel, "hidemode 3");
+        add(post, "growy, wmin 64");
+        add(cancel, "growy, wmin 72, hidemode 3");
 
         refresh();
     }

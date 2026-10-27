@@ -12,6 +12,7 @@ import org.tasknavi.team.TeamTaskStore;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.DialogFit;
 import org.tasknavi.ui.DialogKeys;
+import org.tasknavi.ui.InputHint;
 import org.tasknavi.ui.NoticeBar;
 import org.tasknavi.ui.UiLabels;
 import org.tasknavi.ui.team.TaskCommentsPanel;
@@ -27,6 +28,7 @@ import javax.swing.KeyStroke;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Frame;
+import java.awt.Graphics;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
@@ -57,7 +59,15 @@ public class TaskDialog extends JDialog {
     private final JTextField endDateField = new JTextField(10);
     private final JComboBox<String> priorityCombo = new JComboBox<>(Task.PRIORITY_OPTIONS);
     private final JComboBox<String> statusCombo = new JComboBox<>(Task.STATUS_OPTIONS);
-    private final JTextArea memoArea = new JTextArea(4, 20);
+    private final JTextArea memoArea = new JTextArea(4, 20) {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            InputHint.paint(this, g, AppMessages.get("dialog.memo.hint", "作業の説明・手順・決まったことなど"));
+        }
+    };
     private final boolean progressLocked;
     private int baselineProgress;
     private final JComboBox<String> parentProjectCombo = new JComboBox<>();
