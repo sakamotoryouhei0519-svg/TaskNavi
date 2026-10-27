@@ -3,6 +3,7 @@ package org.tasknavi.team;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.tasknavi.model.Assignees;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -349,6 +350,45 @@ public final class TeamProject {
         events.addAll(batch);
         state = TeamReplay.replay(events);
         return ids;
+    }
+
+    /** 担当者が name のタスクの数。 */
+    public int countAssignedTo(String name) {
+        return (int) state.tasks().stream().filter(task -> Assignees.same(task.assignee(), name)).count();
+    }
+
+    /**
+     * 担当者が from のタスクを、まとめて to に付け替える（表示名を変えたとき）。全部を 1 回で書く。
+     *
+     * @return 付け替えた数
+     */
+    public synchronized int reassign(String from, String to) throws IOException {
+        if (to == null || to.isBlank()) {
+            throw new IllegalArgumentException("担当者の名前を入力してください");
+        }
+        long clockValue = state.maxClock();
+        Instant now = Instant.now(clock);
+        List<TeamEvent> batch = new ArrayList<>();
+        for (TeamTask task : state.tasks()) {
+            if (!Assignees.same(task.assignee(), from)) {
+                continue;
+            }
+            TeamState.Version version = state.versions().get(task.id());
+            Map<TeamField, String> base = new EnumMap<>(TeamField.class);
+            String seenEventId = version.fieldEventId().get(TeamField.ASSIGNEE);
+            if (seenEventId != null) {
+                base.put(TeamField.ASSIGNEE, seenEventId);
+            }
+            batch.add(new TeamEvent(UUID.randomUUID().toString(), task.id(), TeamEvent.Op.UPDATE, ++clockValue,
+                    deviceId, author, now, Map.of(TeamField.ASSIGNEE, to.trim()), base, version.lastEventId()));
+        }
+        if (batch.isEmpty()) {
+            return 0;
+        }
+        TeamChangeLog.appendAll(dir, deviceId, batch);
+        events.addAll(batch);
+        state = TeamReplay.replay(events);
+        return batch.size();
     }
 
     /** 今の状態を見て変えた、として記録する。 */

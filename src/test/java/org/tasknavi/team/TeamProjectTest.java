@@ -70,6 +70,25 @@ class TeamProjectTest {
     }
 
     @Test
+    void reassignMovesOnlyTheOldNamesTasksInOneWrite() throws Exception {
+        Path dir = root.resolve("p");
+        TeamProject tanaka = TeamProject.create(dir, "P", "pc-tanaka", "田中", NOW);
+        String mine = tanaka.createTask(Map.of(TeamField.NAME, "設計", TeamField.ASSIGNEE, "田中"));
+        String mineSpaced = tanaka.createTask(Map.of(TeamField.NAME, "実装", TeamField.ASSIGNEE, " 田中 "));
+        String others = tanaka.createTask(Map.of(TeamField.NAME, "試験", TeamField.ASSIGNEE, "鈴木"));
+        long before = Files.readAllLines(TeamChangeLog.logFile(dir, "pc-tanaka")).size();
+
+        assertEquals(2, tanaka.countAssignedTo("田中"));
+        assertEquals(2, tanaka.reassign("田中", "田中太郎"));
+
+        assertEquals("田中太郎", tanaka.state().find(mine).orElseThrow().assignee());
+        assertEquals("田中太郎", tanaka.state().find(mineSpaced).orElseThrow().assignee());
+        assertEquals("鈴木", tanaka.state().find(others).orElseThrow().assignee());
+        assertEquals(before + 2, Files.readAllLines(TeamChangeLog.logFile(dir, "pc-tanaka")).size());
+        assertEquals(0, tanaka.reassign("田中", "田中太郎"), "もう無ければ何も書かない");
+    }
+
+    @Test
     void sameFieldEditedOfflineByBothKeepsOneAndRecordsTheOther() throws Exception {
         Pair pair = sharedTask("設計");
         pair.tanaka.updateTask(pair.taskId, Map.of(TeamField.NAME, "基本設計"));

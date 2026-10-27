@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.tasknavi.AppMessages;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
+import org.tasknavi.model.Assignees;
 import org.tasknavi.service.UserSession;
 import org.tasknavi.team.GoogleDriveFolders;
 import org.tasknavi.team.TeamConflictGroup;
@@ -302,22 +303,43 @@ public final class TeamSession {
                 "team.reload.failed", "読み直せませんでした: {0}", e.getMessage())));
     }
 
+    /** 開いている全部のプロジェクトで表示名を変える。前の名前が担当のタスクがあれば、担当者も直すか聞く。 */
     public void changeDisplayName() {
-        String name = TeamDialogs.askDisplayName(owner, settings.displayName());
+        String oldName = settings.displayName();
+        String name = TeamDialogs.askDisplayName(owner, oldName);
         if (name == null) {
             return;
         }
         settings.setDisplayName(name);
-        TeamProject opened = project;
-        if (opened == null) {
+        List<TeamProject> opened = new ArrayList<>();
+        if (project != null) {
+            opened.add(project);
+        }
+        opened.addAll(others.values());
+        if (opened.isEmpty()) {
             fireStatusChanged();
             return;
         }
+        boolean reassign = askReassign(oldName, name, opened);
         runInBackground(() -> {
-            opened.rename(name);
+            for (TeamProject each : opened) {
+                each.rename(name);
+                if (reassign) {
+                    each.reassign(oldName, name);
+                }
+            }
             return opened;
-        }, renamed -> {
-        }, e -> ErrorDialogUtil.showError(owner, e.getMessage()));
+        }, renamed -> fireOthersChanged(), e -> ErrorDialogUtil.showError(owner, e.getMessage()));
+    }
+
+    private boolean askReassign(String oldName, String newName, List<TeamProject> opened) {
+        if (oldName.isBlank() || Assignees.same(oldName, newName)) {
+            return false;
+        }
+        int count = opened.stream().mapToInt(each -> each.countAssignedTo(oldName)).sum();
+        return count > 0 && AppDialog.confirm(owner, AppMessages.get("team.rename.title", "表示名の変更"),
+                AppMessages.format("team.rename.reassign",
+                        "「{0}」が担当のタスクが {1} 件あります。担当者も「{2}」に直しますか？", oldName, count, newName));
     }
 
     private void setProject(TeamProject opened) {

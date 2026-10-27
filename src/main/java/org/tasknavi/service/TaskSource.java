@@ -1,5 +1,6 @@
 package org.tasknavi.service;
 
+import org.tasknavi.model.Assignees;
 import org.tasknavi.model.Task;
 
 /**
@@ -17,15 +18,12 @@ public record TaskSource(String name, boolean current, TaskService service, Stri
         this(name, current, service, null);
     }
 
-    /**
-     * 自分の担当か。担当者が空のタスクも含める（誰も担当していない期限に、誰も気づかなくならないように）。
-     * 名前は前後の空白と大文字・小文字を無視して比べる。
-     */
+    /** 自分の担当か。担当者が空のタスクも含める（誰も担当していない期限に、誰も気づかなくならないように）。 */
     public boolean isMine(Task task) {
         if (myName == null || myName.isBlank()) {
             return true;
         }
         String assignee = task.getAssignee();
-        return assignee == null || assignee.isBlank() || assignee.trim().equalsIgnoreCase(myName.trim());
+        return assignee == null || assignee.isBlank() || Assignees.same(assignee, myName);
     }
 }
