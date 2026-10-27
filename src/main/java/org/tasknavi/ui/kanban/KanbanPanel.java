@@ -20,13 +20,17 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.prefs.Preferences;
 
 /**
- * カンバンタブ。未着手・進行中・完了の3列にカードを並べる。
+ * カンバンタブ。未着手・進行中・完了の3列にカードを並べる。担当者で絞り込み、列の中を担当者ごとに分けられる。
  */
 public class KanbanPanel extends JPanel implements SearchablePanel {
     private final TaskService taskService;
@@ -55,6 +59,13 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
     private JLabel doneHeaderLabel;
     // 選択中のタスクID
     private Integer selectedTaskId = null;
+
+    private static final String PREF_BY_ASSIGNEE = "kanban.byAssignee";
+    private static final String ALL_ASSIGNEES = "\u0000all";
+    private final JComboBox<String> assigneeCombo = new JComboBox<>();
+    /** null なら全員。 */
+    private String assigneeFilter = null;
+    private boolean fillingAssigneeCombo;
 
     private final KanbanCardFactory.Actions cardActions = new KanbanCardFactory.Actions() {
         @Override
@@ -118,6 +129,7 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         columnsPanel.add(inProgressWrapper, "grow, push");
         columnsPanel.add(doneWrapper, "grow, push");
 
+        add(buildAssigneeBar(), BorderLayout.NORTH);
         add(columnsPanel, BorderLayout.CENTER);
 
         // データベースからタスクを取得してカードを配置
@@ -130,6 +142,96 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
     public void removeNotify() {
         TaskEventBus.getInstance().unregister(taskEventListener);
         super.removeNotify();
+    }
+
+    /** 担当者での絞り込みと、列の中を担当者ごとに分ける切り替え。 */
+    private JPanel buildAssigneeBar() {
+        JPanel bar = new JPanel(new MigLayout("insets 0, gap 8", "[][]16[]"));
+        bar.setOpaque(false);
+        JLabel label = new JLabel(AppMessages.get("kanban.assignee.label", "担当者") + ":");
+        label.setFont(AppTheme.FONT_MAIN);
+        label.setForeground(AppTheme.TEXT_PRIMARY);
+        AppTheme.styleComboBox(assigneeCombo);
+        assigneeCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                return super.getListCellRendererComponent(list, assigneeLabel((String) value), index,
+                        isSelected, cellHasFocus);
+            }
+        });
+        assigneeCombo.addActionListener(e -> {
+            if (fillingAssigneeCombo) {
+                return;
+            }
+            Object selected = assigneeCombo.getSelectedItem();
+            assigneeFilter = selected == null || ALL_ASSIGNEES.equals(selected) ? null : (String) selected;
+            refreshKanban();
+        });
+
+        JCheckBox byAssignee = new JCheckBox(AppMessages.get("kanban.byAssignee", "担当者ごとに分ける"), byAssignee());
+        byAssignee.setFont(AppTheme.FONT_MAIN);
+        byAssignee.setForeground(AppTheme.TEXT_PRIMARY);
+        byAssignee.setOpaque(false);
+        byAssignee.setFocusable(false);
+        byAssignee.setToolTipText(AppMessages.get("kanban.byAssignee.tooltip", "各列の中を担当者ごとに分けて並べます"));
+        byAssignee.addActionListener(e -> {
+            Preferences.userNodeForPackage(KanbanPanel.class).putBoolean(PREF_BY_ASSIGNEE, byAssignee.isSelected());
+            refreshKanban();
+        });
+
+        bar.add(label);
+        bar.add(assigneeCombo, "wmin 160");
+        bar.add(byAssignee);
+        return bar;
+    }
+
+    private static boolean byAssignee() {
+        return Preferences.userNodeForPackage(KanbanPanel.class).getBoolean(PREF_BY_ASSIGNEE, false);
+    }
+
+    private static String assigneeLabel(String value) {
+        if (value == null || ALL_ASSIGNEES.equals(value)) {
+            return AppMessages.get("kanban.assignee.all", "全員");
+        }
+        return KanbanAssignees.UNASSIGNED.equals(value) ? AppMessages.get("kanban.assignee.none", "担当なし") : value;
+    }
+
+    /** 候補を入れ直す。選んでいた人がいなくなったら「全員」に戻す。 */
+    private void fillAssigneeCombo(List<Task> allTasks) {
+        List<String> names = KanbanAssignees.options(taskService.assigneeOptions(), allTasks);
+        List<String> items = new ArrayList<>();
+        items.add(ALL_ASSIGNEES);
+        items.addAll(names);
+        items.add(KanbanAssignees.UNASSIGNED);
+        if (assigneeFilter != null && !items.contains(assigneeFilter)) {
+            assigneeFilter = null;
+        }
+        fillingAssigneeCombo = true;
+        try {
+            assigneeCombo.setModel(new DefaultComboBoxModel<>(items.toArray(String[]::new)));
+            assigneeCombo.setSelectedItem(assigneeFilter != null ? assigneeFilter : ALL_ASSIGNEES);
+        } finally {
+            fillingAssigneeCombo = false;
+        }
+    }
+
+    private JLabel groupHeader(String assignee, int count) {
+        JLabel header = new JLabel(assigneeLabel(assignee) + "  (" + count + ")");
+        header.setFont(AppTheme.FONT_BOLD);
+        header.setForeground(AppTheme.TEXT_MUTED);
+        header.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.BORDER_COLOR),
+                new EmptyBorder(0, 2, 2, 2)));
+        return header;
+    }
+
+    private JPanel columnPanel(KanbanColumnSupport.Column column) {
+        return switch (column) {
+            case IN_PROGRESS -> inProgressColumn;
+            case DONE -> doneColumn;
+            default -> todoColumn;
+        };
     }
 
     /** 1列分。見出しと、カードが並ぶスクロール欄。 */
@@ -192,34 +294,38 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         inProgressColumn.removeAll();
         doneColumn.removeAll();
 
-        List<Task> tasks = KanbanTaskFilter.apply(
-                taskSnapshot != null ? taskSnapshot : taskService.getAllTasks(),
+        List<Task> allTasks = taskSnapshot != null ? taskSnapshot : taskService.getAllTasks();
+        fillAssigneeCombo(allTasks);
+        List<Task> tasks = KanbanAssignees.filter(KanbanTaskFilter.apply(
+                allTasks,
                 currentSearchKeyword,
                 currentStatusFilter,
                 currentProjectFilterId,
-                projectMemberCache);
+                projectMemberCache), assigneeFilter);
 
-        int todoCount = 0;
-        int inProgressCount = 0;
-        int doneCount = 0;
-
-        for (Task task : tasks) {
-            JPanel card = KanbanCardFactory.create(task, cardActions);
-            switch (KanbanColumnSupport.columnFor(task)) {
-                case IN_PROGRESS -> {
-                    inProgressColumn.add(card, "wmin 0");
-                    inProgressCount++;
-                }
-                case DONE -> {
-                    doneColumn.add(card, "wmin 0");
-                    doneCount++;
-                }
-                default -> {
-                    todoColumn.add(card, "wmin 0");
-                    todoCount++;
-                }
+        Map<String, List<Task>> groups = byAssignee()
+                ? KanbanAssignees.group(tasks)
+                : Collections.singletonMap(null, tasks);
+        Map<KanbanColumnSupport.Column, Integer> counts = new EnumMap<>(KanbanColumnSupport.Column.class);
+        for (Map.Entry<String, List<Task>> group : groups.entrySet()) {
+            Map<KanbanColumnSupport.Column, List<Task>> byColumn = new EnumMap<>(KanbanColumnSupport.Column.class);
+            for (Task task : group.getValue()) {
+                byColumn.computeIfAbsent(KanbanColumnSupport.columnFor(task), key -> new ArrayList<>()).add(task);
             }
+            byColumn.forEach((column, columnTasks) -> {
+                JPanel target = columnPanel(column);
+                if (group.getKey() != null) {
+                    target.add(groupHeader(group.getKey(), columnTasks.size()), "wmin 0, gaptop 4");
+                }
+                for (Task task : columnTasks) {
+                    target.add(KanbanCardFactory.create(task, cardActions), "wmin 0");
+                }
+                counts.merge(column, columnTasks.size(), Integer::sum);
+            });
         }
+        int todoCount = counts.getOrDefault(KanbanColumnSupport.Column.TODO, 0);
+        int inProgressCount = counts.getOrDefault(KanbanColumnSupport.Column.IN_PROGRESS, 0);
+        int doneCount = counts.getOrDefault(KanbanColumnSupport.Column.DONE, 0);
 
         KanbanColumnSupport.attachDrop(todoColumn, createColumnDropHandler(Task.STATUS_NOT_STARTED));
         KanbanColumnSupport.attachDrop(inProgressColumn, createColumnDropHandler(Task.STATUS_IN_PROGRESS));
@@ -263,6 +369,7 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         currentSearchKeyword = null;
         currentStatusFilter = null;
         currentProjectFilterId = null;
+        assigneeFilter = null;
         projectMemberCache.clear();
         refreshKanban();
     }

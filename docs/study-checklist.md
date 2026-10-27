@@ -567,9 +567,9 @@ WbsPanel コンストラクタ
 | 区分 | ファイル |
 |------|----------|
 | 必読 | `ui/kanban/KanbanPanel.java` |
-| 関連 | `KanbanCardFactory` / `KanbanColumnSupport` / `KanbanTaskFilter` |
+| 関連 | `KanbanCardFactory` / `KanbanColumnSupport` / `KanbanTaskFilter` / `KanbanAssignees`（担当者での絞り込みと分け方） |
 | 関連 | `util/TaskStatusCycle.java` / `ui/TaskStatusChanger.java` / `service/TaskService.java` の `changeStatus` |
-| テスト | `KanbanTaskFilterTest` / `TaskServiceStatusChangeTest` |
+| テスト | `KanbanTaskFilterTest` / `KanbanAssigneesTest` / `TaskServiceStatusChangeTest` |
 
 **コードの流れ（カンバンカード移動）:**
 
@@ -582,6 +582,8 @@ KanbanPanel コンストラクタ
   → refreshKanban() (初期表示)
     → taskService.getAllTasks() で全タスク取得
     → KanbanTaskFilter でフィルタリング
+    → KanbanAssignees.filter で担当者を絞る（上の「担当者」の選択）
+    → 「担当者ごとに分ける」がオンなら KanbanAssignees.group で担当者ごとにまとめ、列の中に見出しを入れる
     → ステータスごとにタスクを分類
     → KanbanCardFactory.createCard() でカード作成
     → 各カラムにカードを追加
