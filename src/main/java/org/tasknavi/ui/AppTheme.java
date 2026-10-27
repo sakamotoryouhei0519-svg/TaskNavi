@@ -2,6 +2,7 @@ package org.tasknavi.ui;
 
 import org.tasknavi.model.Priority;
 import org.tasknavi.model.TaskStatus;
+
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
@@ -9,8 +10,7 @@ import java.awt.*;
 import java.util.prefs.Preferences;
 
 /**
- * 【アプリケーションテーマ設定クラス】
- * アプリ全体の色、フォント、ボーダーなどのデザイン設定を集約するクラスです。
+ * アプリ全体の色・フォント・枠線。ライトとダークの切り替えもここで持つ。
  */
 public class AppTheme {
 
@@ -235,6 +235,15 @@ public class AppTheme {
 
     public static void styleTextField(JTextField field) {
         AppThemeControls.styleTextField(field);
+    }
+
+    /** 入力欄の背景・文字・キャレット・選択色をテーマに合わせます（枠線は変えません）。 */
+    public static void applyTextColors(javax.swing.text.JTextComponent component) {
+        AppThemeControls.applyTextColors(component);
+    }
+
+    public static JScrollPane createStyledTextAreaScroll(JTextArea area) {
+        return AppThemeControls.createStyledTextAreaScroll(area);
     }
 
     public static void styleComboBox(JComboBox<?> combo) {

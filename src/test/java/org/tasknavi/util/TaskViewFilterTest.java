@@ -1,7 +1,7 @@
 package org.tasknavi.util;
 
-import org.tasknavi.model.Task;
 import org.junit.jupiter.api.Test;
+import org.tasknavi.model.Task;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -53,6 +53,18 @@ class TaskViewFilterTest {
 
         List<Task> filtered = TaskViewFilter.apply(
                 List.of(named, other), "sat", null, null, new HashMap<>());
+
+        assertEquals(List.of(1), filtered.stream().map(Task::getId).toList());
+    }
+
+    @Test
+    void keywordMatchesMemo() {
+        Task withMemo = task(1, "Alpha", null, Task.STATUS_NOT_STARTED);
+        withMemo.setMemo("先方に見積もりを確認\n来週月曜まで");
+        Task other = task(2, "Beta", null, Task.STATUS_NOT_STARTED);
+
+        List<Task> filtered = TaskViewFilter.apply(
+                List.of(withMemo, other), "見積", null, null, new HashMap<>());
 
         assertEquals(List.of(1), filtered.stream().map(Task::getId).toList());
     }

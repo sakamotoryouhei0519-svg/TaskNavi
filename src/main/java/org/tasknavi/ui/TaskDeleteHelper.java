@@ -7,6 +7,7 @@ import org.tasknavi.service.TaskService;
 
 import javax.swing.SwingWorker;
 import java.awt.Component;
+import java.util.List;
 
 /**
  * MainFrame から切り出したタスク削除確認 UI ヘルパー。
@@ -42,10 +43,38 @@ public final class TaskDeleteHelper {
 
     private static void delete(Component parent, TaskService taskService, Task selected) {
         String name = selected.getName();
+        SwingWorker<List<Task>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<Task> doInBackground() throws Exception {
+                return taskService.deleteTask(selected.getId());
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    List<Task> removed = get();
+                    String message = AppMessages.format(
+                            "message.deleted.named", "「{0}」を削除しました。", name);
+                    boolean shown = NoticeBar.infoWithAction(parent, message,
+                            AppMessages.get("notice.undo", "元に戻す"),
+                            () -> restore(parent, taskService, removed, name));
+                    if (!shown) {
+                        NoticeBar.info(parent, message);
+                    }
+                } catch (Exception e) {
+                    ErrorDialogUtil.showBackgroundError(parent, e, AppMessages.get("mainframe.error.delete"));
+                    logger.error("タスク削除エラー", e);
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private static void restore(Component parent, TaskService taskService, List<Task> removed, String name) {
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
-            protected Void doInBackground() throws Exception {
-                taskService.deleteTask(selected.getId());
+            protected Void doInBackground() {
+                taskService.restoreDeleted(removed);
                 return null;
             }
 
@@ -54,10 +83,10 @@ public final class TaskDeleteHelper {
                 try {
                     get();
                     NoticeBar.info(parent, AppMessages.format(
-                            "message.deleted.named", "「{0}」を削除しました。", name));
+                            "message.restored.named", "「{0}」を元に戻しました。", name));
                 } catch (Exception e) {
-                    ErrorDialogUtil.showBackgroundError(parent, e, AppMessages.get("mainframe.error.delete"));
-                    logger.error("タスク削除エラー", e);
+                    ErrorDialogUtil.showBackgroundError(parent, e, AppMessages.get("mainframe.error.restore"));
+                    logger.error("削除の取り消しエラー", e);
                 }
             }
         };

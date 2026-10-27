@@ -1,8 +1,8 @@
 package org.tasknavi.event;
 
-import org.tasknavi.model.Task;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.tasknavi.model.Task;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

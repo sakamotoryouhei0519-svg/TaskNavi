@@ -2,7 +2,7 @@ package org.tasknavi.service;
 
 import org.tasknavi.model.User;
 import org.tasknavi.persistence.UserDao;
-import org.tasknavi.util.AuthAttemptGuard;
+import org.tasknavi.service.AuthAttemptGuard;
 
 /**
  * 認証ユースケース。試行制限と検証付きパスワード再設定を集約する。

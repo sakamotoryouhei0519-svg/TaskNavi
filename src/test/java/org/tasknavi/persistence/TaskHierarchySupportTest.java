@@ -1,7 +1,7 @@
 package org.tasknavi.persistence;
 
-import org.tasknavi.model.Task;
 import org.junit.jupiter.api.Test;
+import org.tasknavi.model.Task;
 
 import java.time.LocalDate;
 import java.util.HashSet;

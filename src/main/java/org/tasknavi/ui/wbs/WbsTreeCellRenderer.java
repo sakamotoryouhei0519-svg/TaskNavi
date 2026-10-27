@@ -1,7 +1,7 @@
 package org.tasknavi.ui.wbs;
 
-import org.tasknavi.ui.AppTheme;
 import org.tasknavi.model.Task;
+import org.tasknavi.ui.AppTheme;
 
 import javax.swing.BorderFactory;
 import javax.swing.Icon;

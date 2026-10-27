@@ -2,8 +2,8 @@ package org.tasknavi.ui.kanban;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.ui.AppTheme;
 import org.tasknavi.model.Task;
+import org.tasknavi.ui.AppTheme;
 import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.BorderFactory;
@@ -19,13 +19,15 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Graphics;
 import java.awt.Insets;
+import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.awt.dnd.DragSource;
 import java.awt.event.MouseEvent;
 
 /**
@@ -98,18 +100,34 @@ public final class KanbanCardFactory {
             }
         });
 
-        card.addMouseListener(new java.awt.event.MouseAdapter() {
+        java.awt.event.MouseAdapter mouseHandler = new java.awt.event.MouseAdapter() {
+            private Point pressPoint;
+            private boolean dragStarted;
+
             @Override
             public void mousePressed(MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e)) {
+                pressPoint = SwingUtilities.isLeftMouseButton(e) ? e.getPoint() : null;
+                dragStarted = false;
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (pressPoint == null || dragStarted || !SwingUtilities.isLeftMouseButton(e)) {
+                    return;
+                }
+                int threshold = DragSource.getDragThreshold();
+                if (Math.abs(e.getX() - pressPoint.x) > threshold || Math.abs(e.getY() - pressPoint.y) > threshold) {
+                    dragStarted = true;
                     actions.onSelect(task);
-                    actions.refresh();
                     card.getTransferHandler().exportAsDrag(card, e, TransferHandler.MOVE);
                 }
             }
 
             @Override
             public void mouseClicked(MouseEvent e) {
+                if (!SwingUtilities.isLeftMouseButton(e)) {
+                    return;
+                }
                 actions.onSelect(task);
                 if (e.getClickCount() == 2) {
                     actions.onOpenEdit(task);
@@ -132,7 +150,9 @@ public final class KanbanCardFactory {
                         ? AppTheme.selectedFill()
                         : baseBg);
             }
-        });
+        };
+        card.addMouseListener(mouseHandler);
+        card.addMouseMotionListener(mouseHandler);
 
         Integer selectedTaskId = actions.selectedTaskId();
         if (selectedTaskId != null && selectedTaskId.equals(task.getId())) {
@@ -147,9 +167,9 @@ public final class KanbanCardFactory {
         progressLabel.setFont(AppTheme.FONT_MAIN);
         progressLabel.setForeground(AppTheme.isDarkMode() ? new Color(96, 165, 250) : AppTheme.PRIMARY);
 
-        JPanel topPanel = new JPanel(new BorderLayout());
+        JPanel topPanel = new JPanel(new BorderLayout(8, 0));
         topPanel.setOpaque(false);
-        topPanel.add(nameLabel, BorderLayout.WEST);
+        topPanel.add(nameLabel, BorderLayout.CENTER);
         topPanel.add(progressLabel, BorderLayout.EAST);
 
         String assigneeText = "\uD83D\uDC64 " + (task.getAssignee() != null ? task.getAssignee() : AppMessages.get("label.unset"));

@@ -3,6 +3,7 @@ package org.tasknavi;
 import org.tasknavi.model.User;
 import org.tasknavi.persistence.Database;
 import org.tasknavi.persistence.UserDao;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

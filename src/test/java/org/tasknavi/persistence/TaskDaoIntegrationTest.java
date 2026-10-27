@@ -1,16 +1,16 @@
 package org.tasknavi.persistence;
 
-import org.tasknavi.AppException;
-import org.tasknavi.DatabaseTestConfig;
-import org.tasknavi.model.Task;
-import org.tasknavi.service.TaskService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.tasknavi.AppException;
+import org.tasknavi.DatabaseTestConfig;
 import org.tasknavi.event.TaskEvent;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
 
 import java.sql.Connection;
 import java.sql.Statement;
@@ -42,6 +42,37 @@ class TaskDaoIntegrationTest {
     @AfterEach
     void tearDown() {
         DatabaseTestConfig.clearTasksTable();
+    }
+
+    @Test
+    void memoIsSavedUpdatedAndCleared() {
+        Task task = new Task(0, "Memo", null, 1, 0, 0, Task.STATUS_NOT_STARTED,
+                LocalDate.now(), LocalDate.now().plusDays(1));
+        task.setMemo("1行目\n2行目");
+        int id = taskDao.addTask(task);
+        assertEquals("1行目\n2行目", taskDao.getTaskById(id).getMemo());
+
+        Task loaded = taskDao.getTaskById(id);
+        loaded.setMemo("書き換え");
+        taskDao.updateTask(loaded);
+        assertEquals("書き換え", taskDao.getTaskById(id).getMemo());
+
+        loaded.setMemo("  ");
+        taskDao.updateTask(loaded);
+        assertEquals("", taskDao.getTaskById(id).getMemo());
+    }
+
+    @Test
+    void memoSurvivesDeleteAndRestore() {
+        Task task = new Task(0, "Undo", null, 1, 0, 0, Task.STATUS_NOT_STARTED,
+                LocalDate.now(), LocalDate.now().plusDays(1));
+        task.setMemo("消しても戻る");
+        int id = taskDao.addTask(task);
+
+        List<Task> removed = taskDao.deleteTask(id);
+        taskDao.restoreTasks(removed);
+
+        assertEquals("消しても戻る", taskDao.getTaskById(id).getMemo());
     }
 
     @Test
@@ -107,52 +138,6 @@ class TaskDaoIntegrationTest {
         assertEquals("P2", after.getName());
         assertEquals(50, after.getProgress());
         assertEquals(Task.STATUS_IN_PROGRESS, after.getStatusCode());
-    }
-
-    @Test
-    void shouldFilterByDateRange() {
-        String unique = UUID.randomUUID().toString().substring(0, 8);
-        LocalDate start = LocalDate.now();
-        LocalDate end = LocalDate.now().plusDays(10);
-        Task task = new Task(0, "DateTest-" + unique, null, 1, 0, 0, "未着手",
-                start, end);
-        int taskId = taskDao.addTask(task);
-        assertTrue(taskId > 0);
-
-        List<Task> results = taskDao.filterByDateRange(start, end);
-        assertFalse(results.isEmpty());
-        assertTrue(results.stream().anyMatch(t -> t.getId() == taskId));
-
-        taskDao.deleteTask(taskId);
-    }
-
-    @Test
-    void shouldSearchCombinedRespectProjectHierarchy() {
-        String unique = UUID.randomUUID().toString().substring(0, 8);
-        Task project = new Task(0, "Proj-" + unique, null, 1, 0, 0, Task.STATUS_NOT_STARTED,
-                LocalDate.now(), LocalDate.now().plusDays(10));
-        int projectId = taskDao.addTask(project);
-        assertTrue(projectId > 0);
-
-        Task inProject = new Task(0, "Hit-" + unique, projectId, 2, 0, 0, Task.STATUS_IN_PROGRESS,
-                LocalDate.now(), LocalDate.now().plusDays(3));
-        inProject.setAssignee("Alice");
-        int inId = taskDao.addTask(inProject);
-
-        Task outside = new Task(0, "Hit-" + unique + "-out", null, 1, 0, 0, Task.STATUS_IN_PROGRESS,
-                LocalDate.now(), LocalDate.now().plusDays(3));
-        outside.setAssignee("Alice");
-        int outId = taskDao.addTask(outside);
-
-        List<Task> results = taskDao.searchCombined(
-                "Hit-" + unique, "Alice", Task.STATUS_IN_PROGRESS, null, null, projectId);
-
-        assertTrue(results.stream().anyMatch(t -> t.getId() == inId));
-        assertTrue(results.stream().noneMatch(t -> t.getId() == outId));
-
-        taskDao.deleteTask(inId);
-        taskDao.deleteTask(outId);
-        taskDao.deleteTask(projectId);
     }
 
     @Test
@@ -296,5 +281,65 @@ class TaskDaoIntegrationTest {
         TaskDao secondDao = new TaskDao(secondId);
         assertTrue(firstDao.getAllTasks().stream().anyMatch(task -> ("Legacy-" + unique).equals(task.getName())));
         assertTrue(secondDao.getAllTasks().stream().noneMatch(task -> ("Legacy-" + unique).equals(task.getName())));
+    }
+
+    private static Task importRow(int id, Integer parentId, int level, int order, String name) {
+        return new Task(id, name, parentId, level, order, 0, Task.STATUS_NOT_STARTED,
+                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
+    }
+
+    @Test
+    void importAppendsAndRemapsParentsToNewIds() {
+        int existingId = taskDao.addTask(importRow(0, null, 1, 0, "既存プロジェクト"));
+        Task work = importRow(3, 2, 3, 0, "取り込みタスク");
+        work.setMemo("メモも入る");
+
+        taskDao.importTasks(List.of(
+                work,
+                importRow(1, null, 1, 0, "取り込みプロジェクト"),
+                importRow(2, 1, 2, 0, "取り込み工程")), false);
+
+        List<Task> all = taskDao.getAllTasks();
+        assertEquals(4, all.size());
+        assertNotNull(taskDao.getTaskById(existingId));
+        Task project = findByName(all, "取り込みプロジェクト");
+        Task stage = findByName(all, "取り込み工程");
+        Task imported = findByName(all, "取り込みタスク");
+        assertNull(project.getParentId());
+        assertEquals(project.getId(), stage.getParentId());
+        assertEquals(stage.getId(), imported.getParentId());
+        assertEquals("メモも入る", imported.getMemo());
+        assertTrue(project.getOrderIndex() > taskDao.getTaskById(existingId).getOrderIndex());
+    }
+
+    @Test
+    void importReplaceRemovesOnlyOwnTasks() {
+        taskDao.addTask(importRow(0, null, 1, 0, "消えるプロジェクト"));
+        String unique = UUID.randomUUID().toString().substring(0, 8);
+        TaskDao otherDao = new TaskDao(DatabaseTestConfig.insertUser("other-" + unique, "other-" + unique + "@example.com"));
+        otherDao.addTask(importRow(0, null, 1, 0, "他人のプロジェクト"));
+
+        taskDao.importTasks(List.of(importRow(1, null, 1, 0, "新しいプロジェクト")), true);
+
+        assertEquals(List.of("新しいプロジェクト"), taskDao.getAllTasks().stream().map(Task::getName).toList());
+        assertEquals(List.of("他人のプロジェクト"), otherDao.getAllTasks().stream().map(Task::getName).toList());
+    }
+
+    @Test
+    void importWithBrokenHierarchyWritesNothing() {
+        taskDao.addTask(importRow(0, null, 1, 0, "残るプロジェクト"));
+
+        assertThrows(AppException.class, () -> taskDao.importTasks(List.of(
+                importRow(1, null, 1, 0, "取り込みプロジェクト"),
+                importRow(2, 99, 2, 0, "親がない工程")), true));
+        assertThrows(AppException.class, () -> taskDao.importTasks(List.of(
+                importRow(1, null, 1, 0, "A"),
+                importRow(1, null, 1, 1, "B")), false));
+
+        assertEquals(List.of("残るプロジェクト"), taskDao.getAllTasks().stream().map(Task::getName).toList());
+    }
+
+    private static Task findByName(List<Task> tasks, String name) {
+        return tasks.stream().filter(t -> name.equals(t.getName())).findFirst().orElseThrow();
     }
 }

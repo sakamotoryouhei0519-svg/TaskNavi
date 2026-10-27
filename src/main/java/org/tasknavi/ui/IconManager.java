@@ -5,9 +5,7 @@ import java.awt.*;
 import java.util.prefs.Preferences;
 
 /**
- * 【アイコン管理クラス】
- * 絵文字とカスタム画像アイコンを一元管理し、
- * 設定によって切り替え可能にします。
+ * ボタンなどのアイコン。絵文字と画像のアイコンを、設定で切り替える。
  */
 public class IconManager {
     
@@ -20,10 +18,12 @@ public class IconManager {
     // アイコン識別子
     public enum IconType {
         // タブアイコン
+        TAB_TODAY,
         TAB_WBS,
         TAB_KANBAN,
         TAB_GANTT,
         TAB_CALENDAR,
+        TAB_TEAM,
         
         // ロゴ・ユーザー
         LOGO,

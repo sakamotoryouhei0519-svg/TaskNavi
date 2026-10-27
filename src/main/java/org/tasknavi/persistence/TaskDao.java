@@ -1,12 +1,10 @@
 package org.tasknavi.persistence;
 
-import org.tasknavi.AppException;
-import org.tasknavi.model.Task;
-import org.tasknavi.util.ProjectMemberFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tasknavi.AppException;
+import org.tasknavi.model.Task;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,22 +13,19 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 【データアクセスオブジェクト (DAO) クラス】
- * tasks テーブルの入口。SQL の中身は同じパッケージのクラスに分けている。
+ * 自分だけのタスク（tasks テーブル）の保存先。SQL の中身は同じパッケージのクラスに分けている。
  */
-public class TaskDao {
+public class TaskDao implements TaskStore {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskDao.class);
 
     private final int ownerId;
-    private final TaskSearchDao searchDao;
 
     public TaskDao(int ownerId) {
         if (ownerId <= 0) {
             throw new IllegalArgumentException("ownerId must be positive");
         }
         this.ownerId = ownerId;
-        this.searchDao = new TaskSearchDao(ownerId, this::getAllTasks);
     }
 
     public int addTask(Task task) {
@@ -68,11 +63,8 @@ public class TaskDao {
         TaskCrudDao.updateAll(tasks, ownerId);
     }
 
-    public boolean updateTaskStatus(int taskId, String newStatus) {
-        return TaskCrudDao.updateStatus(taskId, newStatus, ownerId);
-    }
-
-    public void deleteTask(int taskId) {
+    /** @return 消したタスク（子を含む）。{@link #restoreTasks} に渡せば元に戻せる */
+    public List<Task> deleteTask(int taskId) {
         if (taskId <= 0) {
             throw AppException.validation("削除対象のIDが不正です: " + taskId, "削除対象を特定できませんでした。");
         }
@@ -98,10 +90,84 @@ public class TaskDao {
             updateParentProgress(parentId);
         }
         logger.info("タスクID: {} を削除しました。対象件数={}", taskId, targetIds.size());
+
+        List<Task> deleted = new ArrayList<>();
+        for (Task task : allTasks) {
+            if (targetIds.contains(task.getId())) {
+                deleted.add(task);
+            }
+        }
+        return deleted;
     }
 
+    /**
+     * {@link #deleteTask} で消したタスクを元の ID のまま戻す。
+     * 消したあとで親が消されていたら、行き場がないので戻さない。
+     */
+    public void restoreTasks(List<Task> deletedTasks) {
+        if (deletedTasks == null || deletedTasks.isEmpty()) {
+            return;
+        }
+        Set<Integer> restoringIds = new HashSet<>();
+        for (Task task : deletedTasks) {
+            restoringIds.add(task.getId());
+        }
+        Set<Integer> outsideParentIds = new HashSet<>();
+        for (Task task : deletedTasks) {
+            Integer parentId = task.getParentId();
+            if (parentId != null && parentId > 0 && !restoringIds.contains(parentId)) {
+                outsideParentIds.add(parentId);
+            }
+        }
+        for (Integer parentId : outsideParentIds) {
+            if (getTaskById(parentId) == null) {
+                throw AppException.businessRule(
+                        "復元先の親タスクがありません: " + parentId,
+                        "親のタスクが削除されているため、元に戻せません。");
+            }
+        }
+
+        TaskCrudDao.insertWithIds(deletedTasks, ownerId);
+        for (Integer parentId : outsideParentIds) {
+            updateParentProgress(parentId);
+        }
+        logger.info("削除したタスクを元に戻しました。対象件数={}", deletedTasks.size());
+    }
+
+    /**
+     * タスクをまとめて取り込む。ID・親 ID は {@code tasks} の中だけで通じる番号として扱い、保存時に振り直す。
+     * 1 件でも不正なら何も書き込まない。
+     */
     public void importTasks(List<Task> tasks, boolean replaceExisting) {
-        TaskImportDao.importTasks(tasks, replaceExisting, ownerId, this::validateTask);
+        if (tasks == null) {
+            return;
+        }
+        Map<Integer, Task> byImportId = new HashMap<>();
+        List<Task> valid = new ArrayList<>();
+        for (Task task : tasks) {
+            if (task == null) {
+                continue;
+            }
+            if (byImportId.putIfAbsent(task.getId(), task) != null) {
+                throw AppException.businessRule(
+                        "取り込みデータの ID が重複しています: " + task.getId(),
+                        "取り込むデータに同じ ID のタスクが複数あります（ID: " + task.getId() + "）。");
+            }
+            valid.add(task);
+        }
+        for (Task task : valid) {
+            try {
+                TaskWriteValidator.validate(task, byImportId::get);
+            } catch (AppException e) {
+                throw AppException.businessRule(
+                        "インポートデータに不正な値があります: " + task.getName(),
+                        "「" + task.getName() + "」: " + e.getUserMessage());
+            }
+        }
+        if (valid.isEmpty()) {
+            return;
+        }
+        TaskImportDao.importTasks(valid, replaceExisting, ownerId);
     }
 
     public void updateParentProgress(int parentId) {
@@ -118,42 +184,6 @@ public class TaskDao {
         TaskWriteValidator.validate(task, this::getTaskById);
     }
 
-    public boolean isValidHierarchy(Task task) {
-        return TaskHierarchySupport.isValidHierarchy(task, this::getTaskById);
-    }
-
-    public List<Task> searchByName(String keyword) {
-        return searchDao.searchByName(keyword);
-    }
-
-    public List<Task> searchByAssignee(String assignee) {
-        return searchDao.searchByAssignee(assignee);
-    }
-
-    public List<Task> filterByStatus(String status) {
-        return searchDao.filterByStatus(status);
-    }
-
-    public List<Task> filterByDateRange(LocalDate startDate, LocalDate endDate) {
-        return searchDao.filterByDateRange(startDate, endDate);
-    }
-
-    public List<Task> searchCombined(String keyword, String assignee, String status,
-                                     LocalDate startDate, LocalDate endDate, Integer projectId) {
-        List<Task> results = searchDao.searchCombined(keyword, assignee, status, startDate, endDate);
-        if (projectId == null) {
-            return results;
-        }
-        Set<Integer> memberIds = ProjectMemberFilter.collectMemberIds(getAllTasks(), projectId);
-        List<Task> filtered = new ArrayList<>();
-        for (Task task : results) {
-            if (memberIds.contains(task.getId())) {
-                filtered.add(task);
-            }
-        }
-        return filtered;
-    }
-
     public void updateTaskOrderIndex(int taskId, int newOrderIndex) {
         TaskCrudDao.updateOrderIndex(taskId, newOrderIndex, ownerId);
     }
@@ -167,10 +197,5 @@ public class TaskDao {
             orderByTaskId.put(task.getId(), task.getOrderIndex());
         }
         TaskCrudDao.updateOrderIndexes(orderByTaskId, ownerId);
-    }
-
-    public void reorderSiblingTasks(Integer parentId) {
-        List<Task> changed = TaskReorderSupport.reorderSiblings(parentId, getAllTasks());
-        updateSiblingOrder(changed);
     }
 }

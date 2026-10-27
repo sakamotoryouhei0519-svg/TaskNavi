@@ -2,26 +2,30 @@ package org.tasknavi.ui.taskdialog;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.ui.AppTheme;
-import org.tasknavi.ui.DialogFit;
-import org.tasknavi.ui.DialogKeys;
-import org.tasknavi.ui.NoticeBar;
 import org.tasknavi.model.EntryType;
 import org.tasknavi.model.Task;
 import org.tasknavi.model.TaskBusinessRules;
 import org.tasknavi.model.TaskHierarchyUtil;
 import org.tasknavi.model.TaskStatus;
 import org.tasknavi.service.TaskService;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.DialogFit;
+import org.tasknavi.ui.DialogKeys;
+import org.tasknavi.ui.NoticeBar;
 import org.tasknavi.ui.UiLabels;
 import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
-import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.KeyStroke;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Frame;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.time.LocalDate;
@@ -31,14 +35,12 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * 【タスク追加・編集用ダイアログクラス】
- * タスク名、担当者、開始日・終了日、進捗率を入力するためのモーダル画面です。
+ * タスクを作る・直す窓。名前・担当者・期間・優先度・メモなどを入力する。
  */
 public class TaskDialog extends JDialog {
 
     private static final long serialVersionUID = 1L;
 
-    private final TaskService taskService;
     private final List<Task> allTasks;
 
     private static final String TYPE_PROJECT = EntryType.PROJECT.name();
@@ -52,6 +54,7 @@ public class TaskDialog extends JDialog {
     private final JTextField endDateField = new JTextField(10);
     private final JComboBox<String> priorityCombo = new JComboBox<>(Task.PRIORITY_OPTIONS);
     private final JComboBox<String> statusCombo = new JComboBox<>(Task.STATUS_OPTIONS);
+    private final JTextArea memoArea = new JTextArea(4, 20);
     private final boolean progressLocked;
     private int baselineProgress;
     private final JComboBox<String> parentProjectCombo = new JComboBox<>();
@@ -72,9 +75,20 @@ public class TaskDialog extends JDialog {
     }
 
     private TaskDialog(Frame parent, TaskService taskService, Task task, String defaultType, Integer defaultParentProjectId) {
+        this(parent, Objects.requireNonNull(taskService, "taskService").getAllTasks(),
+                task, defaultType, defaultParentProjectId, taskService.assigneeOptions());
+    }
+
+    /**
+     * TaskService を通さない一覧で開く。
+     *
+     * @param task             編集するタスク。追加なら null
+     * @param assigneeOptions  担当者欄の横のボタンから選べる名前。空ならボタンを出さない
+     */
+    public TaskDialog(Frame parent, List<Task> allTasks, Task task, String defaultType,
+                      Integer defaultParentProjectId, List<String> assigneeOptions) {
         super(parent, TaskDialogTitles.forTask(task), true);
-        this.taskService = Objects.requireNonNull(taskService, "taskService");
-        this.allTasks = taskService.getAllTasks();
+        this.allTasks = allTasks != null ? allTasks : List.of();
         setLayout(new MigLayout("fill, insets 0, gap 0", "[grow]", "[grow][]"));
 
         AppTheme.styleTextField(nameField);
@@ -132,6 +146,8 @@ public class TaskDialog extends JDialog {
                 progressLocked
                         ? AppMessages.get("dialog.status.from.children", "子タスクの進捗から計算されます")
                         : null,
+                memoArea,
+                assigneeOptions,
                 parent);
         TaskDialogFormFactory.DialogButtons buttons = TaskDialogFormFactory.buildButtonPanel(this::handleSave, this::dispose);
 
@@ -145,6 +161,8 @@ public class TaskDialog extends JDialog {
                 endDateField.setText(task.getEndDate().toString());
             }
             priorityCombo.setSelectedItem(task.getPriorityCode());
+            memoArea.setText(task.getMemo());
+            memoArea.setCaretPosition(0);
             if (task.getParentId() != null) {
                 Task rootProject = TaskHierarchyUtil.findRootProject(task, allTasks);
                 if (rootProject != null) {
@@ -161,6 +179,10 @@ public class TaskDialog extends JDialog {
         widenFieldsToFitText();
         DialogFit.showAll(this);
         DialogKeys.install(this, buttons.saveButton(), this::dispose);
+        getRootPane().registerKeyboardAction(
+                e -> handleSave(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, InputEvent.CTRL_DOWN_MASK),
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowOpened(WindowEvent e) {
@@ -239,6 +261,14 @@ public class TaskDialog extends JDialog {
 
     public void setAssignee(String assignee) {
         assigneeField.setText(assignee);
+    }
+
+    public String getMemo() {
+        return memoArea.getText().strip();
+    }
+
+    public void setMemo(String memo) {
+        memoArea.setText(memo);
     }
 
     public String getStartDate() {

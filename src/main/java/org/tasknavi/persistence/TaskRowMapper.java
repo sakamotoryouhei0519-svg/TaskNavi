@@ -33,6 +33,11 @@ public final class TaskRowMapper {
         } catch (SQLException ignored) {
             // 旧スキーマ互換
         }
+        try {
+            task.setMemo(rs.getString("memo"));
+        } catch (SQLException ignored) {
+            // 旧スキーマ互換
+        }
         return task;
     }
 

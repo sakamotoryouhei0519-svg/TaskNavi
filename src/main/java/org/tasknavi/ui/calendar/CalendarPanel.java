@@ -2,14 +2,14 @@ package org.tasknavi.ui.calendar;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.ui.AppTheme;
-import org.tasknavi.ui.SearchablePanel;
-import org.tasknavi.model.Task;
-import org.tasknavi.service.TaskService;
-import org.tasknavi.ui.UiConstants;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
+import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.ProjectFilterDialog;
+import org.tasknavi.ui.SearchablePanel;
+import org.tasknavi.ui.WidthTrackingPanel;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -27,8 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 【カレンダー画面パネルクラス】
- * 月／週表示切替と日別タスク一覧を持つカレンダービュー。
+ * カレンダータブ。月表示と週表示を切り替え、横に選んだ日のタスクを並べる。
  */
 public class CalendarPanel extends JPanel implements SearchablePanel {
 
@@ -80,7 +79,6 @@ public class CalendarPanel extends JPanel implements SearchablePanel {
         setBackground(AppTheme.BACKGROUND);
 
         mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        mainSplitPane.setDividerLocation(UiConstants.WINDOW_WIDTH_MAIN - 380);
         mainSplitPane.setResizeWeight(1.0);
         mainSplitPane.setContinuousLayout(true);
         mainSplitPane.setBorder(null);
@@ -152,7 +150,7 @@ public class CalendarPanel extends JPanel implements SearchablePanel {
         lblDailyCountBadge = dailyHeader.countBadge();
         rightPanel.add(dailyHeader.panel(), BorderLayout.NORTH);
 
-        dailyTasksContainer = new JPanel(new MigLayout("fillx, insets 4 2 12 2, wrap", "[grow,fill]", "[]8"));
+        dailyTasksContainer = new WidthTrackingPanel(new MigLayout("fillx, insets 4 2 12 2, wrap", "[grow,fill]", "[]8"));
         dailyTasksContainer.setBackground(AppTheme.BACKGROUND);
 
         JScrollPane dailyScroll = new JScrollPane(dailyTasksContainer);
@@ -198,7 +196,7 @@ public class CalendarPanel extends JPanel implements SearchablePanel {
 
         calendarContainer.removeAll();
         JComponent viewComponent = currentViewMode == ViewMode.MONTH
-                ? CalendarMonthViewBuilder.build(currentDate, selectedDate, allTasks, calendarMonthActions())
+                ? fitToWidth(CalendarMonthViewBuilder.build(currentDate, selectedDate, allTasks, calendarMonthActions()))
                 : CalendarWeekViewBuilder.build(
                         currentDate, selectedDate, allTasks, calendarCardActions(), date -> {
                             selectedDate = date;
@@ -221,6 +219,13 @@ public class CalendarPanel extends JPanel implements SearchablePanel {
 
         revalidate();
         repaint();
+    }
+
+    private static JComponent fitToWidth(JComponent view) {
+        JPanel holder = new WidthTrackingPanel(new BorderLayout());
+        holder.setBackground(AppTheme.BACKGROUND);
+        holder.add(view, BorderLayout.CENTER);
+        return holder;
     }
 
     private void updatePeriodTitle() {

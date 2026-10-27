@@ -1,9 +1,9 @@
 package org.tasknavi.ui.wbs;
 
 import org.tasknavi.AppMessages;
-import org.tasknavi.ui.ErrorDialogUtil;
 import org.tasknavi.model.Task;
 import org.tasknavi.service.TaskService;
+import org.tasknavi.ui.ErrorDialogUtil;
 
 import javax.swing.JComponent;
 import javax.swing.JTree;

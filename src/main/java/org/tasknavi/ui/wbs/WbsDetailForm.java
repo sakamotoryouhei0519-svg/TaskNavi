@@ -10,13 +10,14 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Graphics;
 import java.awt.RenderingHints;
 
 /**
@@ -46,8 +47,11 @@ public final class WbsDetailForm {
     private final JLabel startCaption = caption();
     private final JLabel endCaption = caption();
     private final JLabel progressCaption = caption();
+    private final JLabel memoCaption = caption();
+    private final JTextArea memoValue = new JTextArea();
     private final JPanel metaDivider = line();
     private final JPanel progressDivider = line();
+    private final JPanel memoDivider = line();
 
     public WbsDetailForm(Runnable onEdit) {
         headingLabel.setText(AppMessages.get("wbs.detail.title", "タスク詳細"));
@@ -67,7 +71,7 @@ public final class WbsDetailForm {
 
         JPanel header = new JPanel(new MigLayout("insets 0", "[grow][]", "[]"));
         header.setOpaque(false);
-        header.add(headingLabel, "growx");
+        header.add(headingLabel, "growx, wmin 0");
         header.add(editButton, "h 36!");
 
         JLabel docIcon = new JLabel("☰");
@@ -77,13 +81,13 @@ public final class WbsDetailForm {
         JPanel titleRow = new JPanel(new MigLayout("insets 0, gap 8", "[][][]", "[]"));
         titleRow.setOpaque(false);
         titleRow.add(docIcon);
-        titleRow.add(nameLabel);
+        titleRow.add(nameLabel, "wmin 0");
         titleRow.add(statusBadge, "aligny center");
 
         JPanel meta = new JPanel(new MigLayout(
                 "insets 0",
-                "[grow,fill]16[grow,fill]16[grow,fill]16[80!]16[110!]16[110!]",
-                "[]4[]"));
+                "[grow,fill]16[grow,fill]16[grow,fill]",
+                "[]4[]14[]4[]"));
         meta.setOpaque(false);
         projectCaption.setText(AppMessages.get("wbs.label.project.name", "プロジェクト名"));
         stageCaption.setText(AppMessages.get("wbs.label.stage.name", "工程名"));
@@ -97,18 +101,18 @@ public final class WbsDetailForm {
         styleValue(startValue);
         styleValue(endValue);
         priorityBadge.setFont(AppTheme.FONT_BOLD);
-        meta.add(projectCaption);
-        meta.add(stageCaption);
-        meta.add(assigneeCaption);
-        meta.add(priorityCaption);
-        meta.add(startCaption);
-        meta.add(endCaption, "wrap");
-        meta.add(projectValue);
-        meta.add(stageValue);
-        meta.add(assigneeValue);
-        meta.add(priorityBadge, "left");
-        meta.add(startValue);
-        meta.add(endValue);
+        meta.add(projectCaption, "wmin 0");
+        meta.add(stageCaption, "wmin 0");
+        meta.add(assigneeCaption, "wmin 0, wrap");
+        meta.add(projectValue, "wmin 0");
+        meta.add(stageValue, "wmin 0");
+        meta.add(assigneeValue, "wmin 0, wrap");
+        meta.add(priorityCaption, "wmin 0");
+        meta.add(startCaption, "wmin 0");
+        meta.add(endCaption, "wmin 0, wrap");
+        meta.add(priorityBadge, "left, growx 0");
+        meta.add(startValue, "wmin 0");
+        meta.add(endValue, "wmin 0");
 
         progressCaption.setText(AppMessages.get("wbs.label.progress.rate", "進捗率"));
         JPanel progressHeader = new JPanel(new MigLayout("insets 0, gap 8", "[][]", "[]"));
@@ -118,14 +122,26 @@ public final class WbsDetailForm {
         progressTrack.setPreferredSize(new Dimension(240, 10));
         progressTrack.setMaximumSize(new Dimension(240, 10));
 
+        memoCaption.setText(AppMessages.get("label.memo", "メモ"));
+        memoValue.setEditable(false);
+        memoValue.setFocusable(false);
+        memoValue.setOpaque(false);
+        memoValue.setLineWrap(true);
+        memoValue.setWrapStyleWord(true);
+        memoValue.setFont(AppTheme.FONT_MAIN);
+        memoValue.setBorder(null);
+
         bodyPanel = new JPanel(new MigLayout("insets 0", "[grow]", "[]10[]10[]8[]"));
         bodyPanel.setOpaque(false);
-        bodyPanel.add(titleRow, "left, wrap");
+        bodyPanel.add(titleRow, "growx, wmin 0, wrap");
         bodyPanel.add(metaDivider, "growx, h 1!, wrap");
-        bodyPanel.add(meta, "growx, wrap");
+        bodyPanel.add(meta, "growx, wmin 0, wrap");
         bodyPanel.add(progressDivider, "growx, h 1!, wrap");
         bodyPanel.add(progressHeader, "left, wrap");
-        bodyPanel.add(progressTrack, "w 240!, h 10!, left");
+        bodyPanel.add(progressTrack, "w 0:240:240, h 10!, left, wrap");
+        bodyPanel.add(memoDivider, "growx, h 1!, gaptop 6, wrap");
+        bodyPanel.add(memoCaption, "left, wrap");
+        bodyPanel.add(memoValue, "growx, wmin 0");
         bodyPanel.setVisible(false);
 
         emptyLabel = new JLabel(AppMessages.get(
@@ -136,7 +152,7 @@ public final class WbsDetailForm {
         rootPanel = new JPanel(new MigLayout("insets 12 16 12 16", "[grow]", "[]12[]"));
         rootPanel.add(header, "growx, wrap");
         rootPanel.add(bodyPanel, "growx, wrap");
-        rootPanel.add(emptyLabel, "growx");
+        rootPanel.add(emptyLabel, "growx, wmin 0");
         updateTheme();
     }
 
@@ -161,11 +177,14 @@ public final class WbsDetailForm {
 
         String name = task.getName() == null ? "" : task.getName();
         nameLabel.setText(wbsCode == null || wbsCode.isBlank() ? name : wbsCode + "  " + name);
+        nameLabel.setToolTipText(name.isBlank() ? null : name);
         statusBadge.setText(AppMessages.statusDisplay(task.getStatusCode()));
         statusBadge.setBackground(AppTheme.getStatusColor(task.getStatusCode()));
 
         projectValue.setText(textOrDash(projectName));
+        projectValue.setToolTipText(projectName == null || projectName.isBlank() ? null : projectName);
         stageValue.setText(textOrDash(stageName));
+        stageValue.setToolTipText(stageName == null || stageName.isBlank() ? null : stageName);
         assigneeValue.setText(assigneeHtml(task.getAssignee()));
         priorityBadge.setText(AppMessages.priorityDisplay(task.getPriorityCode()));
         priorityBadge.setBackground(AppTheme.getPriorityColor(task.getPriorityCode()));
@@ -175,6 +194,8 @@ public final class WbsDetailForm {
         int progress = Math.max(0, Math.min(100, task.getProgress()));
         progressPercent.setText(progress + "%");
         progressTrack.setPercent(progress);
+        memoValue.setText(textOrDash(task.getMemo()));
+        memoValue.setCaretPosition(0);
         rootPanel.revalidate();
         rootPanel.repaint();
     }
@@ -191,10 +212,11 @@ public final class WbsDetailForm {
         startValue.setForeground(fg);
         endValue.setForeground(fg);
         progressPercent.setForeground(fg);
+        memoValue.setForeground(fg);
         emptyLabel.setForeground(muted);
         for (JLabel caption : new JLabel[]{
                 projectCaption, stageCaption, assigneeCaption, priorityCaption,
-                startCaption, endCaption, progressCaption}) {
+                startCaption, endCaption, progressCaption, memoCaption}) {
             caption.setForeground(muted);
         }
         statusBadge.setForeground(Color.WHITE);
@@ -207,6 +229,7 @@ public final class WbsDetailForm {
         progressTrack.repaint();
         metaDivider.setBackground(AppTheme.BORDER_COLOR);
         progressDivider.setBackground(AppTheme.BORDER_COLOR);
+        memoDivider.setBackground(AppTheme.BORDER_COLOR);
     }
 
     private static void styleValue(JLabel value) {

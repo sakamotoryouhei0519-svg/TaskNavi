@@ -1,15 +1,13 @@
 package org.tasknavi.ui.auth;
 
-import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.ui.AppTheme;
-import org.tasknavi.service.AuthService;
-import org.tasknavi.ui.ErrorDialogUtil;
-import org.tasknavi.ui.MainFrame;
-import org.tasknavi.service.TaskService;
-import org.tasknavi.ui.UiConstants;
 import org.tasknavi.persistence.SampleDataUtil;
+import org.tasknavi.service.AuthService;
+import org.tasknavi.service.TaskService;
 import org.tasknavi.service.UserSession;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.ui.main.MainFrame;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -17,22 +15,18 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.SwingWorker;
-import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.prefs.Preferences;
 
 /**
- * 【ログイン画面クラス】
+ * ログイン画面。ログインできたらメインの窓を開く。
  */
 public class LoginFrame extends JFrame {
 
@@ -43,52 +37,28 @@ public class LoginFrame extends JFrame {
     private JPasswordField passwordField;
     private JButton loginButton;
     private JToggleButton showPasswordButton;
-    private JLabel errorLabel;
+    private JTextArea errorArea;
     private JCheckBox rememberMeCheckBox;
 
     public LoginFrame() {
-        AuthFormWidgets.applyWindowDefaults(
-                this,
-                AppMessages.get("auth.login.window.title"),
-                UiConstants.WINDOW_WIDTH_LOGIN,
-                UiConstants.WINDOW_HEIGHT_LOGIN);
-
-        JPanel mainPanel = new JPanel(new MigLayout(
-                "fillx, insets 30 40 30 40, wrap", "[grow,fill]",
-                "[]20[]4[]12[]4[]8[]8[]12[]15[]8"));
-        mainPanel.setBackground(AppTheme.BACKGROUND);
+        AuthFormWidgets.applyWindowDefaults(this, AppMessages.get("auth.login.window.title"));
 
         JLabel titleLabel = AuthFormWidgets.createTitleLabel();
         JLabel subtitleLabel = AuthFormWidgets.createSubtitleLabel(AppMessages.get("auth.login.subtitle"));
 
         JLabel userLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.login.username"));
-        usernameField = AuthFormWidgets.createStyledTextField(
-                AppMessages.get("auth.login.placeholder.username"), true);
+        usernameField = AuthFormWidgets.createStyledTextField();
 
         JLabel passLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.login.password"));
-        JPanel passwordWrapper = new JPanel(new MigLayout("fill, insets 0, gap 0", "[grow][]", "[grow]"));
-        passwordWrapper.setOpaque(false);
-        passwordWrapper.setMaximumSize(new Dimension(UiConstants.FIELD_WIDTH_STANDARD, UiConstants.FIELD_HEIGHT));
-        passwordWrapper.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        passwordField = AuthFormWidgets.createStyledPasswordField(true);
+        passwordField = AuthFormWidgets.createStyledPasswordField();
         showPasswordButton = AuthFormWidgets.createPasswordToggle(passwordField);
-        showPasswordButton.setBorder(new LineBorder(AppTheme.BORDER_COLOR, 1));
-        passwordWrapper.add(passwordField, "grow");
-        passwordWrapper.add(showPasswordButton);
+        JPanel passwordRow = AuthFormWidgets.createPasswordRow(passwordField, showPasswordButton);
 
-        errorLabel = AuthFormWidgets.createErrorLabel();
+        errorArea = AuthFormWidgets.createErrorArea();
 
-        rememberMeCheckBox = new JCheckBox(AppMessages.get("auth.login.remember"));
-        rememberMeCheckBox.setFont(AppTheme.FONT_MAIN);
-        rememberMeCheckBox.setOpaque(false);
-        rememberMeCheckBox.setAlignmentX(Component.CENTER_ALIGNMENT);
-        rememberMeCheckBox.setFocusPainted(false);
+        rememberMeCheckBox = AuthFormWidgets.createCheckBox(AppMessages.get("auth.login.remember"));
 
-        loginButton = AuthFormWidgets.createPrimaryButton(
-                AppMessages.get("auth.login.button"),
-                UiConstants.FIELD_WIDTH_STANDARD,
-                UiConstants.BUTTON_HEIGHT_LARGE);
+        loginButton = AuthFormWidgets.createPrimaryButton(AppMessages.get("auth.login.button"));
 
         JLabel registerLink = AuthFormWidgets.createLinkLabel(
                 AppMessages.htmlUnderline(AppMessages.get("auth.login.link.register")), null);
@@ -111,18 +81,20 @@ public class LoginFrame extends JFrame {
             }
         });
 
-        mainPanel.add(titleLabel, "align center");
-        mainPanel.add(subtitleLabel, "align center, wrap");
-        mainPanel.add(userLabel, "align center");
-        mainPanel.add(usernameField, "align center, wrap");
-        mainPanel.add(passLabel, "align center");
-        mainPanel.add(passwordWrapper, "align center, wrap");
-        mainPanel.add(rememberMeCheckBox, "align center, wrap");
-        mainPanel.add(errorLabel, "align center, wrap");
-        mainPanel.add(loginButton, "align center, wrap");
-        mainPanel.add(registerLink, "align center, wrap");
-        mainPanel.add(forgotPasswordLink, "align center");
-        add(mainPanel);
+        int fieldHeight = AuthFormWidgets.FIELD_HEIGHT;
+        JPanel card = AuthFormWidgets.createCard();
+        card.add(titleLabel, "growx");
+        card.add(subtitleLabel, "growx, gaptop 4");
+        card.add(userLabel, "growx, gaptop 24");
+        card.add(usernameField, "growx, gaptop 6, h " + fieldHeight + "!");
+        card.add(passLabel, "growx, gaptop 14");
+        card.add(passwordRow, "growx, gaptop 6");
+        card.add(rememberMeCheckBox, "gaptop 12");
+        card.add(errorArea, AuthFormWidgets.ERROR_AREA_CONSTRAINTS);
+        card.add(loginButton, "growx, gaptop 4, h " + AuthFormWidgets.BUTTON_HEIGHT + "!");
+        card.add(registerLink, "growx, gaptop 18");
+        card.add(forgotPasswordLink, "growx, gaptop 8");
+        AuthFormWidgets.showCard(this, card);
 
         String savedUsername = loadSavedUsername();
         if (!savedUsername.isEmpty()) {
@@ -153,15 +125,13 @@ public class LoginFrame extends JFrame {
     }
 
     private void clearInlineError() {
-        errorLabel.setText("");
-        errorLabel.setVisible(false);
+        AuthFormWidgets.clearError(errorArea);
         AuthFormWidgets.setFieldErrorState(usernameField, false);
         AuthFormWidgets.setFieldErrorState(passwordField, false);
     }
 
     private void showInlineError(String message) {
-        errorLabel.setText(message);
-        errorLabel.setVisible(true);
+        AuthFormWidgets.showError(errorArea, message);
         AuthFormWidgets.setFieldErrorState(usernameField, usernameField.getText().trim().isEmpty());
         AuthFormWidgets.setFieldErrorState(passwordField, passwordField.getPassword().length == 0);
     }
@@ -231,7 +201,9 @@ public class LoginFrame extends JFrame {
                     if (result != null && result.isSuccess()) {
                         saveRememberedUsername(username, rememberMeCheckBox.isSelected());
                         UserSession.login(result.getUser());
-                        new MainFrame(TaskService.createDefault()).setVisible(true);
+                        MainFrame mainFrame = new MainFrame(TaskService.createDefault());
+                        mainFrame.setVisible(true);
+                        mainFrame.startDueReminders();
                         LoginFrame.this.dispose();
                     } else if (result != null && result.getStatus() == AuthService.LoginStatus.LOCKED) {
                         AuthFormWidgets.setFieldErrorState(usernameField, true);

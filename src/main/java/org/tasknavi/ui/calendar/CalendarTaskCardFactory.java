@@ -2,8 +2,8 @@ package org.tasknavi.ui.calendar;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.ui.AppTheme;
 import org.tasknavi.model.Task;
+import org.tasknavi.ui.AppTheme;
 import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.BorderFactory;
@@ -18,8 +18,8 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.RenderingHints;
 

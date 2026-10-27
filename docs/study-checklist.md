@@ -72,9 +72,9 @@ main()
 | 必読 | `ui/auth/LoginFrame.java` |
 | 必読 | `service/AuthService.java` |
 | 必読 | `service/TaskService.java` の `createDefault()` |
-| 必読 | `ui/MainFrame.java`（コンストラクタ前半: ヘッダー・タブ追加） |
+| 必読 | `ui/main/MainFrame.java`（コンストラクタ前半: ヘッダー・タブ追加） |
 | 関連 | `persistence/UserDao.java` / `service/UserSession.java` |
-| 関連 | `ui/MainHeaderBar.java` / `ui/MainToolbarButtons.java` |
+| 関連 | `ui/main/MainHeaderBar.java` / `ui/main/MainToolbarButtons.java` |
 
 **コードの流れ（LoginFrame → MainFrame）:**
 
@@ -108,7 +108,7 @@ LoginFrame.handleLogin()
         → new KanbanPanel(taskService)
         → new GanttPanel(taskService)
         → new CalendarPanel(taskService)
-        → addMainTab() で4つのタブ追加
+        → addMainTab() で5つのタブ追加（今日 / WBS / カンバン / ガント / カレンダー）
         → loadLastTabIndex() で最後のタブを復元
         → addChangeListener() でタブ切り替えリスナー設定
       → mainFrame.setVisible(true)
@@ -129,10 +129,10 @@ LoginFrame.handleLogin()
 
 | 区分 | ファイル |
 |------|----------|
-| 必読 | `ui/MainFrame.java`（`JTabbedPane` と `addChangeListener`） |
+| 必読 | `ui/main/MainFrame.java`（`JTabbedPane` と `addChangeListener`） |
 | 必読 | `ui/SearchablePanel.java`（各タブが実装する約束） |
-| 関連 | `ui/MainTabChrome.java`（見た目） |
-| 関連 | `ui/MainGlobalSearchBar.java` の `syncActive()` |
+| 関連 | `ui/main/MainTabChrome.java`（見た目） |
+| 関連 | `ui/main/MainGlobalSearchBar.java` の `syncActive()` |
 
 **コードの流れ（MainFrame タブ切り替え）:**
 
@@ -193,8 +193,8 @@ MainFrame
 
 | 区分 | ファイル |
 |------|----------|
-| 必読 | `ui/MainFrame.java`（追加ボタンの `ActionListener`） |
-| 必読 | `ui/MainTaskAddHelper.java` |
+| 必読 | `ui/main/MainFrame.java`（追加ボタンの `ActionListener`） |
+| 必読 | `ui/main/MainTaskAddHelper.java` |
 | 必読 | `ui/taskdialog/TaskDialog.java` |
 | 必読 | `ui/TaskEntryFactory.java` |
 | 必読 | `service/TaskService.java`（`addTask`） |
@@ -231,7 +231,7 @@ MainFrame.createToolBarPanel()
         → TaskDao.addTask(newTask)
           → validateTask(newTask) (バリデーション)
           → TaskCrudDao.add(newTask, ownerId)
-            → DatabaseUtil.getConnection() でDB接続取得
+            → Database.connect() でDB接続取得
             → PreparedStatement で INSERT SQL 実行
             → getGeneratedKeys() で生成されたID取得
             → task.setId(generatedId)
@@ -299,7 +299,7 @@ WbsPanel コンストラクタ
           → TaskDao.updateTasks(tasks)
             → 各タスクを validateTask() でバリデーション
             → TaskCrudDao.updateAll(tasks, ownerId)
-              → DatabaseUtil.withTransaction() でトランザクション開始
+              → Database.withTransaction() でトランザクション開始
               → 各タスクを UPDATE SQL で更新
               → getAll(connection, ownerId) で全タスク再取得
               → TaskHierarchySupport.rollupAncestors() で祖先の進捗計算
@@ -359,7 +359,7 @@ MainFrame.createToolBarPanel()
                 → TaskHierarchySupport.collectDescendantIds(taskId, allTasks, targetIds)
                   → 再帰的に子孫タスクのIDを収集
                 → TaskCrudDao.deleteIds(targetIds, ownerId)
-                  → DatabaseUtil.withTransaction() でトランザクション開始
+                  → Database.withTransaction() でトランザクション開始
                   → PreparedStatement で DELETE SQL をバッチ実行
                   → 全IDを1回のトランザクションで削除
                   → 失敗ならロールバック
@@ -425,9 +425,9 @@ MainFrame.createToolBarPanel()
 
 | 区分 | ファイル |
 |------|----------|
-| 必読 | `ui/MainGlobalSearchBar.java` |
+| 必読 | `ui/main/MainGlobalSearchBar.java` |
 | 必読 | `SearchablePanel.applySearchFilter` |
-| 必読 | `util/TaskViewFilter.java`（名前 **または担当者**） |
+| 必読 | `util/TaskViewFilter.java`（名前・担当者・メモ。`matchesKeyword`） |
 | 必読 | 今アクティブな Panel の `applySearchFilter` |
 | 関連 | `util/SearchFilterUtil.java` |
 | 関連 | `MainGlobalSearchBar.describeFilters`（適用中フィルタの表示文言） |
@@ -457,6 +457,7 @@ MainGlobalSearchBar.createSearchBox()
             → TaskViewFilter.matches(task, keyword, status) でフィルタリング
               → keyword が null または task.getName().contains(keyword)
               → または task.getAssignee().contains(keyword)
+              → または task.getMemo().contains(keyword)
               → status が null または task.getStatusCode().equals(status)
             → フィルタ済みタスクでツリー再構築
       → refreshFilterSummary()
@@ -468,13 +469,13 @@ MainGlobalSearchBar.createSearchBox()
 
 - [ ] なぜ Panel ごとに別ロジックを書かず `TaskViewFilter` に寄せるのか言える
 - [ ] `DocumentListener` が入力のたびに `applyToActive()` を呼び出していると言える
-- [ ] `TaskViewFilter.matches()` が名前または担当者でのマッチングを行っていると言える
+- [ ] `TaskViewFilter.matches()` が名前・担当者・メモでのマッチングを行っていると言える
 
 ### 操作I: フィルタダイアログ／プロジェクト絞り込み
 
 | 区分 | ファイル |
 |------|----------|
-| 必読 | `ui/MainGlobalSearchBar.java` |
+| 必読 | `ui/main/MainGlobalSearchBar.java` |
 | 必読 | `ui/ProjectFilterDialog.java` |
 | 必読 | Panel の `handleExistingProject` / `handleClearFilter` |
 | 関連 | `util/ProjectMemberFilter.java` |
@@ -530,7 +531,7 @@ MainGlobalSearchBar.showFilterMenu()
 | 必読 | `ui/wbs/WbsPanel.java` |
 | 関連 | `WbsTreeModelBuilder` / `WbsTreeFilter` / `WbsDetailForm` |
 | 後回し可 | `WbsTreeTransferHandler`（DnD） |
-| テスト | `WbsTreeFilterTest` / `WbsFormValidatorTest` |
+| テスト | `WbsTreeFilterTest` |
 
 **コードの流れ（WBSツリー表示）:**
 
@@ -727,7 +728,7 @@ RegisterFrame コンストラクタ
         → パスワードハッシュ化して保存
     → SwingWorker.done() (EDTで結果処理)
       → 成功なら AuthNavigation.openLoginAndDispose(this)
-      → 失敗なら errorLabel にエラー表示
+      → 失敗なら errorArea にエラー表示（AuthFormWidgets.showError）
 ```
 
 **コードの流れ（パスワード再設定）:**
@@ -770,47 +771,50 @@ LoginFrame で「パスワードを忘れた」リンクをクリック
 
 | 区分 | ファイル |
 |------|----------|
-| 必読 | `ui/TaskDataIoHelper.java`（全件／絞り込み結果の選択を含む） |
-| 必読 | `persistence/TaskImportDao.java` |
-| 関連 | `util/JsonTaskSerializer.java` / `JsonTaskDeserializer.java` |
-| テスト | `TaskImportDaoTest` / `JsonTaskSerializerTest` |
+| 必読 | `ui/TaskDataIoHelper.java`（全件／絞り込み結果の選択、取り込み前の確認を含む） |
+| 必読 | `io/TaskCsv.java`（タスク ⇔ CSV、行ごとの検証） |
+| 必読 | `persistence/TaskImportDao.java`（ID の振り直し） |
+| 関連 | `io/CsvCodec.java`（引用符・改行・文字コード） / `io/TaskJson.java` |
+| テスト | `TaskCsvTest` / `CsvCodecTest` / `TaskJsonTest` / `TaskDataIoHelperTest` / `TaskDaoIntegrationTest`（import〜） |
 
 **コードの流れ（エクスポート）:**
 
 ```
-MainFrame で「エクスポート」メニューを選択
+ヘッダーの「エクスポート」をクリック
   → TaskDataIoHelper.exportTasks()
-    → JFileChooser で保存先ファイルを選択
-    → taskService.getAllTasks() で全タスク取得
-    → JsonTaskSerializer.serialize(tasks) でJSONシリアライズ
-    → Files.write() でファイル書き込み
-    → NoticeBar.info() で「エクスポートしました」を表示
+    → 絞り込み中なら「絞り込み結果／全件」を選ぶ（絞り込み結果には親も足す: withAncestors）
+    → JFileChooser で保存先と形式（CSV / JSON）を選ぶ
+    → TaskCsv.write()（BOM 付き UTF-8・親の直後に子の順）または TaskJson.write()
+    → NoticeBar.info() で件数と保存先を表示
 ```
 
 **コードの流れ（インポート）:**
 
 ```
-MainFrame で「インポート」メニューを選択
+ヘッダーの「インポート」をクリック
   → TaskDataIoHelper.importTasks()
-    → JFileChooser でインポートファイルを選択
-    → Files.readAllBytes() でファイル読み込み
-    → JsonTaskDeserializer.deserialize() でJSONデシリアライズ
-    → 置換確認ダイアログ表示（既存データを上書きするか）
-    → SwingWorker.doInBackground()
-      → taskDao.importTasks(tasks, replaceExisting)
-        → TaskImportDao.importTasks()
-          → replaceExisting なら全タスク削除
-          → 各タスクを TaskCrudDao.add() で追加
-          → 親子関係を考慮して順序を調整
-    → SwingWorker.done()
+    → JFileChooser でファイルを選ぶ
+    → TaskCsv.read()（CSV）または TaskJson.read()（JSON）
+      → CsvCodec.decode() で UTF-8 / Shift_JIS を判定 → CsvCodec.parse() で行に分ける
+      → 1 行ずつ検証し、駄目な行は RowError（行番号と理由）へ
+    → summarize() の内容で確認ダイアログ（追加 / すべて置き換え / キャンセル）
+    → 置き換えなら、今のタスクを backups/before-import-日時.csv に書き出してから
+    → taskService.importTasks(tasks, replace)
+      → TaskDao.importTasks() でファイル内の親子関係を検証（1 件でも不正なら何も書かない）
+        → TaskImportDao.importTasks()（1 トランザクション）
+          → 置き換えなら自分のタスクを全削除
+          → 親から順に INSERT し、振られた ID で子の親 ID を付け替える
       → TaskEventBus.post(REFRESH_ALL)
-      → NoticeBar.info() で「インポートしました」を表示
+    → NoticeBar.info() で件数を表示
 ```
+
+共有プロジェクトを選んでいるときは、`TaskDao` の代わりに `TeamTaskStore.importTasks()` → `TeamProject.importTasks()` を通ります。全部の行をチェックしてから、`TeamChangeLog.appendAll()` で記録ファイルに1回で書きます。
 
 できたチェック:
 
-- [ ] `JsonTaskSerializer` がタスクリストをJSONに変換していると言える
-- [ ] `TaskImportDao.importTasks()` がreplaceExistingフラグで全置換か追加を制御していると言える
+- [ ] Excel で保存した CSV（Shift_JIS・`2026/10/24` 形式の日付）も読める理由を `CsvCodec.decode` と `TaskCsv.parseDate` で説明できる
+- [ ] 取り込み時に ID を振り直す理由と、親を先に入れる理由を言える
+- [ ] `TaskImportDao.importTasks()` が replaceExisting で全置換か追加を切り替えていると言える
 
 ### 操作O2: 期限超過の見え方を確認する
 
@@ -854,7 +858,7 @@ Task.isOverdue()
 |------|----------|
 | 必読 | `MainFrame` のテーマトグル |
 | 必読 | `ui/AppTheme.java` / `ui/AppThemeControls.java` |
-| 関連 | `ui/MainThemeSupport.java` |
+| 関連 | `ui/main/MainThemeSupport.java` |
 
 **コードの流れ（テーマ切り替え）:**
 
@@ -903,12 +907,29 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 |------|----------|
 | 期限超過の強調 | `Task.isOverdue()` / `CalendarTaskCardFactory` / `KanbanCardFactory` |
 | 適用中フィルタの表示 | `MainGlobalSearchBar.describeFilters` |
-| 絞り込み結果の JSON エクスポート | `TaskDataIoHelper`（全件かフィルタ結果かを確認） |
+| 絞り込み結果のエクスポート | `TaskDataIoHelper`（全件かフィルタ結果かを確認） |
+| Excel 向け CSV の書き出し・取り込み | `TaskCsv` / `CsvCodec` / `TaskImportDao` |
 | 保存の失敗を画面に出す | `ErrorDialogUtil.findAppException` |
 | 編集の保存は成功したあとだけ知らせる | `WbsPanel.openEditDialog` → `TaskService.updateTask` → `updateTasks` |
 | 削除と並べ替えを途中で残さない | `TaskCrudDao.deleteIds` / `updateOrderIndexes` |
 | 再設定コードを DB に残す | `VerificationManager` / `V3__verification_codes.sql` |
-| テスト | `TaskOverdueTest` / `MainGlobalSearchBarDescribeTest` / `TaskDaoIntegrationTest` |
+| チーム共有の土台（教科書16章） | `team/TeamProject` → `TeamChangeLog`（読み書き）→ `TeamReplay`（組み立てと重なりの検出） |
+| 共有プロジェクトを作る・参加する・閉じる・表示名 | `ui/team/ProjectSwitcher`（メニュー）→ `ui/team/TeamSession` / `TeamDialogs` / `team/TeamSettings` |
+| メンバー・同期・重なりの表示 | `ProjectSwitcher.refresh` ← `TeamSession.Listener.statusChanged` / `TeamMembersDialog` |
+| 担当者をメンバーから選ぶ | `TaskDialog` → `TaskService.assigneeOptions` → `TeamTaskStore.assigneeOptions` |
+| チームの自動の読み直し | `TeamSession.poll`（5秒ごと）→ `TeamProject.reloadIfChanged` → `TeamChangeLog.fingerprint` → `Listener.dataChanged` → `TaskService.reload` |
+| 共有プロジェクトを全タブに出す | `ProjectSwitcher` → `TeamSession.Listener.projectChanged` → `TaskService.useStore(teamSession.storeOf(...))` |
+| 「今日」タブと期限の通知を全プロジェクトで出す | `ProjectSources.all` → `TaskSource` の一覧 → `TodayPanel.collect` / `DueReminder.dueAcross` → `DueTasks.merge`（プロジェクトごとに作ってからつなぐ） |
+| 最近のプロジェクトも裏で開いて見張る | `TeamSession.loadOthers` / `poll` → `Listener.otherProjectsChanged` → `ProjectSources.invalidate` + `TaskService.reload` |
+| 共有プロジェクトへのまとめての取り込み | `TeamTaskStore.importTasks` → `TeamProject.importTasks`（全部チェックしてから）→ `TeamChangeLog.appendAll`（1回で書く） |
+| 共有のタスクを画面の番号で扱う・見ていた版と比べる | `TeamTaskStore`（`idOf` / `Task.revision` → `seenState`）→ `TeamProject.updateTask(id, 変更, 見ていた状態)` |
+| WBS で親を変える（深さは並べるときに決める） | `TeamProject.requireMovable` / `TeamReplay.visibleTasks`（`cycleTop` で輪をほどく） |
+| 重なった変更の確認と戻す | `TeamSession.showConflicts` → `TeamConflictDialog` → `TeamConflictGroup` / `TeamProject.restoreTask` / `TeamSettings.acknowledge` |
+| チームの変更履歴 | `TeamSession.showHistory` → `TeamProject.history` → `TeamHistory.build` → `TeamHistoryDialog` |
+| 置き場所の初期値（共有ドライブ → マイドライブ） | `TeamSession.defaultLocation` → `team/GoogleDriveFolders` |
+| 1台で2人目として起動する | `Main` → `TeamSettings.applyLaunchArguments`（`--team-profile=名前`）→ `TeamSettings.userDefault` |
+| 同じ PC で2つ起動しても記録が壊れない | `TeamChangeLog.append`（PC 内のファイルでロック）/ `TeamChangeLogConcurrencyTest` |
+| テスト | `TaskOverdueTest` / `MainGlobalSearchBarDescribeTest` / `TaskDaoIntegrationTest` / `TeamProjectTest` / `TeamChangeLogTest` / `TeamSettingsTest` / `TeamTaskStoreTest` / `DueTasksTest` / `DueReminderTest` |
 
 ---
 
@@ -955,7 +976,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 2. 画面は入力だけです。保存は `TaskService`、データベースは `TaskDao`、更新の知らせは `TaskEventBus` です
 3. 追った操作は「追加」（操作D）です。道は MainFrame → Helper → Dialog → Service → Bus です
 4. 保存の失敗は画面に出ます。削除と並べ替えは、途中だけ残りません
-5. 状態変更のルールは `TaskService.changeStatus` の1か所にあります。全件の読み込みは1回の変更で1回だけで、4つの画面で使い回します
+5. 状態変更のルールは `TaskService.changeStatus` の1か所にあります。全件の読み込みは1回の変更で1回だけで、5つの画面で使い回します
 6. テストは `mvn test` です。CI でも同じテストが動きます
 7. ログインした人ごとに台帳が分かれます。別のアカウントのタスクは見えません
 

@@ -1,7 +1,7 @@
 package org.tasknavi.service;
 
 import org.tasknavi.AppException;
-import org.tasknavi.util.DatabaseUtil;
+import org.tasknavi.persistence.Database;
 
 import java.security.SecureRandom;
 import java.sql.Connection;
@@ -32,7 +32,7 @@ public final class VerificationManager {
         long now = System.currentTimeMillis();
         String sql = "INSERT INTO verification_codes (email, code, generated_at) VALUES (?, ?, ?) "
                 + "ON CONFLICT(email) DO UPDATE SET code = excluded.code, generated_at = excluded.generated_at";
-        try (Connection conn = DatabaseUtil.getConnection();
+        try (Connection conn = Database.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, key);
             ps.setString(2, value);
@@ -52,7 +52,7 @@ public final class VerificationManager {
 
         purgeExpired();
         String sql = "SELECT code, generated_at FROM verification_codes WHERE email = ?";
-        try (Connection conn = DatabaseUtil.getConnection();
+        try (Connection conn = Database.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, key);
             try (ResultSet rs = ps.executeQuery()) {
@@ -76,7 +76,7 @@ public final class VerificationManager {
         if (key.isEmpty()) {
             return;
         }
-        try (Connection conn = DatabaseUtil.getConnection();
+        try (Connection conn = Database.connect();
              PreparedStatement ps = conn.prepareStatement("DELETE FROM verification_codes WHERE email = ?")) {
             ps.setString(1, key);
             ps.executeUpdate();
@@ -86,7 +86,7 @@ public final class VerificationManager {
     }
 
     public static void clearAll() {
-        try (Connection conn = DatabaseUtil.getConnection();
+        try (Connection conn = Database.connect();
              PreparedStatement ps = conn.prepareStatement("DELETE FROM verification_codes")) {
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -96,7 +96,7 @@ public final class VerificationManager {
 
     static int sizeForTesting() {
         purgeExpired();
-        try (Connection conn = DatabaseUtil.getConnection();
+        try (Connection conn = Database.connect();
              PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM verification_codes");
              ResultSet rs = ps.executeQuery()) {
             return rs.next() ? rs.getInt(1) : 0;
@@ -108,7 +108,7 @@ public final class VerificationManager {
     static void expireForTesting(String email) {
         String key = normalizeEmail(email);
         long expiredAt = System.currentTimeMillis() - CODE_VALIDITY_MILLIS - 1L;
-        try (Connection conn = DatabaseUtil.getConnection();
+        try (Connection conn = Database.connect();
              PreparedStatement ps = conn.prepareStatement(
                      "UPDATE verification_codes SET generated_at = ? WHERE email = ?")) {
             ps.setLong(1, expiredAt);
@@ -121,7 +121,7 @@ public final class VerificationManager {
 
     private static void purgeExpired() {
         long cutoff = System.currentTimeMillis() - CODE_VALIDITY_MILLIS;
-        try (Connection conn = DatabaseUtil.getConnection();
+        try (Connection conn = Database.connect();
              PreparedStatement ps = conn.prepareStatement(
                      "DELETE FROM verification_codes WHERE generated_at < ?")) {
             ps.setLong(1, cutoff);

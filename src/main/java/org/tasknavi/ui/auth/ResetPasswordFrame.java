@@ -1,12 +1,10 @@
 package org.tasknavi.ui.auth;
 
-import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.ui.AppTheme;
 import org.tasknavi.service.AuthService;
-import org.tasknavi.util.EmailUtil;
-import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.service.EmailUtil;
 import org.tasknavi.service.VerificationManager;
+import org.tasknavi.ui.ErrorDialogUtil;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -17,11 +15,9 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.SwingWorker;
-import java.awt.Component;
-import java.awt.Dimension;
 
 /**
- * 【パスワード再設定画面クラス】
+ * パスワード再設定画面。メールで送った認証コードを確かめてから変える。
  */
 public class ResetPasswordFrame extends JFrame {
 
@@ -41,67 +37,54 @@ public class ResetPasswordFrame extends JFrame {
     private boolean emailVerified = false;
 
     public ResetPasswordFrame() {
-        AuthFormWidgets.applyWindowDefaults(
-                this, AppMessages.get("auth.reset.window.title"), 400, 480);
-
-        JPanel mainPanel = new JPanel(new MigLayout(
-                "fillx, insets 30 40 30 40, wrap", "[grow,fill]",
-                "[]18[]4[]8[]12[]4[]8[]12[]4[]8[]22[]15"));
-        mainPanel.setBackground(AppTheme.BACKGROUND);
+        AuthFormWidgets.applyWindowDefaults(this, AppMessages.get("auth.reset.window.title"));
 
         JLabel titleLabel = AuthFormWidgets.createTitleLabel();
         JLabel subtitleLabel = AuthFormWidgets.createSubtitleLabel(AppMessages.get("auth.reset.subtitle"));
 
-        JLabel emailLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.register.email"), 320, 18);
-        emailField = AuthFormWidgets.createStyledTextField("example@domain.com", false);
+        JLabel emailLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.register.email"));
+        emailField = AuthFormWidgets.createStyledTextField();
 
-        sendCodeButton = AuthFormWidgets.createPrimaryButton(
-                AppMessages.get("auth.reset.button.send"), 320, 36);
+        sendCodeButton = AuthFormWidgets.createPrimaryButton(AppMessages.get("auth.reset.button.send"));
         sendCodeButton.addActionListener(e -> handleSendAuthCode());
 
-        JLabel authCodeLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.reset.code.label"), 320, 18);
-        authCodeField = AuthFormWidgets.createStyledTextField(
-                AppMessages.get("auth.reset.placeholder.code"), false);
+        JLabel authCodeLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.reset.code.label"));
+        authCodeField = AuthFormWidgets.createStyledTextField();
         authCodeField.setEnabled(false);
 
-        verifyButton = AuthFormWidgets.createPrimaryButton(
-                AppMessages.get("auth.reset.button.verify"), 320, 36);
+        verifyButton = AuthFormWidgets.createPrimaryButton(AppMessages.get("auth.reset.button.verify"));
         verifyButton.setEnabled(false);
         verifyButton.addActionListener(e -> handleVerifyAuthCode());
 
-        JLabel passLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.reset.new.password"), 320, 18);
-        JPanel passwordWrapper = new JPanel(new MigLayout("fill, insets 0, gap 0", "[grow][]", "[grow]"));
-        passwordWrapper.setOpaque(false);
-        passwordWrapper.setMaximumSize(new Dimension(320, 36));
-        passwordWrapper.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        newPasswordField = AuthFormWidgets.createStyledPasswordField(false);
+        JLabel passLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.reset.new.password"));
+        newPasswordField = AuthFormWidgets.createStyledPasswordField();
         newPasswordField.setEnabled(false);
         showPasswordButton = AuthFormWidgets.createPasswordToggle(newPasswordField);
-        passwordWrapper.add(newPasswordField, "grow");
-        passwordWrapper.add(showPasswordButton);
+        JPanel passwordRow = AuthFormWidgets.createPasswordRow(newPasswordField, showPasswordButton);
 
-        resetButton = AuthFormWidgets.createPrimaryButton(
-                AppMessages.get("auth.reset.button.update"), 320, 42);
+        resetButton = AuthFormWidgets.createPrimaryButton(AppMessages.get("auth.reset.button.update"));
         resetButton.setEnabled(false);
 
         JLabel loginLink = AuthFormWidgets.createLinkLabel(
                 AppMessages.get("auth.reset.login.link"),
                 () -> AuthNavigation.openLoginAndDispose(this));
 
-        mainPanel.add(titleLabel, "align center");
-        mainPanel.add(subtitleLabel, "align center, wrap");
-        mainPanel.add(emailLabel, "align center");
-        mainPanel.add(emailField, "align center, wrap");
-        mainPanel.add(sendCodeButton, "align center, wrap");
-        mainPanel.add(authCodeLabel, "align center");
-        mainPanel.add(authCodeField, "align center, wrap");
-        mainPanel.add(verifyButton, "align center, wrap");
-        mainPanel.add(passLabel, "align center");
-        mainPanel.add(passwordWrapper, "align center, wrap");
-        mainPanel.add(resetButton, "align center, wrap");
-        mainPanel.add(loginLink, "align center");
-        add(mainPanel);
+        String field = "growx, gaptop 6, h " + AuthFormWidgets.FIELD_HEIGHT + "!";
+        String stepButton = "growx, gaptop 10, h " + AuthFormWidgets.FIELD_HEIGHT + "!";
+        JPanel card = AuthFormWidgets.createCard();
+        card.add(titleLabel, "growx");
+        card.add(subtitleLabel, "growx, gaptop 4");
+        card.add(emailLabel, "growx, gaptop 24");
+        card.add(emailField, field);
+        card.add(sendCodeButton, stepButton);
+        card.add(authCodeLabel, "growx, gaptop 20");
+        card.add(authCodeField, field);
+        card.add(verifyButton, stepButton);
+        card.add(passLabel, "growx, gaptop 20");
+        card.add(passwordRow, "growx, gaptop 6");
+        card.add(resetButton, "growx, gaptop 20, h " + AuthFormWidgets.BUTTON_HEIGHT + "!");
+        card.add(loginLink, "growx, gaptop 18");
+        AuthFormWidgets.showCard(this, card);
 
         resetButton.addActionListener(e -> handleResetPassword());
     }
@@ -316,7 +299,5 @@ public class ResetPasswordFrame extends JFrame {
         resetButton.setEnabled(false);
         setSendCodeButtonBusy(false);
         showPasswordButton.setSelected(false);
-        newPasswordField.setEchoChar('•');
-        showPasswordButton.setText("🙈");
     }
 }

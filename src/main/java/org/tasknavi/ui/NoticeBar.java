@@ -20,13 +20,15 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 
 /**
- * 画面下に短く出す完了・エラー・削除確認。
+ * 画面下に短く出す完了・エラー・削除確認・取り消し。
  * 確認は「はい」を押すまで消えず、押すまで削除などの処理は走らない。
+ * 取り消しのボタンは、帯が出ている間だけ押せる。
  */
 public final class NoticeBar extends JPanel {
 
     private static final String KEY = "tasknavi.noticeBar";
     private static final int AUTO_HIDE_MS = 4200;
+    private static final int ACTION_HIDE_MS = 10000;
 
     private final JLabel messageLabel = new JLabel();
     private final JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -62,19 +64,24 @@ public final class NoticeBar extends JPanel {
     }
 
     public static void info(Component parent, String message) {
-        show(parent, message, Kind.INFO, null);
+        show(parent, message, Kind.INFO, null, null);
     }
 
     public static boolean error(Component parent, String message) {
-        return show(parent, message, Kind.ERROR, null);
+        return show(parent, message, Kind.ERROR, null, null);
     }
 
     /** 帯を出せたとき true。「はい」を押したときだけ onYes を実行する。 */
     public static boolean confirm(Component parent, String message, Runnable onYes) {
-        return show(parent, message, Kind.CONFIRM, onYes);
+        return show(parent, message, Kind.CONFIRM, onYes, null);
     }
 
-    private static boolean show(Component parent, String message, Kind kind, Runnable onYes) {
+    /** ボタンを1つ付けた完了の帯。帯が消えたあとは onAction は呼ばれない。 */
+    public static boolean infoWithAction(Component parent, String message, String actionLabel, Runnable onAction) {
+        return show(parent, message, Kind.ACTION, onAction, actionLabel);
+    }
+
+    private static boolean show(Component parent, String message, Kind kind, Runnable onYes, String actionLabel) {
         Window window = parent instanceof Window owned ? owned : SwingUtilities.getWindowAncestor(parent);
         if (!(window instanceof RootPaneContainer root)) {
             return false;
@@ -96,23 +103,25 @@ public final class NoticeBar extends JPanel {
         if (bar.confirmShowing && kind != Kind.CONFIRM) {
             return false;
         }
-        bar.present(message == null ? "" : message, kind, onYes);
+        bar.present(message == null ? "" : message, kind, onYes, actionLabel);
         bar.place(layered);
         layered.revalidate();
         layered.repaint();
         return true;
     }
 
-    private void present(String message, Kind kind, Runnable onYes) {
+    private void present(String message, Kind kind, Runnable onYes, String actionLabel) {
         hideTimer.stop();
-        pendingYes = kind == Kind.CONFIRM ? onYes : null;
+        boolean hasButton = kind == Kind.CONFIRM || kind == Kind.ACTION;
+        pendingYes = hasButton ? onYes : null;
         confirmShowing = kind == Kind.CONFIRM;
         messageLabel.setText(toHtml(message));
-        yesButton.setText(AppMessages.get("notice.yes", "はい"));
+        yesButton.setText(kind == Kind.ACTION ? actionLabel : AppMessages.get("notice.yes", "はい"));
         noButton.setText(AppMessages.get("notice.no", "いいえ"));
         AppTheme.styleDialogSecondaryButton(yesButton);
         AppTheme.styleDialogSecondaryButton(noButton);
-        actions.setVisible(kind == Kind.CONFIRM);
+        noButton.setVisible(kind == Kind.CONFIRM);
+        actions.setVisible(hasButton);
         Color background = kind == Kind.ERROR ? errorBackground() : infoBackground();
         Color foreground = kind == Kind.ERROR ? errorForeground() : infoForeground();
         setBackground(background);
@@ -120,6 +129,7 @@ public final class NoticeBar extends JPanel {
         messageLabel.setForeground(foreground);
         setVisible(true);
         if (kind != Kind.CONFIRM) {
+            hideTimer.setInitialDelay(kind == Kind.ACTION ? ACTION_HIDE_MS : AUTO_HIDE_MS);
             hideTimer.restart();
         }
     }
@@ -170,6 +180,6 @@ public final class NoticeBar extends JPanel {
     }
 
     private enum Kind {
-        INFO, ERROR, CONFIRM
+        INFO, ERROR, CONFIRM, ACTION
     }
 }

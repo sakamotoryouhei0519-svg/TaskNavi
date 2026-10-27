@@ -1,8 +1,8 @@
 package org.tasknavi.ui.calendar;
 
+import org.junit.jupiter.api.Test;
 import org.tasknavi.model.Task;
 import org.tasknavi.util.TaskStatusCycle;
-import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.util.HashMap;

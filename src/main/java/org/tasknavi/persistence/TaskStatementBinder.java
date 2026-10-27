@@ -11,20 +11,24 @@ import java.sql.Types;
  */
 public final class TaskStatementBinder {
 
+    private static final int TASK_COLUMN_COUNT = 11;
+    /** INSERT で使う ? の数（タスクの列と所有者）。 */
+    public static final int INSERT_PARAM_COUNT = TASK_COLUMN_COUNT + 1;
+
     private TaskStatementBinder() {
     }
 
-    /** INSERT 用（1..10 がタスク、11 が所有者）。 */
+    /** INSERT 用（1..11 がタスク、12 が所有者）。 */
     public static void bindInsert(PreparedStatement pstmt, Task task, int ownerId) throws SQLException {
         bindTaskColumns(pstmt, task);
-        pstmt.setInt(11, ownerId);
+        pstmt.setInt(TASK_COLUMN_COUNT + 1, ownerId);
     }
 
-    /** UPDATE 用（1..10 がタスク、11 が id、12 が所有者）。 */
+    /** UPDATE 用（1..11 がタスク、12 が id、13 が所有者）。 */
     public static void bindUpdate(PreparedStatement pstmt, Task task, int ownerId) throws SQLException {
         bindTaskColumns(pstmt, task);
-        pstmt.setInt(11, task.getId());
-        pstmt.setInt(12, ownerId);
+        pstmt.setInt(TASK_COLUMN_COUNT + 1, task.getId());
+        pstmt.setInt(TASK_COLUMN_COUNT + 2, ownerId);
     }
 
     private static void bindTaskColumns(PreparedStatement pstmt, Task task) throws SQLException {
@@ -42,5 +46,7 @@ public final class TaskStatementBinder {
         pstmt.setString(8, task.getStatusCode() != null ? task.getStatusCode() : Task.STATUS_NOT_STARTED);
         pstmt.setInt(9, task.getProgress());
         pstmt.setString(10, task.getPriorityCode());
+        String memo = task.getMemo();
+        pstmt.setString(11, memo.isBlank() ? null : memo);
     }
 }

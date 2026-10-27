@@ -2,22 +2,28 @@ package org.tasknavi.ui;
 
 import javax.swing.AbstractButton;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.border.AbstractBorder;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.basic.BasicComboBoxUI;
+import javax.swing.plaf.basic.BasicGraphicsUtils;
+import javax.swing.text.JTextComponent;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Graphics;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.Graphics;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 
 /**
@@ -142,16 +148,24 @@ final class AppThemeControls {
         }
     }
 
+    static void applyTextColors(JTextComponent component) {
+        component.setBackground(AppTheme.getCurrentTheme().textFieldBackground());
+        if (AppTheme.isDarkMode()) {
+            component.setForeground(new Color(226, 232, 240));
+            component.setCaretColor(Color.WHITE);
+            component.setDisabledTextColor(new Color(100, 116, 139));
+        } else {
+            component.setForeground(AppTheme.getCurrentTheme().textFieldForeground());
+            component.setCaretColor(Color.BLACK);
+            component.setDisabledTextColor(new Color(148, 163, 184));
+        }
+        component.setSelectionColor(AppTheme.selectedFill());
+        component.setSelectedTextColor(component.getForeground());
+    }
+
     static void styleTextField(JTextField field) {
         field.setFont(AppTheme.FONT_MAIN);
-        field.setBackground(AppTheme.getCurrentTheme().textFieldBackground());
-        if (AppTheme.isDarkMode()) {
-            field.setForeground(new Color(226, 232, 240));
-            field.setCaretColor(Color.WHITE);
-        } else {
-            field.setForeground(AppTheme.getCurrentTheme().textFieldForeground());
-            field.setCaretColor(Color.BLACK);
-        }
+        applyTextColors(field);
         field.setBorder(createFieldBorder());
         field.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override
@@ -165,6 +179,30 @@ final class AppThemeControls {
             }
         });
         field.putClientProperty("app.styled.textfield", Boolean.TRUE);
+    }
+
+    static JScrollPane createStyledTextAreaScroll(JTextArea area) {
+        Color background = AppTheme.getCurrentTheme().textFieldBackground();
+        area.setFont(AppTheme.FONT_MAIN);
+        applyTextColors(area);
+        area.setBorder(new EmptyBorder(2, 0, 2, 0));
+
+        JScrollPane scroll = new JScrollPane(area);
+        scroll.setBackground(background);
+        scroll.getViewport().setBackground(background);
+        scroll.setBorder(createFieldBorder());
+        area.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                scroll.setBorder(createFocusedFieldBorder());
+            }
+
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                scroll.setBorder(createFieldBorder());
+            }
+        });
+        return scroll;
     }
 
     static void styleComboBox(JComboBox<?> combo) {
@@ -273,6 +311,19 @@ final class AppThemeControls {
                 }
             }
             paint(g, c);
+        }
+
+        /** 標準の無効表示は文字を浮き彫りにして読みにくいので、くすんだ単色で描く。 */
+        @Override
+        protected void paintText(Graphics g, AbstractButton b, Rectangle textRect, String text) {
+            if (b.isEnabled()) {
+                super.paintText(g, b, textRect, text);
+                return;
+            }
+            FontMetrics metrics = b.getFontMetrics(b.getFont());
+            g.setColor(AppTheme.isDarkMode() ? new Color(148, 163, 184) : new Color(100, 116, 139));
+            BasicGraphicsUtils.drawStringUnderlineCharAt(
+                    b, (Graphics2D) g, text, -1, textRect.x, textRect.y + metrics.getAscent());
         }
     }
 

@@ -2,11 +2,11 @@ package org.tasknavi.ui.gantt;
 
 import org.tasknavi.AppException;
 import org.tasknavi.AppMessages;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
 import org.tasknavi.ui.ErrorDialogUtil;
 import org.tasknavi.ui.NoticeBar;
-import org.tasknavi.model.Task;
 import org.tasknavi.ui.taskdialog.TaskDialog;
-import org.tasknavi.service.TaskService;
 import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.SwingUtilities;
@@ -39,6 +39,7 @@ public final class GanttTaskEditor {
 
         task.setName(dialog.getTaskName());
         task.setAssignee(dialog.getAssignee());
+        task.setMemo(dialog.getMemo());
         task.setProgress(dialog.getProgress());
         task.setStatus(TaskStatusCycle.fromProgress(task.getProgress()));
         task.setPriority(dialog.getPriority());

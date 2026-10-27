@@ -1,16 +1,18 @@
 package org.tasknavi;
 
-import org.tasknavi.ui.AppTheme;
-import org.tasknavi.ui.MainFrame;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.tasknavi.model.User;
+import org.tasknavi.persistence.AppDataLocation;
+import org.tasknavi.persistence.Database;
 import org.tasknavi.persistence.SampleDataUtil;
 import org.tasknavi.persistence.UserDao;
 import org.tasknavi.service.TaskService;
-import org.tasknavi.ui.UiDebugUtil;
-import org.tasknavi.model.User;
 import org.tasknavi.service.UserSession;
+import org.tasknavi.team.TeamSettings;
+import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.auth.LoginFrame;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.tasknavi.ui.main.MainFrame;
 
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -33,18 +35,21 @@ public class Main {
     private static final int SPLASH_DELAY_MS = 1000;
 
     public static void main(String[] args) {
+        logger.info("TaskNavi を起動します（Java {} / {} {}）",
+                System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.version"));
+        TeamSettings.applyLaunchArguments(args);
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             logger.error("未処理の例外が発生しました: " + thread.getName(), throwable);
+            String message = "アプリケーションで予期せぬエラーが発生しました。\n詳細はログを確認してください。\n"
+                    + AppDataLocation.logDirectory();
             if (SwingUtilities.isEventDispatchThread()) {
-                showFatalStartupError(
-                        "アプリケーションで予期せぬエラーが発生しました。\n詳細はログを確認してください。",
-                        throwable);
+                showFatalStartupError(message, throwable);
             } else {
-                SwingUtilities.invokeLater(() -> showFatalStartupError(
-                        "アプリケーションで予期せぬエラーが発生しました。\n詳細はログを確認してください。",
-                        throwable));
+                SwingUtilities.invokeLater(() -> showFatalStartupError(message, throwable));
             }
         });
+
+        Database.prepareOnStartup();
 
         SwingUtilities.invokeLater(() -> {
             try {
@@ -101,7 +106,7 @@ public class Main {
     public static void openMainFrame() {
         MainFrame mainFrame = new MainFrame(TaskService.createDefault());
         mainFrame.setVisible(true);
-        UiDebugUtil.dumpComponentTree("MainFrame", mainFrame);
+        mainFrame.startDueReminders();
     }
 
     private static JWindow createSplashWindow() {

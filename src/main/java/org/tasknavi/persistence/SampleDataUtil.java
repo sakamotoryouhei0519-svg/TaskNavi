@@ -1,7 +1,10 @@
 package org.tasknavi.persistence;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tasknavi.model.Priority;
 import org.tasknavi.model.Task;
+
 import java.sql.*;
 import java.time.LocalDate;
 
@@ -9,6 +12,8 @@ import java.time.LocalDate;
  * ログインした人の台帳が空のときだけ、サンプルのプロジェクトを入れる。
  */
 public class SampleDataUtil {
+
+    private static final Logger logger = LoggerFactory.getLogger(SampleDataUtil.class);
 
     /**
      * まだ誰のタスクでもない行があれば、このユーザーに渡す。
@@ -56,9 +61,7 @@ public class SampleDataUtil {
                             + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS)) {
 
-                // ==========================================
                 // プロジェクト 1: 次世代ECサイト構築プロジェクト（大規模）
-                // ==========================================
                 Integer proj1 = insertSampleTask(insertPstmt, userId, null, 1,
                         "次世代ECサイトリニューアル", "佐藤花子", "2026-04-01", "2026-12-25",
                         Task.STATUS_IN_PROGRESS, 45, Priority.HIGH.name());
@@ -91,9 +94,7 @@ public class SampleDataUtil {
                         {"本番移行・リリース作業", "佐藤花子", "2026-12-01", "2026-12-25", Task.STATUS_NOT_STARTED, "0", Priority.HIGH.name()}
                 });
 
-                // ==========================================
                 // プロジェクト 2: 社内DX推進・クラウド移行（中規模）
-                // ==========================================
                 Integer proj2 = insertSampleTask(insertPstmt, userId, null, 1,
                         "社内基幹システム クラウド移行", "田中次郎", "2026-05-15", "2026-11-15",
                         Task.STATUS_IN_PROGRESS, 30, Priority.MEDIUM.name());
@@ -110,9 +111,7 @@ public class SampleDataUtil {
                         {"旧データクレンジング作業", "小林由美", "2026-07-15", "2026-09-10", Task.STATUS_IN_PROGRESS, "20", Priority.LOW.name()}
                 });
 
-                // ==========================================
                 // プロジェクト 3: 全社セキュリティ監査対応（短期・緊急）
-                // ==========================================
                 Integer proj3 = insertSampleTask(insertPstmt, userId, null, 1,
                         "2026年度 下期セキュリティ監査", "中村健", "2026-09-01", "2026-10-15",
                         Task.STATUS_NOT_STARTED, 0, Priority.HIGH.name());
@@ -124,13 +123,13 @@ public class SampleDataUtil {
                 });
 
                 conn.commit();
-                System.out.println("実務用サンプルデータの投入が完了しました。");
+                logger.info("サンプルデータを入れました。");
             } catch (SQLException e) {
                 conn.rollback();
                 throw e;
             }
         } catch (SQLException e) {
-            System.err.println("サンプルデータ投入エラー: " + e.getMessage());
+            logger.error("サンプルデータを入れられませんでした", e);
         }
     }
 

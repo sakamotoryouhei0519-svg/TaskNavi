@@ -1,22 +1,11 @@
-// packageとは、このファイルがどのグループ（パッケージ）に属しているかを宣言するもの
 package org.tasknavi;
 
-// public class AppException extends RuntimeExceptionとは、AppExceptionというクラスを宣言していること
-// extends RuntimeExceptionとは、RuntimeException（実行時例外）を継承すること
-// RuntimeExceptionとは、プログラム実行中に発生する例外（エラー）の種類
+/**
+ * アプリの中で起きたエラー。ログ用の詳しいメッセージと、画面に出す短いメッセージを別に持つ。
+ * 画面では {@code ui/ErrorDialogUtil} が {@link #getUserMessage()} を表示する。
+ */
 public class AppException extends RuntimeException {
-    // ==========================================
-    //  【エラーコード列挙型】
-    // ==========================================
-    // 【改善点】
-    // エラーの種類をコードで管理できるようにしました。
-    // これにより、エラーの分類やハンドリングが容易になります。
-    // 
-    // 【初心者向け解説】
-    // Enum（列挙型）とは、決まった値の集合を定義する型です。
-    // 例えば、「曜日」は月・火・水・木・金・土・日の7種類しかないので、
-    // Enumで定義すると、間違った値（「木曜日」を「木」ではなく「Wood」と書くなど）を防げます。
-    // 同様に、エラーコードも決まった種類しかないので、Enumで管理するのが適切です。
+    /** エラーの種類。画面の文言は messages の {@code error.*} から引く。 */
     public enum ErrorCode {
         // データベース関連のエラー
         DATABASE_CONNECTION_FAILED("DB001", "データベース接続に失敗しました"),

@@ -1,16 +1,16 @@
 package org.tasknavi.ui.wbs;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tasknavi.AppException;
 import org.tasknavi.AppMessages;
 import org.tasknavi.model.EntryType;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
 import org.tasknavi.ui.ErrorDialogUtil;
 import org.tasknavi.ui.NoticeBar;
-import org.tasknavi.model.Task;
-import org.tasknavi.ui.taskdialog.TaskDialog;
 import org.tasknavi.ui.TaskEntryFactory;
-import org.tasknavi.service.TaskService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.tasknavi.ui.taskdialog.TaskDialog;
 
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;

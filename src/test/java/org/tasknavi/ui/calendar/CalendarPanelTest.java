@@ -1,14 +1,14 @@
 package org.tasknavi.ui.calendar;
 
-import org.tasknavi.persistence.Database;
-import org.tasknavi.DatabaseTestConfig;
-import org.tasknavi.model.Task;
-import org.tasknavi.persistence.TaskDao;
-import org.tasknavi.service.TaskService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.tasknavi.DatabaseTestConfig;
+import org.tasknavi.model.Task;
+import org.tasknavi.persistence.Database;
+import org.tasknavi.persistence.TaskDao;
+import org.tasknavi.service.TaskService;
 
 import javax.swing.*;
 import java.lang.reflect.Field;
@@ -18,8 +18,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 【CalendarPanel 単体テスト】
- * カレンダー画面の初期化、表示切替、フィルタリング、タスク抽出の動作を検証します。
+ * カレンダー画面の初期化・表示の切り替え・絞り込み・その日のタスクの取り出し。
  */
 class CalendarPanelTest {
 

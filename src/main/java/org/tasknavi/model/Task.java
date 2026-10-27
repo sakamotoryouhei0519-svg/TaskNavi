@@ -3,8 +3,8 @@ package org.tasknavi.model;
 import java.time.LocalDate;
 
 /**
- * 【タスクデータモデルクラス】
- * 状態・優先度を Enum で型安全に保持・管理します。
+ * タスク1件。プロジェクト（階層1）・フェーズ（階層2）・タスク（階層3）のどれも、このクラスで表す。
+ * 状態と優先度は Enum で持つ。
  */
 public class Task {
     public static final String DEFAULT_PRIORITY = Priority.MEDIUM.name();
@@ -33,6 +33,12 @@ public class Task {
     private Priority priority;
     private LocalDate startDate;
     private LocalDate endDate;
+    private String memo;
+    /**
+     * 共有プロジェクトで、このタスクを読み出したときの版。保存のとき、読んだあとに入った他の人の変更を
+     * 黙って上書きせず「重なり」として残すために使う。個人のタスクでは使わない（0）。
+     */
+    private long revision;
 
     public Task(int id, String name, Integer parentId, int level, int orderIndex, int progress, String status, LocalDate startDate, LocalDate endDate) {
         this.id = id;
@@ -57,7 +63,17 @@ public class Task {
         Task copy = new Task(id, name, parentId, level, orderIndex, progress, getStatus(), startDate, endDate);
         copy.assignee = assignee;
         copy.priority = priority;
+        copy.memo = memo;
+        copy.revision = revision;
         return copy;
+    }
+
+    public long getRevision() {
+        return revision;
+    }
+
+    public void setRevision(long revision) {
+        this.revision = revision;
     }
 
     /** 表示言語に依存しない永続化コード（NOT_STARTED 等）へ正規化する。 */
@@ -119,6 +135,14 @@ public class Task {
 
     public void setAssignee(String assignee) {
         this.assignee = assignee;
+    }
+
+    public String getMemo() {
+        return memo != null ? memo : "";
+    }
+
+    public void setMemo(String memo) {
+        this.memo = memo;
     }
 
     public int getProgress() {

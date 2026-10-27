@@ -1,10 +1,6 @@
 package org.tasknavi.ui.auth;
 
-import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.ui.AppTheme;
-import org.tasknavi.service.AuthService;
-import org.tasknavi.ui.ErrorDialogUtil;
 import org.tasknavi.persistence.UserDao;
 
 import javax.swing.JButton;
@@ -13,12 +9,12 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
-import java.awt.Cursor;
 
 /**
- * 【新規ユーザー登録画面クラス】
+ * ユーザー登録画面。
  */
 public class RegisterFrame extends JFrame {
 
@@ -31,58 +27,55 @@ public class RegisterFrame extends JFrame {
     private JPasswordField passwordField;
     private JPasswordField confirmPasswordField;
     private JButton registerButton;
-    private JLabel errorLabel;
+    private JTextArea errorArea;
 
     public RegisterFrame() {
-        AuthFormWidgets.applyWindowDefaults(
-                this, AppMessages.get("auth.register.window.title"), 400, 520);
-
-        JPanel mainPanel = new JPanel(new MigLayout(
-                "fillx, insets 25 40 25 40, wrap", "[grow,fill]",
-                "[]15[]2[]8[]2[]8[]2[]8[]12"));
-        mainPanel.setBackground(AppTheme.BACKGROUND);
+        AuthFormWidgets.applyWindowDefaults(this, AppMessages.get("auth.register.window.title"));
 
         JLabel titleLabel = AuthFormWidgets.createTitleLabel();
         JLabel subtitleLabel = AuthFormWidgets.createSubtitleLabel(AppMessages.get("auth.register.subtitle"));
 
-        JLabel userLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.login.username"), 320, 18);
+        JLabel userLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.login.username"));
         usernameField = AuthFormWidgets.createStyledTextField();
 
-        JLabel emailLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.register.email"), 320, 18);
+        JLabel emailLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.register.email"));
         emailField = AuthFormWidgets.createStyledTextField();
 
-        JLabel passLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.login.password"), 320, 18);
-        passwordField = AuthFormWidgets.createStyledPasswordField(false);
-        JPanel passwordWrapper = AuthFormWidgets.createPasswordTogglePanel(passwordField, 6);
+        JLabel passLabel = AuthFormWidgets.createFormLabel(AppMessages.get("auth.login.password"));
+        passwordField = AuthFormWidgets.createStyledPasswordField();
+        JPanel passwordRow = AuthFormWidgets.createPasswordRow(
+                passwordField, AuthFormWidgets.createPasswordToggle(passwordField));
 
         JLabel confirmPassLabel = AuthFormWidgets.createFormLabel(
-                AppMessages.get("auth.register.password.confirm"), 320, 18);
-        confirmPasswordField = AuthFormWidgets.createStyledPasswordField(false);
-        JPanel confirmPasswordWrapper = AuthFormWidgets.createPasswordTogglePanel(confirmPasswordField, 6);
+                AppMessages.get("auth.register.password.confirm"));
+        confirmPasswordField = AuthFormWidgets.createStyledPasswordField();
+        JPanel confirmPasswordRow = AuthFormWidgets.createPasswordRow(
+                confirmPasswordField, AuthFormWidgets.createPasswordToggle(confirmPasswordField));
 
-        errorLabel = AuthFormWidgets.createErrorLabel();
+        errorArea = AuthFormWidgets.createErrorArea();
 
-        registerButton = AuthFormWidgets.createPrimaryButton(
-                AppMessages.get("auth.register.button.account"), 320, 42);
+        registerButton = AuthFormWidgets.createPrimaryButton(AppMessages.get("auth.register.button.account"));
 
         JLabel loginLink = AuthFormWidgets.createLinkLabel(
                 AppMessages.get("auth.register.login.link"),
                 () -> AuthNavigation.openLoginAndDispose(this));
 
-        mainPanel.add(titleLabel, "align center");
-        mainPanel.add(subtitleLabel, "align center, wrap");
-        mainPanel.add(userLabel, "align center");
-        mainPanel.add(usernameField, "align center, wrap");
-        mainPanel.add(emailLabel, "align center");
-        mainPanel.add(emailField, "align center, wrap");
-        mainPanel.add(passLabel, "align center");
-        mainPanel.add(passwordWrapper, "align center, wrap");
-        mainPanel.add(confirmPassLabel, "align center");
-        mainPanel.add(confirmPasswordWrapper, "align center, wrap");
-        mainPanel.add(errorLabel, "align center, wrap");
-        mainPanel.add(registerButton, "align center, wrap");
-        mainPanel.add(loginLink, "align center");
-        add(mainPanel);
+        String field = "growx, gaptop 6, h " + AuthFormWidgets.FIELD_HEIGHT + "!";
+        JPanel card = AuthFormWidgets.createCard();
+        card.add(titleLabel, "growx");
+        card.add(subtitleLabel, "growx, gaptop 4");
+        card.add(userLabel, "growx, gaptop 24");
+        card.add(usernameField, field);
+        card.add(emailLabel, "growx, gaptop 14");
+        card.add(emailField, field);
+        card.add(passLabel, "growx, gaptop 14");
+        card.add(passwordRow, "growx, gaptop 6");
+        card.add(confirmPassLabel, "growx, gaptop 14");
+        card.add(confirmPasswordRow, "growx, gaptop 6");
+        card.add(errorArea, AuthFormWidgets.ERROR_AREA_CONSTRAINTS);
+        card.add(registerButton, "growx, gaptop 4, h " + AuthFormWidgets.BUTTON_HEIGHT + "!");
+        card.add(loginLink, "growx, gaptop 18");
+        AuthFormWidgets.showCard(this, card);
 
         getRootPane().setDefaultButton(registerButton);
         registerButton.addActionListener(e -> handleRegister());
@@ -108,9 +101,9 @@ public class RegisterFrame extends JFrame {
                 username, email, userDao::isUsernameExists, userDao::isEmailRegistered);
         if (uniquenessMessage != null) {
             if (uniquenessMessage.equals(AppMessages.get("auth.register.validation.username.taken"))) {
-                AuthFormWidgets.highlightInvalid(usernameField, true);
+                AuthFormWidgets.setFieldErrorState(usernameField, true);
             } else {
-                AuthFormWidgets.highlightInvalid(emailField, true);
+                AuthFormWidgets.setFieldErrorState(emailField, true);
             }
             showInlineError(uniquenessMessage);
             return;
@@ -149,13 +142,13 @@ public class RegisterFrame extends JFrame {
     private void highlightValidationFields(
             String username, String email, String password, String confirmPassword) {
         if (username.isEmpty()) {
-            AuthFormWidgets.highlightInvalid(usernameField, true);
+            AuthFormWidgets.setFieldErrorState(usernameField, true);
         } else if (email.isEmpty() || !AuthPasswordPolicy.isValidEmail(email)) {
-            AuthFormWidgets.highlightInvalid(emailField, true);
+            AuthFormWidgets.setFieldErrorState(emailField, true);
         } else if (password.isEmpty() || !password.equals(confirmPassword)
                 || !AuthPasswordPolicy.isStrongPassword(password)) {
-            AuthFormWidgets.highlightInvalid(passwordField, true);
-            AuthFormWidgets.highlightInvalid(confirmPasswordField, true);
+            AuthFormWidgets.setFieldErrorState(passwordField, true);
+            AuthFormWidgets.setFieldErrorState(confirmPasswordField, true);
         }
     }
 
@@ -165,22 +158,17 @@ public class RegisterFrame extends JFrame {
                 busy,
                 AppMessages.get("auth.register.in.progress"),
                 AppMessages.get("auth.register.button.account"));
-        if (!busy) {
-            registerButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        }
     }
 
     private void showInlineError(String message) {
-        errorLabel.setText(message);
-        errorLabel.setVisible(true);
+        AuthFormWidgets.showError(errorArea, message);
     }
 
     private void clearErrorState() {
-        errorLabel.setText("");
-        errorLabel.setVisible(false);
-        AuthFormWidgets.highlightInvalid(usernameField, false);
-        AuthFormWidgets.highlightInvalid(emailField, false);
-        AuthFormWidgets.highlightInvalid(passwordField, false);
-        AuthFormWidgets.highlightInvalid(confirmPasswordField, false);
+        AuthFormWidgets.clearError(errorArea);
+        AuthFormWidgets.setFieldErrorState(usernameField, false);
+        AuthFormWidgets.setFieldErrorState(emailField, false);
+        AuthFormWidgets.setFieldErrorState(passwordField, false);
+        AuthFormWidgets.setFieldErrorState(confirmPasswordField, false);
     }
 }

@@ -1,11 +1,11 @@
 package org.tasknavi.event;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.swing.SwingUtilities;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * タスクイベントの登録と通知を管理するイベントバス（シングルトン）

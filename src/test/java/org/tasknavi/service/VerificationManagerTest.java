@@ -1,9 +1,9 @@
 package org.tasknavi.service;
 
-import org.tasknavi.DatabaseTestConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.tasknavi.DatabaseTestConfig;
 
 import static org.junit.jupiter.api.Assertions.*;
 

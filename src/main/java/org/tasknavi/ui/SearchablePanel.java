@@ -1,6 +1,7 @@
 package org.tasknavi.ui;
 
 import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
 
 /**
  * 検索可能なパネルが実装すべきインターフェース。
@@ -52,6 +53,15 @@ public interface SearchablePanel {
      * @return 選択中のタスク（選択されていない場合はnull）
      */
     default Task getSelectedTask() {
+        return null;
+    }
+
+    /**
+     * 選択中のタスクを読み書きする入口。「今日」は開いていないプロジェクトのタスクも選べるので、そのときだけ別になる。
+     *
+     * @return 今選んでいるプロジェクトと同じなら null
+     */
+    default TaskService selectedTaskService() {
         return null;
     }
 }

@@ -1,14 +1,14 @@
 package org.tasknavi.ui.gantt;
 
-import org.tasknavi.ui.AppTheme;
-import org.tasknavi.ui.SearchablePanel;
-import org.tasknavi.model.Task;
-import org.tasknavi.model.TaskHierarchyUtil;
-import org.tasknavi.service.TaskService;
 import org.tasknavi.event.TaskEvent;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
+import org.tasknavi.model.Task;
+import org.tasknavi.model.TaskHierarchyUtil;
+import org.tasknavi.service.TaskService;
+import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.ProjectFilterDialog;
+import org.tasknavi.ui.SearchablePanel;
 
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -18,8 +18,8 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.event.MouseEvent;
@@ -32,8 +32,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 【ガントチャート画面パネルクラス】
- * WBS階層表示、日付ヘッダー、ドラッグ操作、進捗バー描画に対応。
+ * ガントタブ。左に WBS の階層、右に日付と進捗のバーを描き、バーのドラッグで期間を変える。
+ * 描画・クリック判定・ドラッグは同じパッケージの Gantt* クラスに分けている。
  */
 public class GanttPanel extends JPanel implements SearchablePanel {
 

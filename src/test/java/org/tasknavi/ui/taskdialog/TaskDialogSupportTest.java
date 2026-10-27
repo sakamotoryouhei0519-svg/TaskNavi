@@ -1,8 +1,8 @@
 package org.tasknavi.ui.taskdialog;
 
+import org.junit.jupiter.api.Test;
 import org.tasknavi.model.EntryType;
 import org.tasknavi.model.Task;
-import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.util.List;

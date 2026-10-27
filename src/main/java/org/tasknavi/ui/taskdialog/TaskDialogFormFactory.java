@@ -5,16 +5,22 @@ import org.tasknavi.AppMessages;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.DatePickerDialog;
 import org.tasknavi.ui.IconManager;
-import org.tasknavi.ui.UiDebugUtil;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Insets;
+import java.awt.KeyboardFocusManager;
+import java.util.List;
 
 /**
  * TaskDialog のフォーム／ボタンパネル組み立て。
@@ -43,6 +49,8 @@ public final class TaskDialogFormFactory {
             JComboBox<String> priorityCombo,
             JComboBox<String> statusCombo,
             String statusHint,
+            JTextArea memoArea,
+            List<String> assigneeOptions,
             Frame ownerForDatePicker) {
 
         JPanel formPanel = new JPanel(new MigLayout("fill, insets 15 20 15 20, wrap", "[right][grow,fill]", "[]8"));
@@ -59,12 +67,11 @@ public final class TaskDialogFormFactory {
         formPanel.add(labeled(AppMessages.get("dialog.label.name", "名前") + ":"), "align right");
         formPanel.add(nameField, "wrap");
         formPanel.add(labeled(AppMessages.get("dialog.label.assignee", "担当者") + ":"), "align right");
-        formPanel.add(assigneeField, "wrap");
+        formPanel.add(assigneeRow(assigneeField, assigneeOptions), "wrap");
 
         JPanel startPanel = dateRow(
                 startDateField,
                 AppMessages.get("dialog.tooltip.select.start", "開始日を選択"),
-                "TaskDialog.startDateButton",
                 ownerForDatePicker);
         formPanel.add(labeled(AppMessages.get("dialog.label.startdate", "開始日 (YYYY-MM-DD)") + ":"), "align right");
         formPanel.add(startPanel, "wrap");
@@ -72,7 +79,6 @@ public final class TaskDialogFormFactory {
         JPanel endPanel = dateRow(
                 endDateField,
                 AppMessages.get("dialog.tooltip.select.end", "終了日を選択"),
-                "TaskDialog.endDateButton",
                 ownerForDatePicker);
         formPanel.add(labeled(AppMessages.get("dialog.label.enddate", "終了日 (YYYY-MM-DD)") + ":"), "align right");
         formPanel.add(endPanel, "wrap");
@@ -92,6 +98,16 @@ public final class TaskDialogFormFactory {
 
         formPanel.add(labeled(AppMessages.get("dialog.label.status", "状態") + ":"), "align right");
         formPanel.add(progressPanel, "wrap");
+
+        memoArea.setLineWrap(true);
+        memoArea.setWrapStyleWord(true);
+        memoArea.setToolTipText(AppMessages.get("dialog.tooltip.memo", "Ctrl+Enter で保存"));
+        memoArea.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null);
+        memoArea.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, null);
+        JScrollPane memoScroll = AppTheme.createStyledTextAreaScroll(memoArea);
+        memoScroll.setPreferredSize(new Dimension(280, 96));
+        formPanel.add(labeled(AppMessages.get("dialog.label.memo", "メモ") + ":"), "align right top, gaptop 6");
+        formPanel.add(memoScroll, "growx, wrap");
 
         return new FormParts(formPanel, parentLabel, startPanel, endPanel, progressPanel);
     }
@@ -129,7 +145,36 @@ public final class TaskDialogFormFactory {
         return label;
     }
 
-    private static JPanel dateRow(JTextField field, String tooltip, String debugName, Frame owner) {
+    /** 候補があれば、押すと名前の一覧が出るボタンを横に置く。手で打つこともできる。 */
+    private static JComponent assigneeRow(JTextField field, List<String> options) {
+        if (options == null || options.isEmpty()) {
+            return field;
+        }
+        JPanel panel = new JPanel(new MigLayout("insets 0, gap 5", "[grow,fill][]"));
+        panel.setOpaque(false);
+        JButton pick = new JButton("▼");
+        AppTheme.styleDialogSecondaryButton(pick);
+        pick.setPreferredSize(new Dimension(40, 36));
+        pick.setToolTipText(AppMessages.get("dialog.tooltip.assignee.pick", "メンバーから選ぶ"));
+        pick.addActionListener(e -> {
+            JPopupMenu menu = new JPopupMenu();
+            menu.setBackground(AppTheme.PANEL_BG);
+            for (String name : options) {
+                JMenuItem item = new JMenuItem(name);
+                item.setFont(AppTheme.FONT_MAIN);
+                item.setForeground(AppTheme.TEXT_PRIMARY);
+                item.setBackground(AppTheme.PANEL_BG);
+                item.addActionListener(ev -> field.setText(name));
+                menu.add(item);
+            }
+            menu.show(pick, 0, pick.getHeight());
+        });
+        panel.add(field);
+        panel.add(pick);
+        return panel;
+    }
+
+    private static JPanel dateRow(JTextField field, String tooltip, Frame owner) {
         JPanel panel = new JPanel(new MigLayout("insets 0, gap 5, align left", "[][]"));
         panel.setOpaque(false);
         field.setColumns(10);
@@ -140,7 +185,6 @@ public final class TaskDialogFormFactory {
         cal.setPreferredSize(new Dimension(40, 36));
         cal.setMargin(new Insets(0, 2, 0, 2));
         cal.setToolTipText(tooltip);
-        UiDebugUtil.logButtonState(debugName, cal);
         cal.addActionListener(e -> new DatePickerDialog(owner, field));
 
         panel.add(field);

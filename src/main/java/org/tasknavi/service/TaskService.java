@@ -1,13 +1,14 @@
 package org.tasknavi.service;
 
 import org.tasknavi.AppException;
+import org.tasknavi.event.TaskEvent;
+import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.model.Task;
 import org.tasknavi.model.TaskBusinessRules;
 import org.tasknavi.model.TaskHierarchyUtil;
 import org.tasknavi.model.User;
 import org.tasknavi.persistence.TaskDao;
-import org.tasknavi.event.TaskEvent;
-import org.tasknavi.event.TaskEventBus;
+import org.tasknavi.persistence.TaskStore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,13 +18,40 @@ import java.util.Objects;
  * タスクのユースケースをまとめるサービス層。
  */
 public class TaskService {
-    private final TaskDao taskDao;
+    private final TaskStore personalStore;
+    /** 今の保存先。プロジェクトを切り替えると差し替わる。 */
+    private volatile TaskStore store;
     private final Object snapshotLock = new Object();
     private List<Task> snapshot;
     private long snapshotVersion;
 
-    public TaskService(TaskDao taskDao) {
-        this.taskDao = taskDao;
+    public TaskService(TaskStore personalStore) {
+        this.personalStore = personalStore;
+        this.store = personalStore;
+    }
+
+    /** 保存先を切り替え、全画面に描き直させる。null なら個人のタスクに戻す。 */
+    public void useStore(TaskStore next) {
+        store = next != null ? next : personalStore;
+        reload();
+    }
+
+    public TaskStore currentStore() {
+        return store;
+    }
+
+    public boolean isPersonal() {
+        return store == personalStore;
+    }
+
+    /** 自分だけのタスクの保存先。共有プロジェクトを開いていても変わらない。 */
+    public TaskStore personalStore() {
+        return personalStore;
+    }
+
+    /** 保存先が外から変わった（共有フォルダの読み直しなど）ので、次の読み取りで読み直させる。画面には知らせない。 */
+    public void invalidate() {
+        invalidateSnapshot();
     }
 
     /** 本番起動用。ログイン中の人のタスクだけを扱う。UI からは {@code TaskDao} を直接 new しない。 */
@@ -47,7 +75,7 @@ public class TaskService {
             }
             version = snapshotVersion;
         }
-        List<Task> loaded = taskDao.getAllTasks();
+        List<Task> loaded = store.getAllTasks();
         if (loaded == null) {
             loaded = new ArrayList<>();
         }
@@ -66,17 +94,22 @@ public class TaskService {
     }
 
     public Task getTaskById(int id) {
-        return taskDao.getTaskById(id);
+        return store.getTaskById(id);
+    }
+
+    /** 担当者の欄で選べる名前（共有プロジェクトならメンバー）。 */
+    public List<String> assigneeOptions() {
+        return store.assigneeOptions();
     }
 
     public void updateTaskOrderIndex(int id, int index) {
         try {
-            taskDao.updateTaskOrderIndex(id, index);
+            store.updateTaskOrderIndex(id, index);
         } finally {
             invalidateSnapshot();
         }
 
-        Task task = taskDao.getTaskById(id);
+        Task task = store.getTaskById(id);
         if (task != null) {
             TaskEventBus.getInstance().post(new TaskEvent(TaskEvent.Type.TASK_UPDATED, task));
         }
@@ -85,7 +118,7 @@ public class TaskService {
     /** 兄弟の並びを1回で保存し、成功したあとだけ画面へ知らせる。 */
     public void updateSiblingOrder(List<Task> orderedTasks) {
         try {
-            taskDao.updateSiblingOrder(orderedTasks);
+            store.updateSiblingOrder(orderedTasks);
         } finally {
             invalidateSnapshot();
         }
@@ -135,7 +168,7 @@ public class TaskService {
             return;
         }
         try {
-            taskDao.updateTasks(tasks);
+            store.updateTasks(tasks);
         } finally {
             invalidateSnapshot();
         }
@@ -147,12 +180,12 @@ public class TaskService {
     public int addTask(Task task) {
         int newId;
         try {
-            newId = taskDao.addTask(task);
+            newId = store.addTask(task);
         } finally {
             invalidateSnapshot();
         }
 
-        Task created = taskDao.getTaskById(newId);
+        Task created = store.getTaskById(newId);
         if (created == null) {
             Task fallback = copyTaskWithId(task, newId);
             TaskEventBus.getInstance().post(new TaskEvent(TaskEvent.Type.TASK_CREATED, fallback));
@@ -163,18 +196,34 @@ public class TaskService {
         return newId;
     }
 
-    public void deleteTask(int taskId) {
-        Task existing = taskDao.getTaskById(taskId);
+    /** @return 消したタスク（子を含む）。{@link #restoreDeleted} に渡せば元に戻せる */
+    public List<Task> deleteTask(int taskId) {
+        Task existing = store.getTaskById(taskId);
         Task deleted = existing != null
                 ? existing
                 : new Task(taskId, "Deleted Task", null, 0, 0, 0, Task.STATUS_NOT_STARTED, null, null);
 
+        List<Task> removed;
         try {
-            taskDao.deleteTask(taskId);
+            removed = store.deleteTask(taskId);
         } finally {
             invalidateSnapshot();
         }
         TaskEventBus.getInstance().post(new TaskEvent(TaskEvent.Type.TASK_DELETED, deleted));
+        return removed;
+    }
+
+    /** 削除の取り消し。全部戻せたときだけ画面へ知らせる。 */
+    public void restoreDeleted(List<Task> deletedTasks) {
+        if (deletedTasks == null || deletedTasks.isEmpty()) {
+            return;
+        }
+        try {
+            store.restoreTasks(deletedTasks);
+        } finally {
+            invalidateSnapshot();
+        }
+        TaskEventBus.getInstance().post(new TaskEvent(TaskEvent.Type.REFRESH_ALL, null));
     }
 
     /**
@@ -185,7 +234,7 @@ public class TaskService {
      */
     public void importTasks(List<Task> tasks, boolean clearExisting) {
         try {
-            taskDao.importTasks(tasks, clearExisting);
+            store.importTasks(tasks, clearExisting);
         } finally {
             invalidateSnapshot();
         }
@@ -221,6 +270,7 @@ public class TaskService {
         );
         copy.setAssignee(source.getAssignee());
         copy.setPriority(source.getPriority());
+        copy.setMemo(source.getMemo());
         return copy;
     }
 }

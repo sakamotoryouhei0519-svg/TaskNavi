@@ -1,8 +1,8 @@
 package org.tasknavi.persistence;
 
+import org.junit.jupiter.api.Test;
 import org.tasknavi.AppException;
 import org.tasknavi.model.Task;
-import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 

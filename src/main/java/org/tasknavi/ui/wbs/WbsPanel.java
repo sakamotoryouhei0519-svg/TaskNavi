@@ -2,19 +2,20 @@ package org.tasknavi.ui.wbs;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.ui.AppTheme;
-import org.tasknavi.ui.ErrorDialogUtil;
-import org.tasknavi.ui.NoticeBar;
-import org.tasknavi.ui.SearchablePanel;
+import org.tasknavi.event.TaskEventBus;
+import org.tasknavi.event.TaskEventListener;
 import org.tasknavi.model.Task;
 import org.tasknavi.model.TaskHierarchyUtil;
 import org.tasknavi.service.TaskService;
-import org.tasknavi.ui.taskdialog.TaskDialog;
-import org.tasknavi.ui.UiConstants;
-import org.tasknavi.util.TaskStatusCycle;
-import org.tasknavi.event.TaskEventBus;
-import org.tasknavi.event.TaskEventListener;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.ui.NoticeBar;
 import org.tasknavi.ui.ProjectFilterDialog;
+import org.tasknavi.ui.SearchablePanel;
+import org.tasknavi.ui.UiConstants;
+import org.tasknavi.ui.WidthTrackingPanel;
+import org.tasknavi.ui.taskdialog.TaskDialog;
+import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -32,8 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 【WBS画面パネルクラス】
- * 左側にツリー、右側に選択中の内容を表示する。編集はダイアログで行う。
+ * WBS タブ。左側にツリー、右側に選択中の内容を表示する。編集はダイアログで行う。
  */
 public class WbsPanel extends JPanel implements SearchablePanel {
     private static final long serialVersionUID = 1L;
@@ -118,7 +118,7 @@ public class WbsPanel extends JPanel implements SearchablePanel {
         leftPanel.add(new JScrollPane(wbsTree), "grow");
 
         detailForm = new WbsDetailForm(this::openEditDialog);
-        detailHolder = new JPanel(new BorderLayout());
+        detailHolder = new WidthTrackingPanel(new BorderLayout());
         detailHolder.setBackground(AppTheme.PANEL_BG);
         detailHolder.add(detailForm.getPanel(), BorderLayout.NORTH);
 
@@ -454,6 +454,7 @@ public class WbsPanel extends JPanel implements SearchablePanel {
 
         task.setName(dialog.getTaskName());
         task.setAssignee(dialog.getAssignee());
+        task.setMemo(dialog.getMemo());
         task.setProgress(dialog.getProgress());
         task.setPriority(dialog.getPriority());
         task.setStartDate(startDate);

@@ -1,18 +1,18 @@
 package org.tasknavi.ui.gantt;
 
-import org.tasknavi.ui.AppTheme;
 import org.tasknavi.model.Task;
 import org.tasknavi.model.TaskHierarchyUtil;
+import org.tasknavi.ui.AppTheme;
 
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.Graphics;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;

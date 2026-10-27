@@ -12,6 +12,8 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- 配布用 exe に付ける版（jpackage は数字と . だけ受け付ける） -->
+        <app.version>1.0.0</app.version>
     </properties>
 
     <dependencies>
@@ -83,17 +85,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.6.0</version>
-                <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <archive>
-                        <manifest>
-                            <!-- メイン関数があるクラスを指定 -->
-                            <mainClass>org.tasknavi.Main</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
                 <executions>
                     <execution>
                         <id>make-assembly</id>
@@ -101,6 +92,17 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
+                        <configuration>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <!-- メイン関数があるクラスを指定 -->
+                                    <mainClass>org.tasknavi.Main</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -112,6 +114,10 @@
                 <version>3.0.0-M9</version>
                 <configuration>
                     <useModulePath>false</useModulePath>
+                    <systemPropertyVariables>
+                        <!-- テストが %APPDATA% の本物の DB に触れないようにする -->
+                        <tasknavi.dataDir>${project.build.directory}/test-data</tasknavi.dataDir>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
 
@@ -126,5 +132,140 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!--
+          配布用フォルダと zip を作る（Windows 用）: mvn -Pdist -DskipTests verify
+          出来上がり: target/jpackage/dist/TaskNavi/TaskNavi.exe と target/TaskNavi-*-windows.zip
+          Java ごと入るので、使うパソコンに Java は要らない。
+        -->
+        <profile>
+            <id>dist</id>
+            <properties>
+                <jpackage.dir>${project.build.directory}/jpackage</jpackage.dir>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- 1. 前回の出力を消す（jpackage は出力先が残っていると止まる） -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <version>3.2.0</version>
+                        <executions>
+                            <execution>
+                                <id>clean-jpackage</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <configuration>
+                                    <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                                    <filesets>
+                                        <fileset>
+                                            <directory>${jpackage.dir}</directory>
+                                        </fileset>
+                                    </filesets>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- 2. package で作った依存込み JAR だけを jpackage の入力フォルダへ写す -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>3.4.0</version>
+                        <executions>
+                            <execution>
+                                <id>copy-jpackage-input</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${jpackage.dir}/input</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.build.directory}</directory>
+                                            <includes>
+                                                <include>${project.build.finalName}-jar-with-dependencies.jar</include>
+                                            </includes>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- 3. jpackage で TaskNavi.exe と、必要な分だけの Java を入れたフォルダを作る -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>jpackage</id>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${java.home}/bin/jpackage.exe</executable>
+                                    <arguments>
+                                        <argument>--type</argument>
+                                        <argument>app-image</argument>
+                                        <argument>--name</argument>
+                                        <argument>TaskNavi</argument>
+                                        <argument>--app-version</argument>
+                                        <argument>${app.version}</argument>
+                                        <argument>--vendor</argument>
+                                        <argument>TaskNavi</argument>
+                                        <argument>--input</argument>
+                                        <argument>${jpackage.dir}/input</argument>
+                                        <argument>--main-jar</argument>
+                                        <argument>${project.build.finalName}-jar-with-dependencies.jar</argument>
+                                        <argument>--main-class</argument>
+                                        <argument>org.tasknavi.Main</argument>
+                                        <argument>--icon</argument>
+                                        <argument>${project.basedir}/src/main/packaging/TaskNavi.ico</argument>
+                                        <argument>--dest</argument>
+                                        <argument>${jpackage.dir}/dist</argument>
+                                        <!-- jdeps で調べた分 + 日本語の日付表示・文字コード・暗号・ライブラリが裏で使う分 -->
+                                        <argument>--add-modules</argument>
+                                        <argument>java.base,java.desktop,java.naming,java.prefs,java.security.sasl,java.sql,java.management,jdk.unsupported,jdk.localedata,jdk.charsets,jdk.crypto.ec</argument>
+                                        <argument>--jlink-options</argument>
+                                        <argument>--strip-debug --no-man-pages --no-header-files --strip-native-commands --include-locales=ja,en</argument>
+                                        <argument>--java-options</argument>
+                                        <argument>-Dfile.encoding=UTF-8</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- 4. 出来たフォルダを zip にまとめる -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>dist-zip</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/packaging/dist-zip.xml</descriptor>
+                                    </descriptors>
+                                    <attach>false</attach>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

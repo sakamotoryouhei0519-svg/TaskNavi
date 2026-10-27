@@ -1,9 +1,9 @@
 package org.tasknavi;
 
-import org.tasknavi.ui.ErrorDialogUtil;
+import org.junit.jupiter.api.Test;
 import org.tasknavi.model.Task;
 import org.tasknavi.persistence.TaskDao;
-import org.junit.jupiter.api.Test;
+import org.tasknavi.ui.ErrorDialogUtil;
 
 import java.time.LocalDate;
 import java.util.Locale;

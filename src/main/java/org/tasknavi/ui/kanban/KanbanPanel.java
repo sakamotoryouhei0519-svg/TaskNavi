@@ -3,15 +3,16 @@ package org.tasknavi.ui.kanban;
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppException;
 import org.tasknavi.AppMessages;
-import org.tasknavi.ui.AppTheme;
-import org.tasknavi.ui.ErrorDialogUtil;
-import org.tasknavi.ui.SearchablePanel;
-import org.tasknavi.ui.TaskStatusChanger;
-import org.tasknavi.model.Task;
-import org.tasknavi.service.TaskService;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
+import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.ErrorDialogUtil;
 import org.tasknavi.ui.ProjectFilterDialog;
+import org.tasknavi.ui.SearchablePanel;
+import org.tasknavi.ui.TaskStatusChanger;
+import org.tasknavi.ui.WidthTrackingPanel;
 import org.tasknavi.ui.taskdialog.TaskDialog;
 
 import javax.swing.*;
@@ -25,9 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 【カンバン画面パネルクラス】
- * タスクのステータス（未着手・進行中・完了）ごとに 3 カラムのボードを構築し、
- * カード形式で直感的に進捗管理を行う画面です。
+ * カンバンタブ。未着手・進行中・完了の3列にカードを並べる。
  */
 public class KanbanPanel extends JPanel implements SearchablePanel {
     private final TaskService taskService;
@@ -124,8 +123,6 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         // データベースからタスクを取得してカードを配置
         refreshKanban();
 
-        // ★【追加】イベントバスに登録
-        // タスクの変更イベントを検知して自動更新
         TaskEventBus.getInstance().register(taskEventListener);
     }
 
@@ -135,10 +132,7 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         super.removeNotify();
     }
 
-    /**
-     * 【カラム用枠線・ヘッダー構築メソッド】
-     * 各列の見出し（タイトル）と、カードが並ぶスクロールエリアを生成します。
-     */
+    /** 1列分。見出しと、カードが並ぶスクロール欄。 */
     private JPanel buildColumnWrapper(String status, String title, JPanel cardsContainer) {
         JPanel wrapper = new JPanel(new MigLayout("fill, insets 0, gap 8", "[grow]", "[][grow]"));
         wrapper.setBackground(AppTheme.BACKGROUND);
@@ -182,18 +176,12 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         return wrapper;
     }
 
-    /**
-     * 【カード格納用パネルの初期化】
-     */
     private JPanel createColumnPanel() {
-        JPanel panel = new JPanel(new MigLayout("fillx, insets 8 8 10 8, wrap", "[grow,fill]", "[]8"));
+        JPanel panel = new WidthTrackingPanel(new MigLayout("fillx, insets 8 8 10 8, wrap", "[grow,fill]", "[]8"));
         panel.setBackground(AppTheme.BACKGROUND);
         return panel;
     }
 
-    /**
-     * 【カンバン画面のデータ再描画処理】
-     */
     public void refreshKanban() {
         refreshKanban(taskService.getAllTasks());
     }
@@ -219,15 +207,15 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
             JPanel card = KanbanCardFactory.create(task, cardActions);
             switch (KanbanColumnSupport.columnFor(task)) {
                 case IN_PROGRESS -> {
-                    inProgressColumn.add(card);
+                    inProgressColumn.add(card, "wmin 0");
                     inProgressCount++;
                 }
                 case DONE -> {
-                    doneColumn.add(card);
+                    doneColumn.add(card, "wmin 0");
                     doneCount++;
                 }
                 default -> {
-                    todoColumn.add(card);
+                    todoColumn.add(card, "wmin 0");
                     todoCount++;
                 }
             }
@@ -368,6 +356,7 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
         if (dialog.isConfirmed()) {
             task.setName(dialog.getTaskName());
             task.setAssignee(dialog.getAssignee());
+            task.setMemo(dialog.getMemo());
             task.setProgress(dialog.getProgress());
             task.setPriority(dialog.getPriority());
             task.setStartDate(LocalDate.parse(dialog.getStartDate()));

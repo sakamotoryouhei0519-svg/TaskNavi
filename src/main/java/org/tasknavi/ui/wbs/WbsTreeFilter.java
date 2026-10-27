@@ -1,6 +1,7 @@
 package org.tasknavi.ui.wbs;
 
 import org.tasknavi.model.Task;
+import org.tasknavi.util.TaskViewFilter;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -38,8 +39,7 @@ public final class WbsTreeFilter {
         Set<Integer> matchingTaskIds = new HashSet<>();
 
         for (Task task : tasks) {
-            boolean matchesKeyword = keyword == null || keyword.isEmpty()
-                    || (task.getName() != null && task.getName().toLowerCase().contains(keyword.toLowerCase()));
+            boolean matchesKeyword = TaskViewFilter.matchesKeyword(task, keyword);
             boolean matchesStatus = status == null || status.isEmpty()
                     || (task.getStatusCode() != null && task.getStatusCode().equals(status));
 

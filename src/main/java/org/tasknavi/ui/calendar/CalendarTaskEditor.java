@@ -1,17 +1,17 @@
 package org.tasknavi.ui.calendar;
 
-import org.tasknavi.AppException;
-import org.tasknavi.AppMessages;
-import org.tasknavi.ui.ErrorDialogUtil;
-import org.tasknavi.ui.NoticeBar;
-import org.tasknavi.ui.TaskStatusChanger;
-import org.tasknavi.model.Task;
-import org.tasknavi.ui.taskdialog.TaskDialog;
-import org.tasknavi.ui.TaskEntryFactory;
-import org.tasknavi.service.TaskService;
-import org.tasknavi.util.TaskStatusCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tasknavi.AppException;
+import org.tasknavi.AppMessages;
+import org.tasknavi.model.Task;
+import org.tasknavi.service.TaskService;
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.ui.NoticeBar;
+import org.tasknavi.ui.TaskEntryFactory;
+import org.tasknavi.ui.TaskStatusChanger;
+import org.tasknavi.ui.taskdialog.TaskDialog;
+import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
@@ -97,6 +97,7 @@ public final class CalendarTaskEditor {
 
         task.setName(dialog.getTaskName());
         task.setAssignee(dialog.getAssignee());
+        task.setMemo(dialog.getMemo());
         task.setProgress(dialog.getProgress());
         task.setPriority(dialog.getPriority());
         task.setStartDate(LocalDate.parse(dialog.getStartDate()));

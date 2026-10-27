@@ -12,7 +12,7 @@ import java.util.Set;
 /**
  * 画面共通のキーワード／ステータス／プロジェクト絞り込み。
  * カンバン・カレンダー・ガントなどで同じ条件意味を共有する。
- * キーワードはタスク名または担当者に部分一致する。
+ * キーワードはタスク名・担当者・メモに部分一致する。
  */
 public final class TaskViewFilter {
 
@@ -72,17 +72,20 @@ public final class TaskViewFilter {
         return filtered;
     }
 
-    private static boolean matchesKeyword(Task task, String keyword) {
-        if (keyword == null) {
+    /** タスク名・担当者・メモのどれかに含まれれば一致。キーワードが空なら全部一致。 */
+    public static boolean matchesKeyword(Task task, String keyword) {
+        String normalized = SearchFilterUtil.normalizeKeyword(keyword);
+        if (normalized == null) {
             return true;
         }
-        String needle = keyword.toLowerCase();
-        String name = task.getName();
-        if (name != null && name.toLowerCase().contains(needle)) {
-            return true;
-        }
-        String assignee = task.getAssignee();
-        return assignee != null && !assignee.isBlank() && assignee.toLowerCase().contains(needle);
+        String needle = normalized.toLowerCase();
+        return containsIgnoreCase(task.getName(), needle)
+                || containsIgnoreCase(task.getAssignee(), needle)
+                || containsIgnoreCase(task.getMemo(), needle);
+    }
+
+    private static boolean containsIgnoreCase(String value, String lowerNeedle) {
+        return value != null && !value.isBlank() && value.toLowerCase().contains(lowerNeedle);
     }
 
     private static boolean matchesStatus(Task task, String status) {

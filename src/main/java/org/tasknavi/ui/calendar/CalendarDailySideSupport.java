@@ -2,9 +2,9 @@ package org.tasknavi.ui.calendar;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
+import org.tasknavi.model.Task;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.IconManager;
-import org.tasknavi.model.Task;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -14,8 +14,8 @@ import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Font;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.time.LocalDate;
@@ -54,7 +54,7 @@ public final class CalendarDailySideSupport {
         lblDailyCountBadge.setOpaque(false);
         lblDailyCountBadge.setBorder(new EmptyBorder(3, 8, 3, 8));
 
-        titlePanel.add(lblDailyHeader);
+        titlePanel.add(lblDailyHeader, "wmin 0");
         titlePanel.add(lblDailyCountBadge);
 
         JButton btnAddTaskForDay = IconManager.getIconButton(
@@ -68,7 +68,7 @@ public final class CalendarDailySideSupport {
         btnAddTaskForDay.setMargin(new Insets(4, 10, 4, 10));
         btnAddTaskForDay.addActionListener(e -> onAddTask.run());
 
-        panel.add(titlePanel, "left");
+        panel.add(titlePanel, "left, wmin 0");
         panel.add(btnAddTaskForDay, "right");
 
         return new Header(panel, lblDailyHeader, lblDailyCountBadge);
@@ -118,7 +118,7 @@ public final class CalendarDailySideSupport {
             container.add(emptyPanel, "grow");
         } else {
             for (Task task : tasksForSelectedDate) {
-                container.add(CalendarTaskCardFactory.create(task, false, cardActions), "growx");
+                container.add(CalendarTaskCardFactory.create(task, false, cardActions), "growx, wmin 0");
             }
         }
     }

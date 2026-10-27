@@ -1,10 +1,9 @@
 package org.tasknavi.persistence;
 
-import org.tasknavi.DatabaseTestConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.tasknavi.DatabaseTestConfig;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -30,6 +29,7 @@ class DatabaseTest {
         try (Connection conn = Database.connect()) {
             assertTrue(hasColumn(conn, "users", "role"));
             assertTrue(hasColumn(conn, "tasks", "priority"));
+            assertTrue(hasColumn(conn, "tasks", "memo"));
         }
     }
 

@@ -1,7 +1,7 @@
 package org.tasknavi.ui.calendar;
 
-import org.tasknavi.ui.AppTheme;
 import org.tasknavi.model.Task;
+import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.UiLabels;
 
 import javax.swing.JLabel;

@@ -1,8 +1,8 @@
 package org.tasknavi.model;
 
+import org.junit.jupiter.api.Test;
 import org.tasknavi.AppMessages;
 import org.tasknavi.util.SearchFilterUtil;
-import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 

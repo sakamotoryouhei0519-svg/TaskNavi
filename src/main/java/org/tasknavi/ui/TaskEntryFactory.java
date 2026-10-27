@@ -67,6 +67,7 @@ public final class TaskEntryFactory {
                 end
         );
         newTask.setAssignee(dialog.getAssignee());
+        newTask.setMemo(dialog.getMemo());
         newTask.setPriority(dialog.getPriority() != null ? dialog.getPriority() : Task.DEFAULT_PRIORITY);
         return newTask;
     }
