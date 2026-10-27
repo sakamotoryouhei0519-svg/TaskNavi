@@ -34,8 +34,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * 共有プロジェクトのタスクのコメント欄。書く・直す・消すは、すぐ共有フォルダに書き足す（編集画面の「保存」とは別）。
- * 直す・消すは、この PC で書いた自分のコメントだけ。
+ * 共有プロジェクトのタスクのコメント欄。書く・編集・消すは、すぐ共有フォルダに書き足す（編集画面の「保存」とは別）。
+ * 編集・消すは、この PC で書いた自分のコメントだけ。
  */
 public final class TaskCommentsPanel extends JPanel {
 
@@ -62,7 +62,7 @@ public final class TaskCommentsPanel extends JPanel {
     };
     private final JButton post = new JButton(AppMessages.get("comment.post", "書く"));
     private final JButton cancel = new JButton(AppMessages.get("comment.cancel", "やめる"));
-    /** 直しているコメントの記録 ID。書いているときは null。 */
+    /** 編集しているコメントの記録 ID。書いているときは null。 */
     private String editingId;
 
     public TaskCommentsPanel(TeamProject project, String taskId) {
@@ -82,7 +82,7 @@ public final class TaskCommentsPanel extends JPanel {
 
         AppTheme.styleTextField(input);
         input.setToolTipText(AppMessages.get("comment.input.hint",
-                "Enter で書き込みます。自分のコメントは、あとから直したり消したりできます"));
+                "Enter で書き込みます。自分のコメントは、あとから編集したり消したりできます"));
         input.addActionListener(e -> submit());
         AppTheme.styleDialogSecondaryButton(post);
         post.addActionListener(e -> submit());
@@ -96,7 +96,7 @@ public final class TaskCommentsPanel extends JPanel {
         refresh();
     }
 
-    /** 名前と時刻。直したものには印を付ける。 */
+    /** 名前と時刻。編集したものには印を付ける。 */
     static String headerText(TeamComment comment) {
         String header = comment.author() + "  " + comment.at().atZone(ZoneId.systemDefault()).format(AT);
         return comment.edited() && !comment.deleted()
@@ -126,7 +126,7 @@ public final class TaskCommentsPanel extends JPanel {
         row.setOpaque(false);
         row.add(mutedLabel(headerText(comment)), "wmin 0");
         if (project.canChange(comment)) {
-            row.add(linkButton(AppMessages.get("comment.edit", "直す"), AppTheme.PRIMARY, () -> startEditing(comment)));
+            row.add(linkButton(AppMessages.get("comment.edit", "編集"), AppTheme.PRIMARY, () -> startEditing(comment)));
             row.add(linkButton(AppMessages.get("comment.delete", "消す"), AppTheme.danger(), () -> confirmDelete(comment)));
         } else {
             row.add(new JLabel(), "span 2");

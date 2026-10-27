@@ -149,7 +149,7 @@ final class TeamHistoryDialog {
             case DELETE -> AppMessages.get("team.history.op.delete", "削除");
             case RESTORE -> AppMessages.get("team.history.op.restore", "戻す");
             case COMMENT -> AppMessages.get("team.history.op.comment", "コメント");
-            case COMMENT_EDIT -> AppMessages.get("team.history.op.commentEdit", "コメントを直す");
+            case COMMENT_EDIT -> AppMessages.get("team.history.op.commentEdit", "コメントを編集");
             case COMMENT_DELETE -> AppMessages.get("team.history.op.commentDelete", "コメントを消す");
         };
     }

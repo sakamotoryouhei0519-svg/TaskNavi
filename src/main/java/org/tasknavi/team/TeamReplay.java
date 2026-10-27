@@ -131,8 +131,8 @@ public final class TeamReplay {
     }
 
     /**
-     * 書いた PC からの直す・消すだけを当てはめる。ほかの PC からの記録（ファイルを手で書き換えたなど）は無視するので、
-     * どの PC でも同じ結果になる。消したあとの直すも無視する。
+     * 書いた PC からの編集・削除だけを当てはめる。ほかの PC からの記録（ファイルを手で書き換えたなど）は無視するので、
+     * どの PC でも同じ結果になる。消したあとの編集も無視する。
      */
     private static void applyCommentChange(Map<String, Entry> entries, TeamEvent event) {
         Entry entry = entries.get(event.taskId());

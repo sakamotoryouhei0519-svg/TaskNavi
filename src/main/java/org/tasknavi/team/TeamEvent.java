@@ -30,7 +30,7 @@ public record TeamEvent(
 
     /**
      * RESTORE は削除したタスクを戻す。COMMENT はコメントを書き足す（値は変えないので重ならない）。
-     * COMMENT_EDIT / COMMENT_DELETE は、baseEventId で指したコメントを直す・消す。
+     * COMMENT_EDIT / COMMENT_DELETE は、baseEventId で指したコメントを編集・削除する。
      */
     public enum Op { CREATE, UPDATE, DELETE, RESTORE, COMMENT, COMMENT_EDIT, COMMENT_DELETE }
 
