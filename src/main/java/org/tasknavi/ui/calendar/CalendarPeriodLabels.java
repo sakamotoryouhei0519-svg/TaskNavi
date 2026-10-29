@@ -30,7 +30,8 @@ public final class CalendarPeriodLabels {
         return AppMessages.format(
                 "calendar.title.week",
                 "{0}年 {1}月 第{2}週 ({3}/{4} 〜 {5}/{6})",
-                date.getYear(),
+                // 数のまま渡すと MessageFormat が「2,026」と桁区切りを入れる
+                String.valueOf(date.getYear()),
                 date.getMonthValue(),
                 weekNumber,
                 startOfWeek.getMonthValue(), startOfWeek.getDayOfMonth(),
