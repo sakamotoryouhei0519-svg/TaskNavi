@@ -8,10 +8,14 @@ import org.tasknavi.model.Task;
 import org.tasknavi.model.TaskHierarchyUtil;
 import org.tasknavi.service.TaskService;
 import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.ui.NoticeBar;
 import org.tasknavi.ui.ProjectFilterDialog;
 import org.tasknavi.ui.SearchablePanel;
 import org.tasknavi.ui.UiConstants;
 import org.tasknavi.ui.WidthTrackingPanel;
+import org.tasknavi.ui.taskdialog.TaskDialog;
+import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -19,6 +23,8 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * WBS タブ。左側にツリー、右側に選択中の内容を表示する。編集は選んで Enter（MainFrame の共通の操作）で行う。
+ * WBS タブ。左側にツリー、右側に選択中の内容を表示する。編集はダイアログで行う。
  */
 public class WbsPanel extends JPanel implements SearchablePanel {
     private static final long serialVersionUID = 1L;
@@ -111,7 +117,7 @@ public class WbsPanel extends JPanel implements SearchablePanel {
         configureTreeDragAndDrop();
         leftPanel.add(new JScrollPane(wbsTree), "grow");
 
-        detailForm = new WbsDetailForm();
+        detailForm = new WbsDetailForm(this::openEditDialog);
         detailHolder = new WidthTrackingPanel(new BorderLayout());
         detailHolder.setBackground(AppTheme.PANEL_BG);
         detailHolder.add(detailForm.getPanel(), BorderLayout.NORTH);
@@ -409,6 +415,69 @@ public class WbsPanel extends JPanel implements SearchablePanel {
             return null;
         }
         return taskService.getTaskById(selectedTaskId);
+    }
+
+    private void openEditDialog() {
+        if (selectedTaskId == null) {
+            NoticeBar.info(this,
+                    AppMessages.get("wbs.edit.select", "左側のツリーから編集対象のタスクを選択してください。"));
+            return;
+        }
+        Task task = taskService.getTaskById(selectedTaskId);
+        if (task == null) {
+            return;
+        }
+        Frame frame = (Frame) SwingUtilities.getWindowAncestor(this);
+        if (frame == null) {
+            return;
+        }
+
+        TaskDialog dialog = new TaskDialog(frame, taskService, task);
+        dialog.setVisible(true);
+        if (!dialog.isConfirmed()) {
+            return;
+        }
+
+        LocalDate startDate;
+        LocalDate endDate;
+        try {
+            startDate = LocalDate.parse(dialog.getStartDate());
+            endDate = LocalDate.parse(dialog.getEndDate());
+        } catch (DateTimeParseException ex) {
+            ErrorDialogUtil.showError(this,
+                    AppMessages.get("wbs.error.date.format", "日付の形式は YYYY-MM-DD で入力してください。"));
+            return;
+        }
+
+        task.setName(dialog.getTaskName());
+        task.setAssignee(dialog.getAssignee());
+        task.setMemo(dialog.getMemo());
+        task.setProgress(dialog.getProgress());
+        task.setPriority(dialog.getPriority());
+        task.setStartDate(startDate);
+        task.setEndDate(endDate);
+        task.setStatus(TaskStatusCycle.fromProgress(task.getProgress()));
+
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() {
+                taskService.updateTask(task);
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get();
+                    NoticeBar.info(WbsPanel.this, AppMessages.get("notice.saved", "保存しました"));
+                } catch (Exception e) {
+                    ErrorDialogUtil.showBackgroundError(WbsPanel.this, e,
+                            AppMessages.get("wbs.error.update", "更新中に予期せぬエラーが発生しました。"));
+                    logger.error("タスク保存時の予期せぬエラー", e);
+                }
+            }
+        };
+        worker.execute();
     }
 
     @Override

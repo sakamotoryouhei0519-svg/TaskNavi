@@ -225,7 +225,7 @@ MainFrame.createToolBarPanel()
 
 | 区分 | ファイル |
 |------|----------|
-| 必読 | `ui/TaskEditHelper.java` の `openAndSave`（どの画面の編集もここを通る） |
+| 必読 | 使った Panel（例: `ui/wbs/WbsPanel.java` の `openEditDialog`） |
 | 必読 | `TaskService.updateTask` と `updateTasks` |
 | 必読 | その Panel の `TaskEventListener`（イベント受信 → refresh） |
 | 関連 | `ui/wbs/WbsDetailForm.java`（WBS の場合） |
@@ -243,10 +243,12 @@ WbsPanel コンストラクタ
         → refreshWbs()
       }
 
-ユーザーがWBSでタスクを選択して Enter を押す（右側の WbsDetailForm は表示だけ）
-  → MainFrame の "editSelected" アクション（文字を打っている最中は無視）
-  → WbsPanel.getSelectedTask() で選択中のタスクを取得
-  → TaskEditHelper.openAndSave(panel, そのタスクのプロジェクトの TaskService, task)
+ユーザーがWBSでタスクを選択して、右側の名前の行をダブルクリック
+  → WbsDetailForm の editOnDoubleClick が反応する（何も出していないときは showing が false で無視）
+  → openEditDialog() コールバックが呼ばれる
+  → WbsPanel.openEditDialog()
+    → selectedTaskId で選択中タスクIDを確認
+    → taskService.getTaskById(selectedTaskId) でタスク取得
     → new TaskDialog(frame, taskService, task) (既存タスクでダイアログ作成)
     → dialog.setVisible(true) (モーダルダイアログ表示)
     → ユーザーが値を変更して「保存」をクリック
@@ -285,7 +287,7 @@ WbsPanel コンストラクタ
 
 - [ ] 保存後、他タブも更新される理由を `TaskEventBus` で説明できる
 - [ ] 入力が不正なとき、1件も保存されないと言える
-- [ ] WBS の編集は Enter から `TaskEditHelper.openAndSave` → `updateTask` と進み、成功したあとだけ他の画面に知らせると言える
+- [ ] WBS の編集は `openEditDialog` から `updateTask` を呼び、成功したあとだけ他の画面に知らせると言える
 - [ ] `TaskCrudDao.updateAll()` がトランザクションで複数タスクを更新していると言える
 
 ### 操作F: ツールバーの「削除」
@@ -809,7 +811,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | 絞り込み結果のエクスポート | `TaskDataIoHelper`（全件かフィルタ結果かを確認） |
 | Excel 向け CSV の書き出し・取り込み | `TaskCsv` / `CsvCodec` / `TaskImportDao` |
 | 保存の失敗を画面に出す | `ErrorDialogUtil.findAppException` |
-| 編集の保存は成功したあとだけ知らせる | `TaskEditHelper.openAndSave` → `TaskService.updateTask` → `updateTasks` |
+| 編集の保存は成功したあとだけ知らせる | `WbsPanel.openEditDialog` → `TaskService.updateTask` → `updateTasks` |
 | 削除と並べ替えを途中で残さない | `TaskCrudDao.deleteIds` / `updateOrderIndexes` |
 | ログインをやめても前のタスクを全部残す | `V6__drop_login.sql` / `DatabaseTest.upgradingFromLoginVersionKeepsEveryAccountsTasks` |
 | サンプルの段階名の番号を外し、自分で付けた名前は触らない | `V7__unnumber_sample_stages.sql` / `DatabaseTest.upgradingRemovesNumbersOnlyFromSampleStageNames` |

@@ -250,9 +250,9 @@ IntelliJ でファイルを開き、`Ctrl+F` で下に書いた言葉を探す�
 
 ### 5日目: 編集は同じ道
 
-WBS でタスクを選んで Enter を押し、名前を変えて保存する。カンバンの名前も変わることを見る。空の名前では保存できないことも見る。
+WBS でタスクを選び、名前を変えて保存する。カンバンの名前も変わることを見る。空の名前では保存できないことも見る。
 
-1. `ui/TaskEditHelper.java` の `openAndSave` を開く（Enter からも、カンバンなどのダブルクリックからもここに来る）
+1. `WbsPanel.java` で `openEditDialog` を検索する
 2. 最後の方で `taskService.updateTask` を呼んでいることを見る
 3. `service/TaskService.java` の `updateTask` を開く。中で `updateTasks` を呼んでいる
 4. `updateTasks` の保存が終わったあとで `TaskEventBus` に知らせていることを見る
@@ -284,11 +284,11 @@ WBS でタスクを選んで Enter を押し、名前を変えて保存する。
 
 ### 8日目: WBS は表示、編集はダイアログ
 
-WBS でタスクを選ぶ。右側は読めるだけで、クリックしても何も起きないことを見る。編集は Enter で、5日目と同じダイアログが開く。左のツリーのダブルクリックは、開く・閉じるだけ。ツリーの番号は「1」「1.1」「1.1.1」と、親の番号に何番目かを点でつなげたもの。
+WBS でタスクを選ぶ。右側は読めるだけで、その場では名前を書き換えられないことを見る。右側の名前の行のダブルクリックで、5日目と同じダイアログが開く（編集ボタンは無い。名前にマウスを乗せると「ダブルクリックで編集」と出る）。左のツリーのダブルクリックは、今までどおり開く・閉じるだけ。ツリーの番号は「1」「1.1」「1.1.1」と、親の番号に何番目かを点でつなげたもの。
 
-1. `ui/main/MainFrame.java` で `editSelected` を検索し、今のタブの `getSelectedTask` を `TaskEditHelper.openAndSave` に渡していることを見る
+1. `ui/wbs/WbsPanel.java` で `openEditDialog` を検索する
 2. 詳細側は `WbsDetailForm` だと見る。フォームの中までは読まない
-3. 番号はツリーと右側の両方が `WbsTreeModelBuilder.childCode` で作っていることだけ確認する
+3. 名前の行のダブルクリック（`editOnDoubleClick`）が `openEditDialog` につながっていることと、番号はツリーと右側の両方が `WbsTreeModelBuilder.childCode` で作っていることだけ確認する
 
 今日の終わり: 「WBS の右側は表示。変更は編集ダイアログから `updateTask`」と言える。
 
