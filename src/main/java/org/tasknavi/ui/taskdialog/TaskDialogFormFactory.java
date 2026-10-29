@@ -73,14 +73,14 @@ public final class TaskDialogFormFactory {
                 startDateField,
                 AppMessages.get("dialog.tooltip.select.start", "開始日を選択"),
                 ownerForDatePicker);
-        formPanel.add(labeled(AppMessages.get("dialog.label.startdate", "開始日 (YYYY-MM-DD)") + ":"), "align right");
+        formPanel.add(labeled(AppMessages.get("dialog.label.startdate", "開始日") + ":"), "align right");
         formPanel.add(startPanel, "wrap");
 
         JPanel endPanel = dateRow(
                 endDateField,
                 AppMessages.get("dialog.tooltip.select.end", "終了日を選択"),
                 ownerForDatePicker);
-        formPanel.add(labeled(AppMessages.get("dialog.label.enddate", "終了日 (YYYY-MM-DD)") + ":"), "align right");
+        formPanel.add(labeled(AppMessages.get("dialog.label.enddate", "終了日") + ":"), "align right");
         formPanel.add(endPanel, "wrap");
 
         formPanel.add(labeled(AppMessages.get("dialog.label.priority", "優先度") + ":"), "align right");

@@ -46,7 +46,6 @@ public final class CalendarTaskCardFactory {
         Color baseBg = AppTheme.cardBackground();
         card.setBackground(baseBg);
 
-        Color statusColor = AppTheme.getStatusColor(task.getStatusCode());
         Color accent = task.isOverdue()
                 ? AppTheme.danger()
                 : AppTheme.BORDER_COLOR;
@@ -96,7 +95,7 @@ public final class CalendarTaskCardFactory {
 
         JLabel progressLabel = new JLabel(task.getProgress() + "%");
         progressLabel.setFont(AppTheme.FONT_MAIN.deriveFont(Font.BOLD, isCompact ? 10f : 11f));
-        progressLabel.setForeground(statusColor);
+        progressLabel.setForeground(AppTheme.statusText(task.getStatusCode()));
 
         JPanel topPanel = new JPanel(new BorderLayout(4, 0));
         topPanel.setOpaque(false);
@@ -124,7 +123,7 @@ public final class CalendarTaskCardFactory {
 
         JLabel statusBadge = new JLabel(AppMessages.statusDisplay(task.getStatus()));
         statusBadge.setFont(AppTheme.FONT_SMALL.deriveFont(Font.BOLD, 10f));
-        statusBadge.setForeground(statusColor);
+        statusBadge.setForeground(AppTheme.statusText(task.getStatusCode()));
         metaPanel.add(statusBadge, BorderLayout.EAST);
 
         centerPanel.add(metaPanel);

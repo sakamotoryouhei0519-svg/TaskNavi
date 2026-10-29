@@ -159,6 +159,7 @@ public class MainFrame extends JFrame {
         JScrollPane ganttScroll = new JScrollPane(ganttChartPanel);
         ganttScroll.setColumnHeaderView(ganttChartPanel.createDateHeader());
         ganttScroll.setRowHeaderView(ganttChartPanel.createTaskNameColumn());
+        ganttScroll.setCorner(JScrollPane.UPPER_LEFT_CORNER, ganttChartPanel.createCorner());
         ganttScroll.getViewport().setBackground(AppTheme.BACKGROUND);
         ganttScroll.setBorder(null);
         ganttScroll.getVerticalScrollBar().setUnitIncrement(GanttMetrics.ROW_HEIGHT * 3);

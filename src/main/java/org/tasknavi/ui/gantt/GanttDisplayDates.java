@@ -62,6 +62,9 @@ public final class GanttDisplayDates {
         return task.getEndDate();
     }
 
+    /** 今日を真ん中に出せるよう、表示期間は今日の前後この日数を必ず含める。 */
+    static final int TODAY_MARGIN_DAYS = 30;
+
     public static LocalDate[] calculateVisibleDateWindow(
             List<Task> tasks,
             Map<Integer, List<Task>> childrenMap,
@@ -73,7 +76,18 @@ public final class GanttDisplayDates {
         if (manual != null) {
             return manual;
         }
+        return includeToday(taskWindow(tasks, childrenMap), LocalDate.now());
+    }
 
+    static LocalDate[] includeToday(LocalDate[] window, LocalDate today) {
+        LocalDate earliest = today.minusDays(TODAY_MARGIN_DAYS);
+        LocalDate latest = today.plusDays(TODAY_MARGIN_DAYS);
+        return new LocalDate[]{
+                window[0].isAfter(earliest) ? earliest : window[0],
+                window[1].isBefore(latest) ? latest : window[1]};
+    }
+
+    private static LocalDate[] taskWindow(List<Task> tasks, Map<Integer, List<Task>> childrenMap) {
         List<Task> activeTasks = tasks.stream()
                 .filter(task -> !Task.STATUS_COMPLETED.equals(task.getStatus()))
                 .toList();

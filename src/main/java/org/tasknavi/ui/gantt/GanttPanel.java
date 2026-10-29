@@ -12,16 +12,16 @@ import org.tasknavi.ui.SearchablePanel;
 
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
-import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.event.HierarchyEvent;
 import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -49,6 +49,7 @@ public class GanttPanel extends JPanel implements SearchablePanel {
     private LocalDate visibleStartDate = LocalDate.now().minusDays(14);
     private LocalDate visibleEndDate = LocalDate.now().plusDays(30);
     private boolean manualVisibleWindow = false;
+    private boolean centeredOnToday = false;
 
     private String currentSearchKeyword = null;
     private String currentStatusFilter = null;
@@ -237,8 +238,13 @@ public class GanttPanel extends JPanel implements SearchablePanel {
             }
         });
 
-        setBackground(Color.WHITE);
+        setBackground(AppTheme.PANEL_BG);
         setPreferredSize(new Dimension(Math.max(800, totalDays * dayWidth), 800));
+        addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing() && !centeredOnToday) {
+                SwingUtilities.invokeLater(this::centerOnToday);
+            }
+        });
 
         TaskEventBus.getInstance().register(taskEventListener);
         refreshTaskCache();
@@ -274,6 +280,25 @@ public class GanttPanel extends JPanel implements SearchablePanel {
     @Override
     protected void processMouseMotionEvent(MouseEvent e) {
         super.processMouseMotionEvent(translateEvent(e));
+    }
+
+    /** 最初に見えたときに一度だけ、今日の列が見えている幅の真ん中に来るよう横に送る。 */
+    void centerOnToday() {
+        JViewport viewport = (JViewport) SwingUtilities.getAncestorOfClass(JViewport.class, this);
+        int extent = viewport == null ? 0 : viewport.getExtentSize().width;
+        if (extent <= 0) {
+            return;
+        }
+        syncPreferredSize();
+        revalidate();
+        viewport.getParent().validate();
+        long offset = ChronoUnit.DAYS.between(visibleStartDate, LocalDate.now());
+        if (offset < 0 || offset >= totalDays) {
+            return;
+        }
+        centeredOnToday = true;
+        int x = GanttViewportSupport.centeredScrollX(offset, dayWidth, extent, getPreferredSize().width);
+        viewport.setViewPosition(new Point(x, viewport.getViewPosition().y));
     }
 
     private void onTaskEvent(TaskEvent event) {
@@ -380,17 +405,22 @@ public class GanttPanel extends JPanel implements SearchablePanel {
 
         g2.setColor(AppTheme.PANEL_BG);
         g2.fillRect(0, 0, getWidth(), getHeight());
-        GanttPainter.drawDayGrid(g2, minDate, 0, tasks.size() * GanttMetrics.ROW_HEIGHT, totalDays, dayWidth);
-
-        int currentY = 0;
+        int rowsHeight = tasks.size() * GanttMetrics.ROW_HEIGHT;
+        GanttPainter.drawRowStripes(g2, tasks.size(), GanttMetrics.ROW_HEIGHT, getWidth());
         Integer hoverId = hoveredTask == null ? null : hoveredTask.getId();
-        for (Task task : tasks) {
-            boolean selected = selectedTaskId != null && selectedTaskId.equals(task.getId());
-            boolean hovered = hoverId != null && hoverId.equals(task.getId());
+        for (int row = 0; row < tasks.size(); row++) {
+            Integer id = tasks.get(row).getId();
+            boolean selected = selectedTaskId != null && selectedTaskId.equals(id);
+            boolean hovered = hoverId != null && hoverId.equals(id);
             if (selected || hovered) {
                 g2.setColor(selected ? AppTheme.selectedFill() : AppTheme.hoverFill());
-                g2.fillRect(0, currentY, getWidth(), GanttMetrics.ROW_HEIGHT);
+                g2.fillRect(0, row * GanttMetrics.ROW_HEIGHT, getWidth(), GanttMetrics.ROW_HEIGHT);
             }
+        }
+        GanttPainter.overlayDayColumns(g2, minDate, rowsHeight, totalDays, dayWidth);
+
+        int currentY = 0;
+        for (Task task : tasks) {
             boolean dragging = dragSession.isDragging(task);
             LocalDate dragStart = null;
             LocalDate dragEnd = null;
@@ -407,10 +437,6 @@ public class GanttPanel extends JPanel implements SearchablePanel {
                     dragging,
                     selectedTaskId != null && selectedTaskId.equals(task.getId()),
                     dragStart, dragEnd);
-            g2.setStroke(new BasicStroke(2f));
-            g2.setColor(AppTheme.gridLine());
-            g2.drawLine(0, currentY + GanttMetrics.ROW_HEIGHT - 1, getWidth(), currentY + GanttMetrics.ROW_HEIGHT - 1);
-            g2.setStroke(new BasicStroke(1f));
             currentY += GanttMetrics.ROW_HEIGHT;
         }
 
@@ -501,6 +527,10 @@ public class GanttPanel extends JPanel implements SearchablePanel {
 
     public JComponent createDateHeader() {
         return GanttSideViews.createDateHeader(sideHost);
+    }
+
+    public JComponent createCorner() {
+        return GanttSideViews.createCorner();
     }
 
     @Override

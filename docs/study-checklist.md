@@ -633,9 +633,11 @@ CalendarPanel コンストラクタ
 | 必読 | `ui/gantt/GanttPanel.java`（全体構造だけ） |
 | 関連 | `GanttPainter` / `GanttTaskFilter` / `GanttSideViews` |
 | 後回し | `GanttMouseController` / `GanttBarDragMath`（複雑） |
-| テスト | `GanttTaskFilterTest` / `GanttBarDragMathTest` |
+| テスト | `GanttTaskFilterTest` / `GanttBarDragMathTest` / `GanttTodayCenteringTest` |
 
 **コードの流れ（ガントチャート表示）:**
+
+（表示する期間は `GanttDisplayDates` が決め、今日の前後30日を必ず含めます。初めて画面に出たとき `GanttPanel.centerOnToday()` が今日を真ん中に送ります。地は `GanttPainter.drawRowStripes()`（1行おきの色）と `overlayDayColumns()`（土日・今日の列）が塗ります）
 
 ```
 GanttPanel コンストラクタ
@@ -659,6 +661,7 @@ GanttPanel コンストラクタ
 
 - [ ] `GanttPainter.paintBars()` がタスクの開始日・終了日に基づいてバーを描画していると言える
 - [ ] `GanttSideViews` がタスク名列と日付ヘッダーを作成していると言える
+- [ ] ガントを開いたとき今日が真ん中に来る理由を、`centerOnToday()` と `GanttViewportSupport.centeredScrollX()` で言える
 
 ---
 

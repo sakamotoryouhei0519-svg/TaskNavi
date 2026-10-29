@@ -63,7 +63,7 @@ public class WbsTreeCellRenderer extends DefaultTreeCellRenderer {
                     setIcon(projectIcon != null ? projectIcon : getDefaultOpenIcon());
                 } else {
                     setIcon(taskIcon != null ? taskIcon : getDefaultLeafIcon());
-                    setForeground(AppTheme.getStatusColor(task.getStatusCode()));
+                    setForeground(AppTheme.statusText(task.getStatusCode()));
                 }
             }
         }

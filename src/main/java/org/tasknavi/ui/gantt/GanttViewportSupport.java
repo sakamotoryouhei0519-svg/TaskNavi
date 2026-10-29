@@ -37,6 +37,14 @@ public final class GanttViewportSupport {
         }
     }
 
+    /** その日の列が見えている幅の真ん中に来る横位置。端では行き過ぎないよう止める。 */
+    static int centeredScrollX(long dayOffset, int dayWidth, int extentWidth, int viewWidth) {
+        long center = dayOffset * dayWidth + dayWidth / 2;
+        long x = center - extentWidth / 2;
+        long max = Math.max(0, viewWidth - extentWidth);
+        return (int) Math.max(0, Math.min(x, max));
+    }
+
     private static int wheelDelta(MouseWheelEvent e) {
         double rotation = e.getPreciseWheelRotation();
         if (rotation == 0) {

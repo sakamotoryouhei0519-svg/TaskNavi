@@ -59,6 +59,15 @@ public final class GanttBarGeometry {
         return 1;
     }
 
+    /**
+     * 月の名前の横位置。月の始まりが左に流れて見えなくなっても、見えている左端について行き、月の終わりの手前で止まる。
+     */
+    public static int stickyLabelX(int startX, int endX, int visibleX, int textWidth, int pad) {
+        int x = Math.max(startX, visibleX) + pad;
+        int last = endX - textWidth - pad;
+        return Math.max(startX + pad, Math.min(x, last));
+    }
+
     public enum ProgressLabelPlace {
         ON_FILL,
         ON_TRACK,

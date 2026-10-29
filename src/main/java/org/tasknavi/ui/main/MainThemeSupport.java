@@ -3,7 +3,9 @@ package org.tasknavi.ui.main;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.SearchablePanel;
 
+import javax.swing.AbstractButton;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -45,10 +47,11 @@ public final class MainThemeSupport {
                     continue;
                 }
                 styleButton(button);
-            } else if (child instanceof JRadioButton radio) {
-                radio.setBackground(AppTheme.isDarkMode() ? AppTheme.PANEL_BG : Color.WHITE);
-                radio.setForeground(AppTheme.textStrong());
-                radio.setOpaque(false);
+            } else if (child instanceof JRadioButton || child instanceof JCheckBox) {
+                AbstractButton choice = (AbstractButton) child;
+                choice.setBackground(AppTheme.PANEL_BG);
+                choice.setForeground(AppTheme.textStrong());
+                choice.setOpaque(false);
             } else if (child instanceof JComboBox<?> combo) {
                 AppTheme.styleComboBox(combo);
                 combo.repaint();

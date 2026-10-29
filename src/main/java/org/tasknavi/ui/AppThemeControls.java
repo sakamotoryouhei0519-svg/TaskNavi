@@ -202,8 +202,8 @@ final class AppThemeControls {
 
     static void styleComboBox(JComboBox<?> combo) {
         combo.setFont(AppTheme.FONT_MAIN);
-        combo.setBackground(AppTheme.getCurrentTheme().textFieldBackground());
-        combo.setForeground(AppTheme.TEXT_PRIMARY);
+        combo.setBackground(AppTheme.controlBackground());
+        combo.setForeground(AppTheme.textStrong());
         combo.setBorder(createRoundedBorder(AppTheme.BORDER_COLOR, 7, 1, 1, 1, 1));
         combo.setUI(new ThemedComboBoxUI());
         combo.putClientProperty("app.styled.combobox", Boolean.TRUE);
@@ -242,7 +242,44 @@ final class AppThemeControls {
         }
     }
 
+    /** 中の文字と一覧は描くたびに今のテーマの色にする。画面ごとの描き方（renderer）が古い色を持っていても上書きする。 */
     private static final class ThemedComboBoxUI extends BasicComboBoxUI {
+        @Override
+        public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+            g.setColor(comboBox.getBackground());
+            g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+
+        @Override
+        public void paintCurrentValue(Graphics g, Rectangle bounds, boolean hasFocus) {
+            @SuppressWarnings("unchecked")
+            javax.swing.ListCellRenderer<Object> renderer = (javax.swing.ListCellRenderer<Object>) comboBox.getRenderer();
+            Component c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, false, false);
+            c.setFont(comboBox.getFont());
+            c.setForeground(comboBox.isEnabled() ? comboBox.getForeground() : AppTheme.textDisabled());
+            c.setBackground(comboBox.getBackground());
+            if (c instanceof JComponent jc) {
+                jc.setOpaque(false);
+            }
+            currentValuePane.paintComponent(g, c, comboBox, bounds.x, bounds.y, bounds.width, bounds.height,
+                    c instanceof javax.swing.JPanel);
+        }
+
+        @Override
+        protected javax.swing.plaf.basic.ComboPopup createPopup() {
+            return new javax.swing.plaf.basic.BasicComboPopup(comboBox) {
+                @Override
+                public void show() {
+                    list.setBackground(AppTheme.PANEL_BG);
+                    list.setForeground(AppTheme.TEXT_PRIMARY);
+                    list.setSelectionBackground(AppTheme.PRIMARY);
+                    list.setSelectionForeground(Color.WHITE);
+                    setBorder(javax.swing.BorderFactory.createLineBorder(AppTheme.BORDER_COLOR, 1));
+                    super.show();
+                }
+            };
+        }
+
         @Override
         protected JButton createArrowButton() {
             JButton button = new JButton() {

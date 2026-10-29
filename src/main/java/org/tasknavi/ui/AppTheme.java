@@ -137,6 +137,14 @@ public class AppTheme {
         return STATUS_IN_PROGRESS;
     }
 
+    /** 状態を文字の色で見せるとき。塗り用の {@link #getStatusColor} は白い地では薄すぎる。 */
+    public static Color statusText(String status) {
+        TaskStatus s = TaskStatus.fromString(status);
+        if (s == TaskStatus.NOT_STARTED) return textDisabled();
+        if (s == TaskStatus.COMPLETED) return success();
+        return isDarkMode() ? PRIMARY : PRIMARY_DARK;
+    }
+
     public static Color getStatusSoftColor(String status) {
         TaskStatus s = TaskStatus.fromString(status);
         if (s == TaskStatus.NOT_STARTED) return STATUS_NOT_STARTED_SOFT;
@@ -195,6 +203,44 @@ public class AppTheme {
     /** ガントの日の区切りなどの罫線。 */
     public static Color gridLine() {
         return isDarkMode() ? new Color(71, 85, 105) : new Color(148, 163, 184);
+    }
+
+    /** ガントのバーの、まだ進んでいない部分。ダークでは淡い色だと地から浮いて眩しいので、状態の色を暗く混ぜる。 */
+    public static Color ganttBarTrack(String status) {
+        if (!isDarkMode()) {
+            return getStatusSoftColor(status);
+        }
+        Color base = getStatusColor(status);
+        Color panel = PANEL_BG;
+        float mix = 0.35f;
+        return new Color(
+                Math.round(base.getRed() * mix + panel.getRed() * (1 - mix)),
+                Math.round(base.getGreen() * mix + panel.getGreen() * (1 - mix)),
+                Math.round(base.getBlue() * mix + panel.getBlue() * (1 - mix)));
+    }
+
+    /** ガントの1行おきの地。 */
+    public static Color ganttStripe() {
+        return isDarkMode() ? new Color(37, 48, 63) : new Color(243, 246, 250);
+    }
+
+    /** ガントの土日の列に重ねる色（透明）。1行おきの地の上でも見分けられる。 */
+    public static Color ganttWeekend() {
+        return isDarkMode() ? new Color(0, 0, 0, 55) : new Color(100, 116, 139, 26);
+    }
+
+    /** ガントの今日の列に重ねる色（透明）。 */
+    public static Color ganttToday() {
+        return isDarkMode() ? new Color(96, 165, 250, 40) : new Color(59, 130, 246, 28);
+    }
+
+    /** ガントの日の区切り。月の区切りは {@link #ganttMonthLine}。 */
+    public static Color ganttDayLine() {
+        return isDarkMode() ? new Color(51, 65, 85) : new Color(226, 232, 240);
+    }
+
+    public static Color ganttMonthLine() {
+        return isDarkMode() ? new Color(100, 116, 139) : new Color(148, 163, 184);
     }
 
     /** お知らせ（情報）の地と文字。 */
@@ -269,6 +315,11 @@ public class AppTheme {
         UIManager.put("Label.font", FONT_MAIN);
         UIManager.put("Button.font", FONT_MAIN);
         UIManager.put("OptionPane.messageFont", FONT_MAIN);
+        UIManager.put("CheckBox.foreground", TEXT_PRIMARY);
+        UIManager.put("ScrollPane.background", BACKGROUND);
+        UIManager.put("ScrollPane.border", new javax.swing.plaf.BorderUIResource(new ThemeLineBorder()));
+        ModernScrollBarUI.install();
+        ModernSplitPaneUI.install();
     }
 
     public static Border createRoundedBorder(Color borderColor, int radius, int top, int left, int bottom, int right) {
@@ -322,6 +373,21 @@ public class AppTheme {
 
     public static void styleComboBox(JComboBox<?> combo) {
         AppThemeControls.styleComboBox(combo);
+    }
+
+    /** 1px の枠。色は描くたびに取るので、テーマを切り替えても作り直さなくてよい。 */
+    static final class ThemeLineBorder extends javax.swing.border.AbstractBorder {
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            g.setColor(BORDER_COLOR);
+            g.drawRect(x, y, width - 1, height - 1);
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c, Insets insets) {
+            insets.set(1, 1, 1, 1);
+            return insets;
+        }
     }
 
     public static class RoundedFillButton extends AppThemeControls.RoundedFillButton {

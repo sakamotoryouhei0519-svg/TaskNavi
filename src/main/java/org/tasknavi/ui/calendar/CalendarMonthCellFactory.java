@@ -168,7 +168,7 @@ public final class CalendarMonthCellFactory {
 
         JLabel progLbl = new JLabel(task.getProgress() + "%");
         progLbl.setFont(AppTheme.FONT_SMALL.deriveFont(Font.BOLD, 9f));
-        progLbl.setForeground(statusColor);
+        progLbl.setForeground(AppTheme.statusText(task.getStatusCode()));
 
         badge.add(nameLbl, BorderLayout.CENTER);
         badge.add(progLbl, BorderLayout.EAST);
