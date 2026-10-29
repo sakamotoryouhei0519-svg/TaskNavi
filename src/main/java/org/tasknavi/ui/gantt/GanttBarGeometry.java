@@ -81,6 +81,20 @@ public final class GanttBarGeometry {
      * 進捗の数字を、塗った部分か薄い残りのどちらかに収める。
      * バーの中央に置くと、進みが少ないとき白文字が白い残りに乗って読めなくなる。
      */
+    /**
+     * 長いバーは端が画面の外に出るので、見えている部分だけをバーとみなして数字を置く。
+     */
+    public static ProgressLabel progressLabel(
+            int barX, int barWidth, int progressWidth, int textWidth, int visibleLeft, int visibleRight) {
+        int left = Math.max(barX, visibleLeft);
+        int right = Math.min(barX + barWidth, visibleRight);
+        if (right - left < textWidth + 12) {
+            return progressLabel(barX, barWidth, progressWidth, textWidth);
+        }
+        int fill = Math.max(0, Math.min(barX + progressWidth - left, right - left));
+        return progressLabel(left, right - left, fill, textWidth);
+    }
+
     public static ProgressLabel progressLabel(int barX, int barWidth, int progressWidth, int textWidth) {
         int pad = 6;
         int fillRoom = progressWidth - pad * 2;

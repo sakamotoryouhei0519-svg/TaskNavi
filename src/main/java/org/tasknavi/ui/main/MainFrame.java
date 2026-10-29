@@ -375,7 +375,7 @@ public class MainFrame extends JFrame {
 
         JButton addTaskButton = MainToolbarButtons.create(
                 AppMessages.get("mainframe.button.add"), IconManager.IconType.ADD,
-                AppTheme.PRIMARY, Color.WHITE, AppTheme.PRIMARY);
+                AppTheme.primaryFill(), Color.WHITE, AppTheme.primaryFill());
         addTaskButton.putClientProperty("app.button.variant", "toolbar-primary");
         addTaskButton.addActionListener(e -> handleAdd());
         addTaskButton.setToolTipText(AppMessages.get("mainframe.tooltip.add"));

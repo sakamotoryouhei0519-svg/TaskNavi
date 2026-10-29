@@ -55,7 +55,7 @@ public final class TaskDialogUiStyle {
             return;
         }
         if (isSelected) {
-            c.setBackground(AppTheme.PRIMARY);
+            c.setBackground(AppTheme.primaryFill());
             c.setForeground(Color.WHITE);
         } else {
             c.setBackground(AppTheme.controlBackground());

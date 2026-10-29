@@ -105,7 +105,7 @@ public final class GanttPainter {
             if (isToday) {
                 int chip = Math.min(dayWidth - 4, 24);
                 g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(AppTheme.PRIMARY);
+                g2.setColor(AppTheme.primaryFill());
                 g2.fillOval(x + (dayWidth - chip) / 2, dayBaseline - 14, chip, chip - 4);
                 g2.setColor(Color.WHITE);
             } else {
@@ -231,7 +231,9 @@ public final class GanttPainter {
             boolean isDragging,
             boolean isSelected,
             LocalDate dragStart,
-            LocalDate dragEnd
+            LocalDate dragEnd,
+            int visibleLeft,
+            int visibleRight
     ) {
         LocalDate startToUse = isDragging && dragStart != null
                 ? dragStart
@@ -294,7 +296,7 @@ public final class GanttPainter {
         FontMetrics fm = g2.getFontMetrics();
         int textWidth = fm.stringWidth(progressText);
         GanttBarGeometry.ProgressLabel label = GanttBarGeometry.progressLabel(
-                barX, barWidth, progressWidth, textWidth);
+                barX, barWidth, progressWidth, textWidth, visibleLeft, visibleRight);
         int textY = barY + (barHeight + fm.getAscent()) / 2 - 2;
         if (label.place() == GanttBarGeometry.ProgressLabelPlace.ON_FILL) {
             g2.setColor(Color.WHITE);

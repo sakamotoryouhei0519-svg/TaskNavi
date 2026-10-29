@@ -58,7 +58,7 @@ final class AppThemeControls {
         JButton button = new RoundedFillButton(text, 12);
         button.putClientProperty("app.button.variant", "primary");
         button.setFont(AppTheme.FONT_HEADER);
-        button.setBackground(AppTheme.getCurrentTheme().primary());
+        button.setBackground(AppTheme.primaryFill());
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -99,7 +99,7 @@ final class AppThemeControls {
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setRolloverEnabled(false);
-        button.setBackground(AppTheme.PRIMARY);
+        button.setBackground(AppTheme.primaryFill());
         button.setForeground(Color.WHITE);
         button.setBorder(null);
         button.setMargin(new Insets(10, 22, 10, 22));

@@ -6,6 +6,7 @@ import org.tasknavi.util.TaskViewFilter;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,13 +30,23 @@ public final class CalendarTaskFilter {
 
     /**
      * 指定日がタスクの開始〜終了に含まれるもの（開始または終了のみでも可）。
+     * 子を持つプロジェクト・工程は何か月も続くので、毎日のマスを埋めないよう外す。
      */
     public static List<Task> tasksForDate(List<Task> tasks, LocalDate date) {
         if (tasks == null || date == null) {
             return Collections.emptyList();
         }
+        Set<Integer> parentIds = new HashSet<>();
+        for (Task task : tasks) {
+            if (task.getParentId() != null) {
+                parentIds.add(task.getParentId());
+            }
+        }
         List<Task> result = new ArrayList<>();
         for (Task task : tasks) {
+            if (parentIds.contains(task.getId())) {
+                continue;
+            }
             LocalDate start = task.getStartDate();
             LocalDate end = task.getEndDate();
             if (start != null && end != null) {

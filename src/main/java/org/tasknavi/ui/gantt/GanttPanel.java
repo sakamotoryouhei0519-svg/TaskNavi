@@ -20,6 +20,7 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.HierarchyEvent;
 import java.awt.event.MouseEvent;
@@ -265,6 +266,15 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         setToolTipText("");
     }
 
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        // 進み具合の数字は見えている範囲に合わせて動くので、横に送るたびに全体を描き直す
+        if (getParent() instanceof JViewport viewport) {
+            viewport.setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
+        }
+    }
+
     private MouseEvent translateEvent(MouseEvent e) {
         Point p = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), this);
         return new MouseEvent(
@@ -419,6 +429,7 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         }
         GanttPainter.overlayDayColumns(g2, minDate, rowsHeight, totalDays, dayWidth);
 
+        Rectangle visible = getVisibleRect();
         int currentY = 0;
         for (Task task : tasks) {
             boolean dragging = dragSession.isDragging(task);
@@ -436,7 +447,8 @@ public class GanttPanel extends JPanel implements SearchablePanel {
                     GanttMetrics.ROW_HEIGHT, GanttMetrics.BAR_HEIGHT,
                     dragging,
                     selectedTaskId != null && selectedTaskId.equals(task.getId()),
-                    dragStart, dragEnd);
+                    dragStart, dragEnd,
+                    visible.x, visible.x + visible.width);
             currentY += GanttMetrics.ROW_HEIGHT;
         }
 

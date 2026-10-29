@@ -49,4 +49,14 @@ class GanttBarGeometryTest {
         assertEquals(GanttBarGeometry.ProgressLabelPlace.ON_FILL, label.place());
         assertEquals(566, label.x());
     }
+
+    @Test
+    void progressLabelOfALongBarStaysInsideTheVisiblePart() {
+        GanttBarGeometry.ProgressLabel pastFill = GanttBarGeometry.progressLabel(0, 5000, 2250, 28, 3000, 4000);
+        assertEquals(GanttBarGeometry.ProgressLabelPlace.ON_TRACK, pastFill.place());
+        assertEquals(3006, pastFill.x());
+
+        GanttBarGeometry.ProgressLabel nearFillEnd = GanttBarGeometry.progressLabel(0, 5000, 2250, 28, 2000, 3000);
+        assertEquals(2256, nearFillEnd.x());
+    }
 }

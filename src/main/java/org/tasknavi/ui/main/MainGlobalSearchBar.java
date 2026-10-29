@@ -42,6 +42,7 @@ public final class MainGlobalSearchBar {
     private JButton btnClearSearch;
     private JButton btnGlobalFilter;
     private JPanel searchContainerPanel;
+    private JLabel searchIconLabel;
     private JLabel filterSummaryLabel;
     private String currentGlobalKeyword = null;
     private String currentGlobalStatus = AppMessages.FILTER_ALL;
@@ -86,7 +87,7 @@ public final class MainGlobalSearchBar {
         box.setMinimumSize(new Dimension(180, 34));
         searchContainerPanel = box;
 
-        JLabel searchIconLabel = new JLabel("🔍");
+        searchIconLabel = new JLabel("🔍");
         searchIconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 13));
         searchIconLabel.setForeground(AppTheme.TEXT_MUTED);
         searchIconLabel.setBorder(new EmptyBorder(0, 8, 0, 2));
@@ -214,6 +215,9 @@ public final class MainGlobalSearchBar {
             txtGlobalSearch.setForeground(AppTheme.TEXT_PRIMARY);
             txtGlobalSearch.setCaretColor(AppTheme.TEXT_PRIMARY);
         }
+        if (searchIconLabel != null) {
+            searchIconLabel.setForeground(AppTheme.TEXT_MUTED);
+        }
         if (btnClearSearch != null) {
             btnClearSearch.setForeground(AppTheme.TEXT_MUTED);
         }
@@ -281,7 +285,7 @@ public final class MainGlobalSearchBar {
                     "mainframe.button.filter.active",
                     "フィルター ({0}) ▼",
                     AppMessages.statusDisplay(currentGlobalStatus)));
-            btn.setBackground(AppTheme.PRIMARY);
+            btn.setBackground(AppTheme.primaryFill());
             btn.setForeground(Color.WHITE);
             btn.setBorder(AppTheme.createRoundedBorder(AppTheme.PRIMARY_DARK, 8, 2, 2, 2, 2));
         } else {

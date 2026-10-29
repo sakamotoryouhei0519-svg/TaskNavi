@@ -625,6 +625,7 @@ CalendarPanel コンストラクタ
 
 - [ ] `CalendarNavToolbar.Actions` で月/週切り替えのアクションが定義されていると言える
 - [ ] `refreshCalendar()` が `currentViewMode` に応じて異なるビルダーを呼び出していると言える
+- [ ] `CalendarTaskFilter.tasksForDate()` が子を持つプロジェクト・工程を外す理由（毎日のマスが埋まるから）を言える
 
 ### 操作M: ガントのバーを見る（ドラッグは後で）
 

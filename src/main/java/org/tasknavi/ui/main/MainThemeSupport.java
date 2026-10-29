@@ -103,9 +103,9 @@ public final class MainThemeSupport {
         Color dangerColor = AppTheme.danger();
 
         if ("toolbar-primary".equals(variant)) {
-            button.setBackground(AppTheme.PRIMARY);
+            button.setBackground(AppTheme.primaryFill());
             button.setForeground(Color.WHITE);
-            button.setBorder(AppTheme.createRoundedBorder(AppTheme.PRIMARY, 8, 2, 2, 2, 2));
+            button.setBorder(AppTheme.createRoundedBorder(AppTheme.primaryFill(), 8, 2, 2, 2, 2));
             return;
         }
         if ("toolbar-outline-danger".equals(variant)) {
@@ -128,7 +128,7 @@ public final class MainThemeSupport {
             return;
         }
         if ("primary".equals(variant)) {
-            button.setBackground(AppTheme.PRIMARY);
+            button.setBackground(AppTheme.primaryFill());
             button.setForeground(Color.WHITE);
             button.setBorder(AppTheme.createRoundedBorder(AppTheme.PRIMARY_DARK, 12, 2, 2, 2, 2));
             return;

@@ -60,7 +60,7 @@ public final class CalendarDailySideSupport {
         JButton btnAddTaskForDay = IconManager.getIconButton(
                 IconManager.IconType.ADD, AppMessages.get("calendar.button.add.task", "タスク追加"));
         btnAddTaskForDay.setFont(AppTheme.FONT_SMALL.deriveFont(Font.BOLD));
-        btnAddTaskForDay.setBackground(AppTheme.PRIMARY);
+        btnAddTaskForDay.setBackground(AppTheme.primaryFill());
         btnAddTaskForDay.setForeground(Color.WHITE);
         btnAddTaskForDay.setFocusPainted(false);
         btnAddTaskForDay.setCursor(new Cursor(Cursor.HAND_CURSOR));

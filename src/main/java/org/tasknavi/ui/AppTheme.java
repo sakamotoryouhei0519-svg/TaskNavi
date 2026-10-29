@@ -171,6 +171,11 @@ public class AppTheme {
     }
 
     /** タスク名や見出しなど、はっきり読ませる文字。 */
+    /** 白い文字を載せる青の塗り。ダークの {@link #PRIMARY} は線や文字用に明るいので、白い文字が読めなくなる。 */
+    public static Color primaryFill() {
+        return isDarkMode() ? FILL_INFO : PRIMARY;
+    }
+
     public static Color textStrong() {
         return isDarkMode() ? new Color(226, 232, 240) : TEXT_PRIMARY;
     }

@@ -25,6 +25,19 @@ class CalendarTaskFilterTest {
     }
 
     @Test
+    void tasksForDateLeavesOutProjectsAndPhasesThatHaveChildren() {
+        LocalDate day = LocalDate.of(2026, 9, 3);
+        Task project = task(1, "P", LocalDate.of(2026, 4, 1), LocalDate.of(2026, 12, 25));
+        Task phase = new Task(2, "Phase", 1, 2, 0, 0, Task.STATUS_NOT_STARTED, day.minusDays(30), day.plusDays(30));
+        Task work = new Task(3, "Work", 2, 3, 0, 0, Task.STATUS_NOT_STARTED, day, day);
+        Task emptyProject = task(4, "New", day, day.plusDays(10));
+
+        List<Task> matched = CalendarTaskFilter.tasksForDate(List.of(project, phase, work, emptyProject), day);
+
+        assertEquals(List.of(3, 4), matched.stream().map(Task::getId).toList());
+    }
+
+    @Test
     void applyFiltersByKeywordAndStatus() {
         Task a = task(1, "Alpha", LocalDate.now(), LocalDate.now());
         a.setStatus(Task.STATUS_IN_PROGRESS);
