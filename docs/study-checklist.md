@@ -242,8 +242,8 @@ WbsPanel コンストラクタ
         → refreshWbs()
       }
 
-ユーザーがWBSでタスクを選択して「編集」ボタンをクリック（または右側の名前の行をダブルクリック）
-  → WbsDetailForm の編集ボタン / editOnDoubleClick が反応する
+ユーザーがWBSでタスクを選択して、右側の名前の行をダブルクリック
+  → WbsDetailForm の editOnDoubleClick が反応する（何も出していないときは showing が false で無視）
   → openEditDialog() コールバックが呼ばれる
   → WbsPanel.openEditDialog()
     → selectedTaskId で選択中タスクIDを確認

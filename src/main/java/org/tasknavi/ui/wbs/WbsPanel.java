@@ -302,19 +302,16 @@ public class WbsPanel extends JPanel implements SearchablePanel {
         if (path == null) {
             return "";
         }
-        StringBuilder code = new StringBuilder();
+        String code = "";
         for (int i = 1; i < path.getPathCount(); i++) {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getPathComponent(i);
             DefaultMutableTreeNode parent = (DefaultMutableTreeNode) node.getParent();
             if (parent == null) {
                 continue;
             }
-            if (code.length() > 0) {
-                code.append('.');
-            }
-            code.append(parent.getIndex(node) + 1);
+            code = WbsTreeModelBuilder.childCode(code, parent.getIndex(node) + 1);
         }
-        return code.toString();
+        return code;
     }
 
     private Task findRootProject(Task task) {

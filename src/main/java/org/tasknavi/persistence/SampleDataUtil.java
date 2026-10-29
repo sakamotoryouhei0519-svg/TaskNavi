@@ -41,28 +41,28 @@ public class SampleDataUtil {
                         Task.STATUS_IN_PROGRESS, 45, Priority.HIGH.name());
 
                 // 階層2: 企画・要件定義
-                insertStageWithTasks(insertPstmt, proj1, "1. 企画・要件定義フェーズ", new String[][] {
+                insertStageWithTasks(insertPstmt, proj1, "企画・要件定義フェーズ", new String[][] {
                         {"現状分析・競合調査", "山田太郎", "2026-04-01", "2026-04-20", Task.STATUS_COMPLETED, "100", Priority.HIGH.name()},
                         {"ビジネス要件定義", "佐藤花子", "2026-04-15", "2026-05-10", Task.STATUS_COMPLETED, "100", Priority.HIGH.name()},
                         {"システム基本構想策定", "鈴木一郎", "2026-05-01", "2026-05-31", Task.STATUS_COMPLETED, "100", Priority.MEDIUM.name()}
                 });
 
                 // 階層2: システム設計
-                insertStageWithTasks(insertPstmt, proj1, "2. 設計フェーズ", new String[][] {
+                insertStageWithTasks(insertPstmt, proj1, "設計フェーズ", new String[][] {
                         {"画面ワイヤーフレーム作成", "高橋恵子", "2026-06-01", "2026-06-25", Task.STATUS_COMPLETED, "100", Priority.HIGH.name()},
                         {"DB・データモデル設計", "鈴木一郎", "2026-06-15", "2026-07-10", Task.STATUS_COMPLETED, "100", Priority.HIGH.name()},
                         {"API・外部連携設計", "田中次郎", "2026-06-20", "2026-07-20", Task.STATUS_IN_PROGRESS, "80", Priority.MEDIUM.name()}
                 });
 
                 // 階層2: 開発・実装
-                insertStageWithTasks(insertPstmt, proj1, "3. 開発・実装フェーズ", new String[][] {
+                insertStageWithTasks(insertPstmt, proj1, "開発・実装フェーズ", new String[][] {
                         {"フロントエンド開発", "高橋恵子", "2026-07-15", "2026-09-30", Task.STATUS_IN_PROGRESS, "50", Priority.HIGH.name()},
                         {"バックエンド API 開発", "田中次郎", "2026-07-15", "2026-10-15", Task.STATUS_IN_PROGRESS, "40", Priority.HIGH.name()},
                         {"決済ゲートウェイ連携", "鈴木一郎", "2026-09-01", "2026-10-31", Task.STATUS_NOT_STARTED, "0", Priority.HIGH.name()}
                 });
 
                 // 階層2: テスト・移行
-                insertStageWithTasks(insertPstmt, proj1, "4. テスト・リリース準備", new String[][] {
+                insertStageWithTasks(insertPstmt, proj1, "テスト・リリース準備", new String[][] {
                         {"結合テストシナリオ作成", "伊藤誠", "2026-10-01", "2026-10-31", Task.STATUS_NOT_STARTED, "0", Priority.MEDIUM.name()},
                         {"総合・負荷テスト実行", "伊藤誠", "2026-11-01", "2026-11-30", Task.STATUS_NOT_STARTED, "0", Priority.HIGH.name()},
                         {"本番移行・リリース作業", "佐藤花子", "2026-12-01", "2026-12-25", Task.STATUS_NOT_STARTED, "0", Priority.HIGH.name()}

@@ -5,8 +5,6 @@ import org.tasknavi.AppMessages;
 import org.tasknavi.model.Task;
 import org.tasknavi.ui.AppTheme;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -24,14 +22,16 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- * WBS 右側の表示専用パネル。編集はボタンか、名前の行のダブルクリックでダイアログを開いて行う。
+ * WBS 右側の表示専用パネル。編集は、名前の行のダブルクリックでダイアログを開いて行う。
  */
 public final class WbsDetailForm {
 
     private final JPanel rootPanel;
     private final JPanel bodyPanel;
     private final JLabel emptyLabel;
-    private final JButton editButton;
+    private final JLabel editHintLabel = new JLabel();
+    /** タスクを出しているときだけ、ダブルクリックで編集を開く。 */
+    private boolean showing;
     private final JLabel nameLabel = new JLabel(" ");
     private final PillLabel statusBadge = new PillLabel();
     private final JLabel projectValue = new JLabel(" ");
@@ -60,12 +60,10 @@ public final class WbsDetailForm {
         headingLabel.setText(AppMessages.get("wbs.detail.title", "タスク詳細"));
         headingLabel.setFont(AppTheme.FONT_HEADER);
 
-        editButton = new JButton("✎  " + AppMessages.get("wbs.button.edit", "編集"));
-        editButton.setFont(AppTheme.FONT_BOLD);
-        editButton.setFocusPainted(false);
-        editButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        editButton.setEnabled(false);
-        editButton.addActionListener(e -> onEdit.run());
+        String editHint = AppMessages.get("wbs.detail.edit.hint", "ダブルクリックで編集");
+        editHintLabel.setText("✎ " + AppMessages.get("wbs.detail.edit.howto", "名前をダブルクリックで編集") + "  ");
+        editHintLabel.setFont(AppTheme.FONT_SMALL);
+        editHintLabel.setVisible(false);
 
         nameLabel.setFont(AppTheme.FONT_TITLE);
         statusBadge.setFont(AppTheme.FONT_SMALL.deriveFont(Font.BOLD, 12f));
@@ -75,7 +73,7 @@ public final class WbsDetailForm {
         JPanel header = new JPanel(new MigLayout("insets 0", "[grow][]", "[]"));
         header.setOpaque(false);
         header.add(headingLabel, "growx, wmin 0");
-        header.add(editButton, "h 36!");
+        header.add(editHintLabel, "aligny center");
 
         JLabel docIcon = new JLabel("☰");
         docIcon.setFont(AppTheme.FONT_TITLE);
@@ -87,7 +85,6 @@ public final class WbsDetailForm {
         titleRow.add(nameLabel, "wmin 0");
         titleRow.add(statusBadge, "aligny center");
         editOnDoubleClick(onEdit, titleRow, docIcon, nameLabel, statusBadge);
-        String editHint = AppMessages.get("wbs.detail.edit.hint", "ダブルクリックで編集");
         docIcon.setToolTipText(editHint);
         statusBadge.setToolTipText(editHint);
 
@@ -173,7 +170,8 @@ public final class WbsDetailForm {
 
     public void show(Task task, String projectName, String stageName, String wbsCode) {
         boolean visible = task != null;
-        editButton.setEnabled(visible);
+        showing = visible;
+        editHintLabel.setVisible(visible);
         bodyPanel.setVisible(visible);
         emptyLabel.setVisible(!visible);
         if (!visible) {
@@ -229,23 +227,19 @@ public final class WbsDetailForm {
         }
         statusBadge.setForeground(Color.WHITE);
         priorityBadge.setForeground(Color.WHITE);
-        editButton.setForeground(fg);
-        editButton.setBackground(AppTheme.PANEL_BG);
-        editButton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(AppTheme.BORDER_COLOR, 1, true),
-                new EmptyBorder(6, 14, 6, 14)));
+        editHintLabel.setForeground(muted);
         progressTrack.repaint();
         metaDivider.setBackground(AppTheme.BORDER_COLOR);
         progressDivider.setBackground(AppTheme.BORDER_COLOR);
         memoDivider.setBackground(AppTheme.BORDER_COLOR);
     }
 
-    /** 名前の行のどこをダブルクリックしても、編集ボタンと同じく編集を開く。選んでいなければ何もしない。 */
+    /** 名前の行のどこをダブルクリックしても編集を開く。選んでいなければ何もしない。 */
     private void editOnDoubleClick(Runnable onEdit, JComponent... targets) {
         MouseAdapter handler = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2 && editButton.isEnabled()) {
+                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2 && showing) {
                     onEdit.run();
                 }
             }

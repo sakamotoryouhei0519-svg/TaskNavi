@@ -95,9 +95,8 @@ public final class WbsTreeModelBuilder {
 
         int projectIndex = 1;
         for (Task rootTask : rootTasks) {
-            String numberPrefix = projectIndex + ". ";
             DefaultMutableTreeNode projectNode = buildTreeNodeRecursive(
-                    rootTask, numberPrefix, childrenMap, nodeTaskMap);
+                    rootTask, String.valueOf(projectIndex), childrenMap, nodeTaskMap);
             root.add(projectNode);
             projectIndex++;
         }
@@ -105,23 +104,24 @@ public final class WbsTreeModelBuilder {
         return new Result(root, nodeTaskMap);
     }
 
+    /** 親の番号に、兄弟の中で何番目か（1 から）をつなげる。いちばん上は親の番号を空で渡す。 */
+    static String childCode(String parentCode, int childIndex) {
+        return parentCode == null || parentCode.isEmpty() ? String.valueOf(childIndex) : parentCode + "." + childIndex;
+    }
+
     private static DefaultMutableTreeNode buildTreeNodeRecursive(
             Task currentTask,
-            String numberPrefix,
+            String code,
             Map<Integer, List<Task>> childrenMap,
             Map<DefaultMutableTreeNode, Task> nodeTaskMap) {
-        String displayText = numberPrefix + currentTask.getName();
-        DefaultMutableTreeNode node = new DefaultMutableTreeNode(displayText);
+        DefaultMutableTreeNode node = new DefaultMutableTreeNode(code + " " + currentTask.getName());
         nodeTaskMap.put(node, currentTask);
 
         List<Task> children = childrenMap.get(currentTask.getId());
         if (children != null) {
             int childIndex = 1;
             for (Task child : children) {
-                String childPrefix = numberPrefix.trim() + "." + childIndex + " ";
-                DefaultMutableTreeNode childNode = buildTreeNodeRecursive(
-                        child, childPrefix, childrenMap, nodeTaskMap);
-                node.add(childNode);
+                node.add(buildTreeNodeRecursive(child, childCode(code, childIndex), childrenMap, nodeTaskMap));
                 childIndex++;
             }
         }
