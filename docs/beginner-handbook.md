@@ -484,7 +484,7 @@ CSV や JSON から共有プロジェクトへ大量に取り込むときは、1
 - 行に書く番号は `TeamEventCodec.formatOf` が決めます。古い版でも読める記録（追加・変更・削除・戻す）は `1` のまま書き、コメントは `2`、コメントの編集・削除は `3` にします。全部を新しい番号にすると、更新していない人がタスクの変更まで読めなくなるためです。更新していない人には、読めない記録が見えず「アプリの更新が必要」が出るだけです
 - 古い版のアプリは、自分より大きい番号の行を読まずに数えます（`TeamChangeLog.ReadResult.newerFormatLines`）。同期の途中で切れた行（`unreadableLines`）とは分けて数えます。切れた行は待てば読めますが、新しい形の行はアプリを新しくするまで読めないためです
 - 新しい形の行があると、ヘッダーがオレンジの「アプリの更新が必要」になり、マウスを乗せると行数と今の版が出ます（`ProjectSwitcher.refresh`）
-- アプリの版は `pom.xml` の `app.version` です。配布用の JAR の manifest に書き、`AppVersion.current()` が読んでウィンドウのタイトルと起動時のログに出します。IntelliJ から動かしたときは manifest が無いので「開発版」と出ます。新しい版を配るときは、`app.version` を上げてから exe を作ります
+- アプリの版は `pom.xml` の `app.version` です。配布用の JAR の manifest に書き、`AppVersion.current()` が読んでウィンドウのタイトルと起動時のログに出します。IntelliJ から動かしたときは manifest が無いので「開発版」と出ます。新しい版を配るときは、`app.version` を上げてから exe を作ります。zip の名前にも版が入ります（`TaskNavi-1.1.0-windows.zip`）
 - 入口は `TeamProject`（作る・開く・追加・変更・削除・読み直し）。テストは `TeamProjectTest` で、2つのフォルダ間でファイルをコピーして「同期の遅れ」や「オフラインで同時に編集」を再現しています
 
 ### 置き場所

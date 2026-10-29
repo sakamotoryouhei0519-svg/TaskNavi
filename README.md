@@ -91,7 +91,7 @@ mvn -Pdist -DskipTests verify
 ```
 
 - `target/jpackage/dist/TaskNavi/TaskNavi.exe` … ダブルクリックで起動。Java ごと入っているので、使うパソコンに Java は要りません
-- `target/TaskNavi-1.0-SNAPSHOT-windows.zip` … 上のフォルダをまとめたもの。展開して `TaskNavi.exe` を起動します
+- `target/TaskNavi-1.1.0-windows.zip` … 上のフォルダをまとめたもの。展開して `TaskNavi.exe` を起動します。名前の数字はアプリの版（`pom.xml` の `app.version`）なので、配った zip がどの版かが名前で分かります
 - 版は `pom.xml` の `app.version`。新しい版を配るときは上げてから作る（チームは全員同じ版にそろえる）
 - `TaskNavi.exe --team-profile=test2` … 共有プロジェクトを別の人として使う（1台で2人分の共有を試すとき。手順は教科書16章）
 - データ・バックアップ・ログは `%APPDATA%\TaskNavi` に置きます（`tasknavi.db` / `backups` / `logs`）。アプリを入れ替えても消えません

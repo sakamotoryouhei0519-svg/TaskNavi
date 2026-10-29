@@ -262,6 +262,7 @@
                                     <descriptors>
                                         <descriptor>src/main/packaging/dist-zip.xml</descriptor>
                                     </descriptors>
+                                    <finalName>TaskNavi-${app.version}</finalName>
                                     <attach>false</attach>
                                 </configuration>
                             </execution>
