@@ -427,7 +427,7 @@ MainFrame.createToolBarPanel()
 |------|----------|
 | 必読 | `ui/main/MainGlobalSearchBar.java` |
 | 必読 | `SearchablePanel.applySearchFilter` |
-| 必読 | `util/TaskViewFilter.java`（名前・担当者・メモ。`matchesKeyword`） |
+| 必読 | `util/TaskViewFilter.java`（名前・担当者・メモ・コメント。`matchesKeyword`） |
 | 必読 | 今アクティブな Panel の `applySearchFilter` |
 | 関連 | `util/SearchFilterUtil.java` |
 | 関連 | `MainGlobalSearchBar.describeFilters`（適用中フィルタの表示文言） |
@@ -469,7 +469,7 @@ MainGlobalSearchBar.createSearchBox()
 
 - [ ] なぜ Panel ごとに別ロジックを書かず `TaskViewFilter` に寄せるのか言える
 - [ ] `DocumentListener` が入力のたびに `applyToActive()` を呼び出していると言える
-- [ ] `TaskViewFilter.matches()` が名前・担当者・メモでのマッチングを行っていると言える
+- [ ] `TaskViewFilter.matches()` が名前・担当者・メモ・コメントでのマッチングを行っていると言える
 
 ### 操作I: フィルタダイアログ／プロジェクト絞り込み
 
@@ -936,7 +936,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | WBS で親を変える（深さは並べるときに決める） | `TeamProject.requireMovable` / `TeamReplay.visibleTasks`（`cycleTop` で輪をほどく） |
 | 重なった変更の確認と戻す | `TeamSession.showConflicts` → `TeamConflictDialog` → `TeamConflictGroup` / `TeamProject.restoreTask` / `TeamSettings.acknowledge` |
 | チームの変更履歴 | `TeamSession.showHistory` → `TeamProject.history` → `TeamHistory.build` → `TeamHistoryDialog` |
-| タスクのコメント | `TaskDialog.commentsFor` → `TaskCommentsPanel.submit` → `TeamProject.addComment`（`COMMENT` の記録を足す）→ `TeamReplay.applyComment` → `TeamState.comments` / 編集・削除は `TaskCommentsPanel.startEditing` / `confirmDelete` → `TeamProject.editComment` / `deleteComment`（`canChange` で自分のものか確かめる）→ `TeamReplay.applyCommentChange` / 行の形は `TeamEventCodec.formatOf` |
+| タスクのコメント | `TaskDialog.commentsFor` → `TaskCommentsPanel.submit` → `TeamProject.addComment`（`COMMENT` の記録を足す）→ `TeamReplay.applyComment` → `TeamState.comments` / 編集・削除は `TaskCommentsPanel.startEditing` / `confirmDelete` → `TeamProject.editComment` / `deleteComment`（`canChange` で自分のものか確かめる）→ `TeamReplay.applyCommentChange` / 行の形は `TeamEventCodec.formatOf` / 件数は `TeamTaskStore.toTask`（`Task.comments`）→ `CommentCount` → `KanbanCardFactory` / `WbsTreeCellRenderer` / 通知は `TeamNotice.forMe`（`COMMENTED` / `REPLIED`） |
 | 置き場所の初期値（共有ドライブ → マイドライブ） | `TeamSession.defaultLocation` → `team/GoogleDriveFolders` |
 | 1台で2人目として起動する | `Main` → `TeamSettings.applyLaunchArguments`（`--team-profile=名前`）→ `TeamSettings.userDefault` |
 | 同じ PC で2つ起動しても記録が壊れない | `TeamChangeLog.append`（PC 内のファイルでロック）/ `TeamChangeLogConcurrencyTest` |

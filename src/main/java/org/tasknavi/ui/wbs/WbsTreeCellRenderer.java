@@ -2,6 +2,7 @@ package org.tasknavi.ui.wbs;
 
 import org.tasknavi.model.Task;
 import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.CommentCount;
 
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
@@ -53,6 +54,11 @@ public class WbsTreeCellRenderer extends DefaultTreeCellRenderer {
         if (value instanceof DefaultMutableTreeNode node) {
             Task task = context.taskFor(node);
             if (task != null) {
+                String commentText = CommentCount.label(task);
+                if (commentText != null) {
+                    // 絵文字は代わりのフォントで描かれ、測った幅より広くなるので、末尾に余白を足す
+                    setText(getText() + "   " + commentText + "  ");
+                }
                 if (task.getLevel() == 1) {
                     setIcon(projectIcon != null ? projectIcon : getDefaultOpenIcon());
                 } else {

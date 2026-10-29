@@ -54,6 +54,21 @@ class TeamTaskStoreTest {
     }
 
     @Test
+    void tasksCarryTheirCommentsWithoutDeletedOnes() throws Exception {
+        TeamProject tanaka = TeamProject.create(root.resolve("p"), "P", "pc-tanaka", "田中", NOW);
+        TeamTaskStore store = new TeamTaskStore(tanaka);
+        int id = store.addTask(task("設計", null));
+        String uuid = store.uuidOf(id);
+        tanaka.addComment(uuid, "見ておきます");
+        tanaka.addComment(uuid, "まちがい");
+        tanaka.deleteComment(uuid, tanaka.state().comments(uuid).get(1).eventId());
+
+        assertEquals(List.of("見ておきます"), store.getTaskById(id).getComments());
+        assertEquals(List.of("見ておきます"), store.getAllTasks().get(0).getComments());
+        assertEquals(List.of("見ておきます"), store.getTaskById(id).copy().getComments());
+    }
+
+    @Test
     void savingAnUnchangedTaskWritesNothing() throws Exception {
         TeamProject tanaka = TeamProject.create(root.resolve("p"), "P", "pc-tanaka", "田中", NOW);
         TeamTaskStore store = new TeamTaskStore(tanaka);

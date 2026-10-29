@@ -4,6 +4,7 @@ import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
 import org.tasknavi.model.Task;
 import org.tasknavi.ui.AppTheme;
+import org.tasknavi.ui.CommentCount;
 import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.BorderFactory;
@@ -184,7 +185,20 @@ public final class KanbanCardFactory {
         if (progressBar != null) {
             centerPanel.add(progressBar);
         }
-        centerPanel.add(assigneeLabel);
+        String commentText = CommentCount.label(task);
+        if (commentText == null) {
+            centerPanel.add(assigneeLabel);
+        } else {
+            JLabel commentLabel = new JLabel(commentText);
+            commentLabel.setFont(AppTheme.FONT_MAIN);
+            commentLabel.setForeground(AppTheme.TEXT_MUTED);
+            commentLabel.setToolTipText(CommentCount.tooltip(task));
+            JPanel assigneeRow = new JPanel(new BorderLayout(8, 0));
+            assigneeRow.setOpaque(false);
+            assigneeRow.add(assigneeLabel, BorderLayout.CENTER);
+            assigneeRow.add(commentLabel, BorderLayout.EAST);
+            centerPanel.add(assigneeRow);
+        }
 
         JPanel buttonPanel = new JPanel(new MigLayout("insets 0, gap 4, align right", "[][]"));
         buttonPanel.setOpaque(false);

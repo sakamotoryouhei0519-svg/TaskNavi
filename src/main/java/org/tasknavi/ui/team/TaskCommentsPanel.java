@@ -48,6 +48,8 @@ public final class TaskCommentsPanel extends JPanel {
 
     private final transient TeamProject project;
     private final String taskId;
+    /** 書き込めたあとに呼ぶ。一覧のコメント件数を新しくするため。 */
+    private final transient Runnable onWritten;
     private final JPanel list = new WidthTrackingPanel(new MigLayout("fillx, insets 6, gap 0, wrap", "[grow,fill]", "[]8"));
     private final JScrollPane scroll = new JScrollPane(list);
     private final JTextField input = new JTextField(20) {
@@ -65,10 +67,11 @@ public final class TaskCommentsPanel extends JPanel {
     /** 編集しているコメントの記録 ID。書いているときは null。 */
     private String editingId;
 
-    public TaskCommentsPanel(TeamProject project, String taskId) {
+    public TaskCommentsPanel(TeamProject project, String taskId, Runnable onWritten) {
         super(new MigLayout("insets 0, gap 5, wrap", "[grow,fill][][]", "[grow,fill][]"));
         this.project = project;
         this.taskId = taskId;
+        this.onWritten = onWritten;
         setOpaque(false);
 
         Color background = AppTheme.getCurrentTheme().textFieldBackground();
@@ -238,6 +241,7 @@ public final class TaskCommentsPanel extends JPanel {
                 try {
                     get();
                     onSuccess.run();
+                    onWritten.run();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 } catch (ExecutionException e) {

@@ -1,6 +1,7 @@
 package org.tasknavi.model;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * タスク1件。プロジェクト（階層1）・フェーズ（階層2）・タスク（階層3）のどれも、このクラスで表す。
@@ -39,6 +40,8 @@ public class Task {
      * 黙って上書きせず「重なり」として残すために使う。個人のタスクでは使わない（0）。
      */
     private long revision;
+    /** 共有プロジェクトのコメントの本文（削除したものは除く）。一覧に件数を出し、検索に使う。保存はしない。 */
+    private List<String> comments = List.of();
 
     public Task(int id, String name, Integer parentId, int level, int orderIndex, int progress, String status, LocalDate startDate, LocalDate endDate) {
         this.id = id;
@@ -65,6 +68,7 @@ public class Task {
         copy.priority = priority;
         copy.memo = memo;
         copy.revision = revision;
+        copy.comments = comments;
         return copy;
     }
 
@@ -74,6 +78,14 @@ public class Task {
 
     public void setRevision(long revision) {
         this.revision = revision;
+    }
+
+    public List<String> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<String> comments) {
+        this.comments = comments != null ? List.copyOf(comments) : List.of();
     }
 
     /** 表示言語に依存しない永続化コード（NOT_STARTED 等）へ正規化する。 */

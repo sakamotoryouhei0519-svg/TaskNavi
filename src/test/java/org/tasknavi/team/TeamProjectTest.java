@@ -181,6 +181,24 @@ class TeamProjectTest {
     }
 
     @Test
+    void aCommentOnATaskIAlsoCommentedOnIsNoticedEvenIfItIsNotMine() throws Exception {
+        Path dir = root.resolve("p");
+        TeamProject tanaka = TeamProject.create(dir, "P", "pc-tanaka", "田中", NOW);
+        String talked = tanaka.createTask(Map.of(TeamField.NAME, "設計", TeamField.ASSIGNEE, "佐藤"));
+        String quiet = tanaka.createTask(Map.of(TeamField.NAME, "実装", TeamField.ASSIGNEE, "佐藤"));
+        tanaka.addComment(talked, "ここはどうしますか？");
+        TeamProject suzuki = TeamProject.open(dir, "pc-suzuki", "鈴木", NOW);
+
+        suzuki.addComment(talked, "A 案でいきましょう");
+        suzuki.addComment(quiet, "着手しました");
+        suzuki.updateTask(talked, Map.of(TeamField.PROGRESS, "50"));
+        tanaka.reload();
+
+        assertEquals(List.of(new TeamNotice(TeamNotice.Kind.REPLIED, "設計", "鈴木")), tanaka.takeNotices(),
+                "自分がコメントしていないタスクと、担当でないタスクの変更は知らせない");
+    }
+
+    @Test
     void onlyTheWriterCanEditOrDeleteACommentAndTheOriginalStaysInHistory() throws Exception {
         Path dir = root.resolve("p");
         TeamProject tanaka = TeamProject.create(dir, "P", "pc-tanaka", "田中", NOW);

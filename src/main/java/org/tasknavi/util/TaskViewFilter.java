@@ -72,7 +72,7 @@ public final class TaskViewFilter {
         return filtered;
     }
 
-    /** タスク名・担当者・メモのどれかに含まれれば一致。キーワードが空なら全部一致。 */
+    /** タスク名・担当者・メモ・コメントのどれかに含まれれば一致。キーワードが空なら全部一致。 */
     public static boolean matchesKeyword(Task task, String keyword) {
         String normalized = SearchFilterUtil.normalizeKeyword(keyword);
         if (normalized == null) {
@@ -81,7 +81,8 @@ public final class TaskViewFilter {
         String needle = normalized.toLowerCase();
         return containsIgnoreCase(task.getName(), needle)
                 || containsIgnoreCase(task.getAssignee(), needle)
-                || containsIgnoreCase(task.getMemo(), needle);
+                || containsIgnoreCase(task.getMemo(), needle)
+                || task.getComments().stream().anyMatch(comment -> containsIgnoreCase(comment, needle));
     }
 
     private static boolean containsIgnoreCase(String value, String lowerNeedle) {

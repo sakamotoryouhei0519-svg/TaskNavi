@@ -89,6 +89,10 @@ class DueReminderTest {
 
         assertEquals("鈴木さんが「設計」をあなたの担当にしました（新システム開発）", DueReminder.buildNoticeMessage(one));
         assertEquals("鈴木さんがあなたの担当の「設計」を変えました（新システム開発）", DueReminder.buildNoticeMessage(changed));
+        Map<String, List<TeamNotice>> replied = new LinkedHashMap<>();
+        replied.put("新システム開発", List.of(new TeamNotice(TeamNotice.Kind.REPLIED, "設計", "鈴木")));
+        assertEquals("鈴木さんが、あなたもコメントした「設計」にコメントしました（新システム開発）",
+                DueReminder.buildNoticeMessage(replied));
         assertNull(DueReminder.buildNoticeMessage(Map.of()));
     }
 
@@ -100,7 +104,7 @@ class DueReminderTest {
                 new TeamNotice(TeamNotice.Kind.CHANGED, "実装", "佐藤")));
         many.put("社内研修", List.of(new TeamNotice(TeamNotice.Kind.CHANGED, "資料", "鈴木")));
 
-        assertEquals("あなたの担当のタスクに 3 件の変更があります（新システム開発、社内研修）",
+        assertEquals("あなたに関わるタスクに 3 件の変更があります（新システム開発、社内研修）",
                 DueReminder.buildNoticeMessage(many));
     }
 

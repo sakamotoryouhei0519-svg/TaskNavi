@@ -97,7 +97,7 @@ public class TaskDialog extends JDialog {
         if (task != null && taskService.currentStore() instanceof TeamTaskStore store) {
             String uuid = store.uuidOf(task.getId());
             if (uuid != null) {
-                return new TaskCommentsPanel(store.project(), uuid);
+                return new TaskCommentsPanel(store.project(), uuid, taskService::reload);
             }
         }
         return null;

@@ -70,6 +70,18 @@ class TaskViewFilterTest {
     }
 
     @Test
+    void keywordMatchesComments() {
+        Task withComment = task(1, "Alpha", null, Task.STATUS_NOT_STARTED);
+        withComment.setComments(List.of("着手しました", "サーバーの申請は済んでいます"));
+        Task other = task(2, "Beta", null, Task.STATUS_NOT_STARTED);
+
+        List<Task> filtered = TaskViewFilter.apply(
+                List.of(withComment, other), "申請", null, null, new HashMap<>());
+
+        assertEquals(List.of(1), filtered.stream().map(Task::getId).toList());
+    }
+
+    @Test
     void nullCacheIsRejected() {
         assertThrows(IllegalArgumentException.class,
                 () -> TaskViewFilter.apply(List.of(), null, null, null, null));

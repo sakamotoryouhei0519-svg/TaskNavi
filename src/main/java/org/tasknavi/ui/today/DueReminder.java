@@ -109,7 +109,7 @@ public final class DueReminder {
         return parts.isEmpty() ? null : String.join(" / ", parts);
     }
 
-    /** ほかの人が自分を担当にした・自分の担当のタスクを変えたことを知らせる。 */
+    /** ほかの人が自分を担当にした・自分の担当のタスクを変えた・自分もコメントしたタスクにコメントしたことを知らせる。 */
     public void showNotices(Map<String, List<TeamNotice>> byProject) {
         String message = buildNoticeMessage(byProject);
         if (message != null && trayIcon != null) {
@@ -124,7 +124,7 @@ public final class DueReminder {
             return null;
         }
         if (total > 1) {
-            return AppMessages.format("notice.many", "あなたの担当のタスクに {0} 件の変更があります（{1}）",
+            return AppMessages.format("notice.many", "あなたに関わるタスクに {0} 件の変更があります（{1}）",
                     total, String.join("、", byProject.keySet()));
         }
         Map.Entry<String, List<TeamNotice>> only = byProject.entrySet().stream()
@@ -134,6 +134,8 @@ public final class DueReminder {
             case ASSIGNED -> AppMessages.format("notice.assigned", "{0}さんが「{1}」をあなたの担当にしました（{2}）",
                     notice.author(), notice.taskName(), only.getKey());
             case COMMENTED -> AppMessages.format("notice.commented", "{0}さんがあなたの担当の「{1}」にコメントしました（{2}）",
+                    notice.author(), notice.taskName(), only.getKey());
+            case REPLIED -> AppMessages.format("notice.replied", "{0}さんが、あなたもコメントした「{1}」にコメントしました（{2}）",
                     notice.author(), notice.taskName(), only.getKey());
             case CHANGED -> AppMessages.format("notice.changed", "{0}さんがあなたの担当の「{1}」を変えました（{2}）",
                     notice.author(), notice.taskName(), only.getKey());

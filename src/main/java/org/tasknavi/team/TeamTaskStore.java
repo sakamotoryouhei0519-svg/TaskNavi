@@ -63,7 +63,7 @@ public final class TeamTaskStore implements TaskStore {
         long revision = revisionOf(state);
         List<Task> tasks = new ArrayList<>(state.tasks().size());
         for (TeamTask teamTask : state.tasks()) {
-            tasks.add(toTask(teamTask, revision));
+            tasks.add(toTask(teamTask, state, revision));
         }
         return tasks;
     }
@@ -76,7 +76,7 @@ public final class TeamTaskStore implements TaskStore {
         }
         TeamState state = project.state();
         long revision = revisionOf(state);
-        return state.find(uuid).map(teamTask -> toTask(teamTask, revision)).orElse(null);
+        return state.find(uuid).map(teamTask -> toTask(teamTask, state, revision)).orElse(null);
     }
 
     @Override
@@ -187,7 +187,7 @@ public final class TeamTaskStore implements TaskStore {
 
     // ---------------------------------------------------------------- 変換
 
-    private Task toTask(TeamTask teamTask, long revision) {
+    private Task toTask(TeamTask teamTask, TeamState state, long revision) {
         Task task = new Task(idOf(teamTask.id()), teamTask.name(),
                 teamTask.parentId() != null ? idOf(teamTask.parentId()) : null,
                 teamTask.level(), teamTask.order(), teamTask.progress(), teamTask.status(),
@@ -196,6 +196,10 @@ public final class TeamTaskStore implements TaskStore {
         task.setPriority(teamTask.priority());
         task.setMemo(teamTask.memo());
         task.setRevision(revision);
+        task.setComments(state.comments(teamTask.id()).stream()
+                .filter(comment -> !comment.deleted())
+                .map(TeamComment::text)
+                .toList());
         return task;
     }
 

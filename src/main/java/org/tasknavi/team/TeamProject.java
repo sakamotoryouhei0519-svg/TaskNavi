@@ -368,11 +368,11 @@ public final class TeamProject {
     }
 
     /**
-     * 前回呼んでから、ほかの人が自分（表示名）を担当にした・自分の担当のタスクを変えたもの。
-     * 開いたときにすでにあった記録は含めない。
+     * 前回呼んでから、ほかの人が自分（表示名）を担当にした・自分の担当のタスクを変えた・
+     * この PC からコメントしたことのあるタスクにコメントしたもの。開いたときにすでにあった記録は含めない。
      */
     public synchronized List<TeamNotice> takeNotices() {
-        List<TeamNotice> notices = TeamNotice.forMe(arrived, state, author);
+        List<TeamNotice> notices = TeamNotice.forMe(arrived, state, author, deviceId);
         arrived.clear();
         return notices;
     }
