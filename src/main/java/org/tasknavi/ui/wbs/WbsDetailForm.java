@@ -9,29 +9,22 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
-import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Graphics;
 import java.awt.RenderingHints;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
 /**
- * WBS 右側の表示専用パネル。編集は、名前の行のダブルクリックでダイアログを開いて行う。
+ * WBS 右側の表示専用パネル。ここでは編集しない。
  */
 public final class WbsDetailForm {
 
     private final JPanel rootPanel;
     private final JPanel bodyPanel;
     private final JLabel emptyLabel;
-    private final JLabel editHintLabel = new JLabel();
-    /** タスクを出しているときだけ、ダブルクリックで編集を開く。 */
-    private boolean showing;
     private final JLabel nameLabel = new JLabel(" ");
     private final PillLabel statusBadge = new PillLabel();
     private final JLabel projectValue = new JLabel(" ");
@@ -56,24 +49,18 @@ public final class WbsDetailForm {
     private final JPanel progressDivider = line();
     private final JPanel memoDivider = line();
 
-    public WbsDetailForm(Runnable onEdit) {
+    public WbsDetailForm() {
         headingLabel.setText(AppMessages.get("wbs.detail.title", "タスク詳細"));
         headingLabel.setFont(AppTheme.FONT_HEADER);
-
-        String editHint = AppMessages.get("wbs.detail.edit.hint", "ダブルクリックで編集");
-        editHintLabel.setText("✎ " + AppMessages.get("wbs.detail.edit.howto", "名前をダブルクリックで編集") + "  ");
-        editHintLabel.setFont(AppTheme.FONT_SMALL);
-        editHintLabel.setVisible(false);
 
         nameLabel.setFont(AppTheme.FONT_TITLE);
         statusBadge.setFont(AppTheme.FONT_SMALL.deriveFont(Font.BOLD, 12f));
         statusBadge.setForeground(Color.WHITE);
         progressPercent.setFont(AppTheme.FONT_BOLD);
 
-        JPanel header = new JPanel(new MigLayout("insets 0", "[grow][]", "[]"));
+        JPanel header = new JPanel(new MigLayout("insets 0", "[grow]", "[]"));
         header.setOpaque(false);
         header.add(headingLabel, "growx, wmin 0");
-        header.add(editHintLabel, "aligny center");
 
         JLabel docIcon = new JLabel("☰");
         docIcon.setFont(AppTheme.FONT_TITLE);
@@ -84,9 +71,6 @@ public final class WbsDetailForm {
         titleRow.add(docIcon);
         titleRow.add(nameLabel, "wmin 0");
         titleRow.add(statusBadge, "aligny center");
-        editOnDoubleClick(onEdit, titleRow, docIcon, nameLabel, statusBadge);
-        docIcon.setToolTipText(editHint);
-        statusBadge.setToolTipText(editHint);
 
         JPanel meta = new JPanel(new MigLayout(
                 "insets 0",
@@ -170,8 +154,6 @@ public final class WbsDetailForm {
 
     public void show(Task task, String projectName, String stageName, String wbsCode) {
         boolean visible = task != null;
-        showing = visible;
-        editHintLabel.setVisible(visible);
         bodyPanel.setVisible(visible);
         emptyLabel.setVisible(!visible);
         if (!visible) {
@@ -182,8 +164,7 @@ public final class WbsDetailForm {
 
         String name = task.getName() == null ? "" : task.getName();
         nameLabel.setText(wbsCode == null || wbsCode.isBlank() ? name : wbsCode + "  " + name);
-        String editHint = AppMessages.get("wbs.detail.edit.hint", "ダブルクリックで編集");
-        nameLabel.setToolTipText(name.isBlank() ? editHint : "<html>" + escapeHtml(name) + "<br>" + escapeHtml(editHint) + "</html>");
+        nameLabel.setToolTipText(name.isBlank() ? null : name);
         statusBadge.setText(AppMessages.statusDisplay(task.getStatusCode()));
         statusBadge.setBackground(AppTheme.getStatusColor(task.getStatusCode()));
 
@@ -227,27 +208,10 @@ public final class WbsDetailForm {
         }
         statusBadge.setForeground(Color.WHITE);
         priorityBadge.setForeground(Color.WHITE);
-        editHintLabel.setForeground(muted);
         progressTrack.repaint();
         metaDivider.setBackground(AppTheme.BORDER_COLOR);
         progressDivider.setBackground(AppTheme.BORDER_COLOR);
         memoDivider.setBackground(AppTheme.BORDER_COLOR);
-    }
-
-    /** 名前の行のどこをダブルクリックしても編集を開く。選んでいなければ何もしない。 */
-    private void editOnDoubleClick(Runnable onEdit, JComponent... targets) {
-        MouseAdapter handler = new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2 && showing) {
-                    onEdit.run();
-                }
-            }
-        };
-        for (JComponent target : targets) {
-            target.addMouseListener(handler);
-            target.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        }
     }
 
     private static void styleValue(JLabel value) {

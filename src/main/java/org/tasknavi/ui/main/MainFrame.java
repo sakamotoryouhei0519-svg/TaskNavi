@@ -37,8 +37,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.prefs.Preferences;
-
 /**
  * メインの窓。ヘッダーとツールバー、5つのタブ（今日・WBS・カンバン・ガント・カレンダー）をつなぐ。
  * ヘッダーなどの部品は同じパッケージの Main* クラスに分けている。
@@ -46,7 +44,6 @@ import java.util.prefs.Preferences;
 public class MainFrame extends JFrame {
 
     private static final long serialVersionUID = 1L;
-    private static final String PREF_LAST_TAB = "tasknavi.main.lastTabKey";
     private static final String TAB_TODAY = "today";
 
     private final TaskService taskService;
@@ -173,13 +170,12 @@ public class MainFrame extends JFrame {
         addMainTab("gantt", AppMessages.get("mainframe.tab.gantt"), IconManager.IconType.TAB_GANTT, ganttScroll);
         addMainTab("calendar", AppMessages.get("mainframe.tab.calendar"), IconManager.IconType.TAB_CALENDAR, calendarPanel);
 
-        mainTabbedPane.setSelectedIndex(loadLastTabIndex());
+        mainTabbedPane.setSelectedIndex(tabKeys.indexOf(TAB_TODAY));
 
         mainTabbedPane.addChangeListener(e -> {
             MainTabChrome.updateTabTextColors(mainTabbedPane);
             globalSearchBar.syncActive();
             MainThemeSupport.updateViewTheme(getActiveComponent());
-            saveLastTab(mainTabbedPane.getSelectedIndex());
         });
         MainTabChrome.updateTabTextColors(mainTabbedPane);
 
@@ -250,20 +246,6 @@ public class MainFrame extends JFrame {
     private static boolean typingFocused() {
         Component focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
         return focus instanceof javax.swing.text.JTextComponent || focus instanceof JComboBox<?>;
-    }
-
-    /** タブを足しても前に開いていた画面に戻れるよう、番号ではなく名前で覚える。 */
-    private int loadLastTabIndex() {
-        String saved = Preferences.userNodeForPackage(MainFrame.class).get(PREF_LAST_TAB, TAB_TODAY);
-        int index = tabKeys.indexOf(saved);
-        return Math.max(index, 0);
-    }
-
-    private void saveLastTab(int index) {
-        if (index < 0 || index >= tabKeys.size()) {
-            return;
-        }
-        Preferences.userNodeForPackage(MainFrame.class).put(PREF_LAST_TAB, tabKeys.get(index));
     }
 
     /**
