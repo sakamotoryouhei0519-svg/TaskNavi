@@ -68,7 +68,7 @@ public class MainFrame extends JFrame {
         this.globalSearchBar = new MainGlobalSearchBar(this::getActiveComponent);
 
         String profile = TeamSettings.profile();
-        setTitle(AppMessages.get("mainframe.title.full") + "  (" + AppVersion.current() + ")"
+        setTitle(AppMessages.get("mainframe.title") + "  (" + AppVersion.current() + ")"
                 + (profile.isEmpty() ? "" : " [" + profile + "]"));
         setIconImages(AppIcon.windowIcons());
         setMinimumSize(new Dimension(UiConstants.WINDOW_MIN_WIDTH_MAIN, UiConstants.WINDOW_MIN_HEIGHT_MAIN));

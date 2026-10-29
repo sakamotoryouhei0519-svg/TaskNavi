@@ -30,6 +30,7 @@
 | 必読 | `persistence/Database.java`（Flyway で表を用意） |
 | 関連 | `persistence/SampleDataUtil.java`（タスクが 1 件もなければサンプル投入） |
 | 関連 | `db/migration/V6__drop_login.sql`（前の版のログイン用の表を外す） |
+| 関連 | `db/migration/V7__unnumber_sample_stages.sql`（サンプルの段階名の「1. 」などを外す） |
 
 **コードの流れ（Main.java）:**
 
@@ -813,6 +814,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | 編集の保存は成功したあとだけ知らせる | `WbsPanel.openEditDialog` → `TaskService.updateTask` → `updateTasks` |
 | 削除と並べ替えを途中で残さない | `TaskCrudDao.deleteIds` / `updateOrderIndexes` |
 | ログインをやめても前のタスクを全部残す | `V6__drop_login.sql` / `DatabaseTest.upgradingFromLoginVersionKeepsEveryAccountsTasks` |
+| サンプルの段階名の番号を外し、自分で付けた名前は触らない | `V7__unnumber_sample_stages.sql` / `DatabaseTest.upgradingRemovesNumbersOnlyFromSampleStageNames` |
 | チーム共有の土台（教科書16章） | `team/TeamProject` → `TeamChangeLog`（読み書き）→ `TeamReplay`（組み立てと重なりの検出） |
 | 共有プロジェクトを作る・参加する・閉じる・表示名 | `ui/team/ProjectSwitcher`（メニュー）→ `ui/team/TeamSession` / `TeamDialogs` / `team/TeamSettings` |
 | メンバー・同期・重なりの表示 | `ProjectSwitcher.refresh` ← `TeamSession.Listener.statusChanged` / `TeamMembersDialog` |

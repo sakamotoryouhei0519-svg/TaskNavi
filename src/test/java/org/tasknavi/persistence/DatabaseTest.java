@@ -67,6 +67,29 @@ class DatabaseTest {
         }
     }
 
+    @Test
+    void upgradingRemovesNumbersOnlyFromSampleStageNames(@TempDir Path dir) throws Exception {
+        SQLiteDataSource dataSource = new SQLiteDataSource();
+        dataSource.setUrl("jdbc:sqlite:" + dir.resolve("old.db"));
+        flyway(dataSource, "6").migrate();
+        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate("INSERT INTO tasks (name, level) VALUES "
+                    + "('1. 企画・要件定義フェーズ', 2), ('4. テスト・リリース準備', 2), "
+                    + "('1. 自分で付けた名前', 2), ('2. 設計フェーズ', 3)");
+        }
+
+        flyway(dataSource, "latest").migrate();
+
+        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT name FROM tasks ORDER BY id")) {
+            List<String> names = new ArrayList<>();
+            while (rs.next()) {
+                names.add(rs.getString(1));
+            }
+            assertEquals(List.of("企画・要件定義フェーズ", "テスト・リリース準備", "1. 自分で付けた名前", "2. 設計フェーズ"), names);
+        }
+    }
+
     private static Flyway flyway(SQLiteDataSource dataSource, String target) {
         return Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target(target).load();
     }

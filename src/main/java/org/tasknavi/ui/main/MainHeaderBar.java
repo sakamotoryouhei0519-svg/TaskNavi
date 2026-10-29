@@ -44,7 +44,7 @@ public final class MainHeaderBar {
                 new EmptyBorder(8, 18, 8, 18)
         ));
 
-        JPanel titleArea = new JPanel(new MigLayout("insets 0, gap 10, align left", "[][][][]"));
+        JPanel titleArea = new JPanel(new MigLayout("insets 0, gap 10, align left", "[][][]"));
         titleArea.setOpaque(false);
 
         JLabel logoIcon = IconManager.getIconLabel(IconManager.IconType.LOGO);
@@ -54,14 +54,9 @@ public final class MainHeaderBar {
         logoLabel.setFont(AppTheme.FONT_HEADER.deriveFont(Font.BOLD, 17f));
         logoLabel.setForeground(AppTheme.TEXT_PRIMARY);
 
-        JLabel subtitleLabel = new JLabel(AppMessages.get("mainframe.tagline"));
-        subtitleLabel.setFont(AppTheme.FONT_MAIN);
-        subtitleLabel.setForeground(AppTheme.TEXT_MUTED);
-
         titleArea.add(logoIcon);
         titleArea.add(logoLabel);
         titleArea.add(projectArea, "gapleft 8");
-        titleArea.add(subtitleLabel, "wmin 0, gapleft 4");
 
         JLabel userStatusLabel = new JLabel();
         userStatusLabel.setFont(AppTheme.FONT_MAIN);
