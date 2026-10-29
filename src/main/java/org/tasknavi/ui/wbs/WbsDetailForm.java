@@ -11,6 +11,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -19,9 +20,11 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Graphics;
 import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 /**
- * WBS 右側の表示専用パネル。編集はボタンからダイアログで行う。
+ * WBS 右側の表示専用パネル。編集はボタンか、名前の行のダブルクリックでダイアログを開いて行う。
  */
 public final class WbsDetailForm {
 
@@ -83,6 +86,10 @@ public final class WbsDetailForm {
         titleRow.add(docIcon);
         titleRow.add(nameLabel, "wmin 0");
         titleRow.add(statusBadge, "aligny center");
+        editOnDoubleClick(onEdit, titleRow, docIcon, nameLabel, statusBadge);
+        String editHint = AppMessages.get("wbs.detail.edit.hint", "ダブルクリックで編集");
+        docIcon.setToolTipText(editHint);
+        statusBadge.setToolTipText(editHint);
 
         JPanel meta = new JPanel(new MigLayout(
                 "insets 0",
@@ -177,7 +184,8 @@ public final class WbsDetailForm {
 
         String name = task.getName() == null ? "" : task.getName();
         nameLabel.setText(wbsCode == null || wbsCode.isBlank() ? name : wbsCode + "  " + name);
-        nameLabel.setToolTipText(name.isBlank() ? null : name);
+        String editHint = AppMessages.get("wbs.detail.edit.hint", "ダブルクリックで編集");
+        nameLabel.setToolTipText(name.isBlank() ? editHint : "<html>" + escapeHtml(name) + "<br>" + escapeHtml(editHint) + "</html>");
         statusBadge.setText(AppMessages.statusDisplay(task.getStatusCode()));
         statusBadge.setBackground(AppTheme.getStatusColor(task.getStatusCode()));
 
@@ -230,6 +238,22 @@ public final class WbsDetailForm {
         metaDivider.setBackground(AppTheme.BORDER_COLOR);
         progressDivider.setBackground(AppTheme.BORDER_COLOR);
         memoDivider.setBackground(AppTheme.BORDER_COLOR);
+    }
+
+    /** 名前の行のどこをダブルクリックしても、編集ボタンと同じく編集を開く。選んでいなければ何もしない。 */
+    private void editOnDoubleClick(Runnable onEdit, JComponent... targets) {
+        MouseAdapter handler = new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2 && editButton.isEnabled()) {
+                    onEdit.run();
+                }
+            }
+        };
+        for (JComponent target : targets) {
+            target.addMouseListener(handler);
+            target.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
     }
 
     private static void styleValue(JLabel value) {
