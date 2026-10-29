@@ -42,7 +42,6 @@ public class IconManager {
         // ヘッダー
         EXPORT,
         IMPORT,
-        LOGOUT,
         
         // カレンダー
         CALENDAR,

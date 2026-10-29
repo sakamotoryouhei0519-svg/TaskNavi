@@ -57,7 +57,7 @@ class AppExceptionTest {
 
     @Test
     void shouldRejectInvalidDateRange() {
-        TaskDao taskDao = new TaskDao(1);
+        TaskDao taskDao = new TaskDao();
         Task task = new Task(1, "範囲不正", null, 1, 0, 0, "未着手",
                 LocalDate.of(2026, 1, 10), LocalDate.of(2026, 1, 5));
 

@@ -12,8 +12,6 @@ import org.tasknavi.persistence.TaskDao;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -36,9 +34,7 @@ class TaskServiceUndoDeleteTest {
     void setUp() {
         Database.initialize();
         DatabaseTestConfig.clearTasksTable();
-        String unique = UUID.randomUUID().toString().substring(0, 8);
-        int ownerId = DatabaseTestConfig.insertUser("undo-" + unique, "undo-" + unique + "@example.com");
-        taskDao = new TaskDao(ownerId);
+        taskDao = new TaskDao();
         service = new TaskService(taskDao);
 
         projectId = taskDao.addTask(new Task(0, "Project", null, 1, 0, 0, Task.STATUS_NOT_STARTED,

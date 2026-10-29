@@ -6,7 +6,6 @@ import org.tasknavi.AppMessages;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
 import org.tasknavi.model.Assignees;
-import org.tasknavi.service.UserSession;
 import org.tasknavi.team.GoogleDriveFolders;
 import org.tasknavi.team.TeamConflictGroup;
 import org.tasknavi.team.TeamField;
@@ -539,8 +538,7 @@ public final class TeamSession {
         if (!settings.displayName().isEmpty()) {
             return true;
         }
-        String suggestion = UserSession.getCurrentUsername();
-        String name = TeamDialogs.askDisplayName(owner, suggestion != null ? suggestion : "");
+        String name = TeamDialogs.askDisplayName(owner, "");
         if (name == null) {
             return false;
         }

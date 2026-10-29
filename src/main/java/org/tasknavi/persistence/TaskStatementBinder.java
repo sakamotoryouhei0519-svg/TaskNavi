@@ -11,24 +11,21 @@ import java.sql.Types;
  */
 public final class TaskStatementBinder {
 
-    private static final int TASK_COLUMN_COUNT = 11;
-    /** INSERT で使う ? の数（タスクの列と所有者）。 */
-    public static final int INSERT_PARAM_COUNT = TASK_COLUMN_COUNT + 1;
+    /** INSERT で使う ? の数（タスクの列）。 */
+    public static final int INSERT_PARAM_COUNT = 11;
 
     private TaskStatementBinder() {
     }
 
-    /** INSERT 用（1..11 がタスク、12 が所有者）。 */
-    public static void bindInsert(PreparedStatement pstmt, Task task, int ownerId) throws SQLException {
+    /** INSERT 用（1..11 がタスク）。 */
+    public static void bindInsert(PreparedStatement pstmt, Task task) throws SQLException {
         bindTaskColumns(pstmt, task);
-        pstmt.setInt(TASK_COLUMN_COUNT + 1, ownerId);
     }
 
-    /** UPDATE 用（1..11 がタスク、12 が id、13 が所有者）。 */
-    public static void bindUpdate(PreparedStatement pstmt, Task task, int ownerId) throws SQLException {
+    /** UPDATE 用（1..11 がタスク、12 が id）。 */
+    public static void bindUpdate(PreparedStatement pstmt, Task task) throws SQLException {
         bindTaskColumns(pstmt, task);
-        pstmt.setInt(TASK_COLUMN_COUNT + 1, task.getId());
-        pstmt.setInt(TASK_COLUMN_COUNT + 2, ownerId);
+        pstmt.setInt(INSERT_PARAM_COUNT + 1, task.getId());
     }
 
     private static void bindTaskColumns(PreparedStatement pstmt, Task task) throws SQLException {

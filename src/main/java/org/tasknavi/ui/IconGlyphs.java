@@ -26,7 +26,6 @@ final class IconGlyphs {
             case REFRESH -> "↺";
             case EXPORT -> "⇓";
             case IMPORT -> "⇑";
-            case LOGOUT -> "↙";
             case CHECK -> "✓";
             case CROSS -> "✕";
             case FOLDER -> "📁";
@@ -51,7 +50,6 @@ final class IconGlyphs {
             case REFRESH -> "refresh.png";
             case EXPORT -> "export.png";
             case IMPORT -> "import.png";
-            case LOGOUT -> "logout.png";
             case CHECK -> "check.png";
             case CROSS -> "cross.png";
             case FOLDER -> "folder.png";

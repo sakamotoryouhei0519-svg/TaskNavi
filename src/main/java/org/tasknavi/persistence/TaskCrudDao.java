@@ -23,30 +23,30 @@ public final class TaskCrudDao {
     private static final Logger logger = LoggerFactory.getLogger(TaskCrudDao.class);
 
     static final String SQL_INSERT =
-            "INSERT INTO tasks (parent_id, level, order_index, name, assignee, start_date, end_date, status, progress, priority, memo, owner_id) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            "INSERT INTO tasks (parent_id, level, order_index, name, assignee, start_date, end_date, status, progress, priority, memo) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     private static final String SQL_INSERT_WITH_ID =
-            "INSERT INTO tasks (parent_id, level, order_index, name, assignee, start_date, end_date, status, progress, priority, memo, owner_id, id) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            "INSERT INTO tasks (parent_id, level, order_index, name, assignee, start_date, end_date, status, progress, priority, memo, id) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     private static final String SQL_SELECT_ALL =
-            "SELECT * FROM tasks WHERE owner_id = ? ORDER BY parent_id, order_index, id ASC";
+            "SELECT * FROM tasks ORDER BY parent_id, order_index, id ASC";
     private static final String SQL_UPDATE =
             "UPDATE tasks SET parent_id = ?, level = ?, order_index = ?, name = ?, assignee = ?, start_date = ?, end_date = ?, "
-                    + "status = ?, progress = ?, priority = ?, memo = ? WHERE id = ? AND owner_id = ?";
-    private static final String SQL_DELETE = "DELETE FROM tasks WHERE id = ? AND owner_id = ?";
+                    + "status = ?, progress = ?, priority = ?, memo = ? WHERE id = ?";
+    private static final String SQL_DELETE = "DELETE FROM tasks WHERE id = ?";
     private static final String SQL_UPDATE_PROGRESS_STATUS =
-            "UPDATE tasks SET progress = ?, status = ? WHERE id = ? AND owner_id = ?";
+            "UPDATE tasks SET progress = ?, status = ? WHERE id = ?";
     private static final String SQL_UPDATE_ORDER_INDEX =
-            "UPDATE tasks SET order_index = ? WHERE id = ? AND owner_id = ?";
+            "UPDATE tasks SET order_index = ? WHERE id = ?";
 
     private TaskCrudDao() {
     }
 
-    public static int add(Task task, int ownerId) {
+    public static int add(Task task) {
         int generatedId = -1;
         try (Connection conn = Database.connect();
              PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT, Statement.RETURN_GENERATED_KEYS)) {
-            TaskStatementBinder.bindInsert(pstmt, task, ownerId);
+            TaskStatementBinder.bindInsert(pstmt, task);
             int affected = pstmt.executeUpdate();
             if (affected > 0) {
                 try (ResultSet keys = pstmt.getGeneratedKeys()) {
@@ -67,19 +67,18 @@ public final class TaskCrudDao {
         return generatedId;
     }
 
-    public static List<Task> getAll(int ownerId) {
+    public static List<Task> getAll() {
         try (Connection conn = Database.connect()) {
-            return getAll(conn, ownerId);
+            return getAll(conn);
         } catch (SQLException e) {
             logger.error("タスク取得エラー", e);
             return new ArrayList<>();
         }
     }
 
-    static List<Task> getAll(Connection conn, int ownerId) throws SQLException {
+    static List<Task> getAll(Connection conn) throws SQLException {
         List<Task> taskList = new ArrayList<>();
         try (PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT_ALL)) {
-            pstmt.setInt(1, ownerId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     taskList.add(TaskRowMapper.fromResultSet(rs));
@@ -89,12 +88,11 @@ public final class TaskCrudDao {
         return taskList;
     }
 
-    public static Task getById(int taskId, int ownerId) {
-        String sql = "SELECT * FROM tasks WHERE id = ? AND owner_id = ?";
+    public static Task getById(int taskId) {
+        String sql = "SELECT * FROM tasks WHERE id = ?";
         try (Connection conn = Database.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, taskId);
-            pstmt.setInt(2, ownerId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return TaskRowMapper.fromResultSet(rs);
@@ -107,27 +105,27 @@ public final class TaskCrudDao {
         return null;
     }
 
-    public static void update(Task task, int ownerId) {
-        updateAll(List.of(task), ownerId);
+    public static void update(Task task) {
+        updateAll(List.of(task));
     }
 
     /**
      * 複数タスクを1トランザクションで更新し、親の進捗も同じ接続で反映する。
      * 途中で失敗した場合はすべてロールバックする。
      */
-    public static void updateAll(List<Task> tasks, int ownerId) {
+    public static void updateAll(List<Task> tasks) {
         if (tasks == null || tasks.isEmpty()) {
             return;
         }
         try {
             Database.withTransaction(connection -> {
                 for (Task task : tasks) {
-                    update(connection, task, ownerId);
+                    update(connection, task);
                 }
-                List<Task> allTasks = getAll(connection, ownerId);
+                List<Task> allTasks = getAll(connection);
                 for (Task task : tasks) {
                     for (Task rolledUp : TaskHierarchySupport.rollupAncestors(task.getId(), allTasks)) {
-                        updateProgressAndStatus(connection, rolledUp, ownerId);
+                        updateProgressAndStatus(connection, rolledUp);
                     }
                 }
                 return null;
@@ -138,9 +136,9 @@ public final class TaskCrudDao {
         }
     }
 
-    private static void update(Connection conn, Task task, int ownerId) throws SQLException {
+    private static void update(Connection conn, Task task) throws SQLException {
         try (PreparedStatement pstmt = conn.prepareStatement(SQL_UPDATE)) {
-            TaskStatementBinder.bindUpdate(pstmt, task, ownerId);
+            TaskStatementBinder.bindUpdate(pstmt, task);
             int updated = pstmt.executeUpdate();
             if (updated == 0) {
                 throw AppException.notFound("タスクID: " + task.getId());
@@ -149,12 +147,11 @@ public final class TaskCrudDao {
         }
     }
 
-    private static void updateProgressAndStatus(Connection conn, Task task, int ownerId) throws SQLException {
+    private static void updateProgressAndStatus(Connection conn, Task task) throws SQLException {
         try (PreparedStatement pstmt = conn.prepareStatement(SQL_UPDATE_PROGRESS_STATUS)) {
             pstmt.setInt(1, task.getProgress());
             pstmt.setString(2, task.getStatusCode());
             pstmt.setInt(3, task.getId());
-            pstmt.setInt(4, ownerId);
             int updated = pstmt.executeUpdate();
             if (updated == 0) {
                 throw AppException.notFound("タスクID: " + task.getId());
@@ -162,7 +159,7 @@ public final class TaskCrudDao {
         }
     }
 
-    public static void deleteIds(Collection<Integer> targetIds, int ownerId) {
+    public static void deleteIds(Collection<Integer> targetIds) {
         if (targetIds == null || targetIds.isEmpty()) {
             return;
         }
@@ -171,7 +168,6 @@ public final class TaskCrudDao {
                 try (PreparedStatement pstmt = connection.prepareStatement(SQL_DELETE)) {
                     for (Integer id : targetIds) {
                         pstmt.setInt(1, id);
-                        pstmt.setInt(2, ownerId);
                         pstmt.addBatch();
                     }
                     pstmt.executeBatch();
@@ -185,7 +181,7 @@ public final class TaskCrudDao {
     }
 
     /** 削除したタスクを元の ID のまま1トランザクションで戻す。1件でも失敗したら全部戻さない。 */
-    public static void insertWithIds(Collection<Task> tasks, int ownerId) {
+    public static void insertWithIds(Collection<Task> tasks) {
         if (tasks == null || tasks.isEmpty()) {
             return;
         }
@@ -193,7 +189,7 @@ public final class TaskCrudDao {
             Database.withTransaction(connection -> {
                 try (PreparedStatement pstmt = connection.prepareStatement(SQL_INSERT_WITH_ID)) {
                     for (Task task : tasks) {
-                        TaskStatementBinder.bindInsert(pstmt, task, ownerId);
+                        TaskStatementBinder.bindInsert(pstmt, task);
                         pstmt.setInt(TaskStatementBinder.INSERT_PARAM_COUNT + 1, task.getId());
                         pstmt.addBatch();
                     }
@@ -207,13 +203,12 @@ public final class TaskCrudDao {
         }
     }
 
-    public static void updateProgressAndStatus(Task task, int ownerId) {
+    public static void updateProgressAndStatus(Task task) {
         try (Connection conn = Database.connect();
              PreparedStatement pstmt = conn.prepareStatement(SQL_UPDATE_PROGRESS_STATUS)) {
             pstmt.setInt(1, task.getProgress());
             pstmt.setString(2, task.getStatusCode());
             pstmt.setInt(3, task.getId());
-            pstmt.setInt(4, ownerId);
             int updated = pstmt.executeUpdate();
             if (updated == 0) {
                 throw AppException.notFound("タスクID: " + task.getId());
@@ -224,12 +219,12 @@ public final class TaskCrudDao {
         }
     }
 
-    public static void updateOrderIndex(int taskId, int newOrderIndex, int ownerId) {
-        updateOrderIndexes(Map.of(taskId, newOrderIndex), ownerId);
+    public static void updateOrderIndex(int taskId, int newOrderIndex) {
+        updateOrderIndexes(Map.of(taskId, newOrderIndex));
     }
 
     /** 兄弟の並びを1トランザクションで書く。途中失敗なら全部戻す。 */
-    public static void updateOrderIndexes(Map<Integer, Integer> orderByTaskId, int ownerId) {
+    public static void updateOrderIndexes(Map<Integer, Integer> orderByTaskId) {
         if (orderByTaskId == null || orderByTaskId.isEmpty()) {
             return;
         }
@@ -239,7 +234,6 @@ public final class TaskCrudDao {
                     for (Map.Entry<Integer, Integer> entry : orderByTaskId.entrySet()) {
                         pstmt.setInt(1, entry.getValue());
                         pstmt.setInt(2, entry.getKey());
-                        pstmt.setInt(3, ownerId);
                         int updated = pstmt.executeUpdate();
                         if (updated == 0) {
                             throw AppException.notFound("タスクID: " + entry.getKey());

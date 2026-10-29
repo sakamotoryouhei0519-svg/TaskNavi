@@ -6,7 +6,7 @@
 | 日 | やること | このファイルの場所 |
 |---|---|---|
 | 1日目 | 起動 | 操作A |
-| 2日目 | ログインと自分のタスク | 操作B |
+| 2日目 | メイン画面と保存の窓口 | 操作B |
 | 3日目 | 追加（ダイアログから `addTask` まで） | 操作Dの画面側 |
 | 4日目 | 他の画面への知らせ | 操作Dの `TaskEventBus` と、WBS の `taskEventListener` |
 | 5日目 | 編集（`updateTask`。道は追加と同じ） | 操作E |
@@ -28,14 +28,15 @@
 |------|----------|
 | 必読 | `Main.java` |
 | 必読 | `persistence/Database.java`（Flyway で表を用意） |
-| 関連 | `persistence/SampleDataUtil.java`（空DBならサンプル投入） |
-| 関連 | `LoginFrame`（`ui/auth/LoginFrame.java`）※ skipLogin なしの場合 |
+| 関連 | `persistence/SampleDataUtil.java`（タスクが 1 件もなければサンプル投入） |
+| 関連 | `db/migration/V6__drop_login.sql`（前の版のログイン用の表を外す） |
 
 **コードの流れ（Main.java）:**
 
 ```
 main()
   → 未処理例外ハンドラ設定
+  → Database.prepareOnStartup() (古い DB の引き継ぎと1日1回のバックアップ)
   → SwingUtilities.invokeLater (EDT上で実行)
     → UIManager.setLookAndFeel (Look & Feel設定)
     → applyGlobalUiDefaults() (テーマ適用)
@@ -43,87 +44,52 @@ main()
     → splash.setVisible(true) (表示)
     → Timer(1000ms) で1秒待機
       → splash.dispose() (スプラッシュ消去)
-      → shouldSkipLogin() で判定
-        → true の場合:
-          → autoLoginForTest()
-            → UserDao.ensureDemoUser() (テストユーザー作成)
-            → SampleDataUtil.prepareLedgerForUser() (サンプルデータ準備)
-            → UserSession.login() (セッション設定)
-          → openMainFrame()
-            → TaskService.createDefault() (サービス作成)
-            → new MainFrame() (メイン画面作成)
-            → mainFrame.setVisible(true)
-        → false の場合:
-          → new LoginFrame() (ログイン画面作成)
-          → loginFrame.setVisible(true)
+      → SampleDataUtil.insertSampleTasksIfEmpty() (空のときだけサンプル)
+      → openMainFrame()
+        → TaskService.createDefault() (サービス作成)
+        → new MainFrame() (メイン画面作成)
+        → mainFrame.setVisible(true)
 ```
 
 できたチェック:
 
 - [ ] `main` が何をしているか、3行で言える
-- [ ] 「DB準備 → スプラッシュ → ログイン or メイン」の順が言える
-- [ ] `shouldSkipLogin()` が `-Dtasknavi.skipLogin=true` で true を返すと言える
-- [ ] スプラッシュが1秒後に消えて、ログイン画面かメイン画面が出る流れを言える
+- [ ] 「DB準備 → スプラッシュ → メイン」の順が言える
+- [ ] ログインがない理由（データは PC の中にあり、守りは Windows のログインに任せる）を言える
 
-### 操作B: ログインしてメイン画面を開く
+### 操作B: メイン画面を開く
 
 | 区分 | ファイル |
 |------|----------|
-| 必読 | `ui/auth/LoginFrame.java` |
-| 必読 | `service/AuthService.java` |
 | 必読 | `service/TaskService.java` の `createDefault()` |
 | 必読 | `ui/main/MainFrame.java`（コンストラクタ前半: ヘッダー・タブ追加） |
-| 関連 | `persistence/UserDao.java` / `service/UserSession.java` |
 | 関連 | `ui/main/MainHeaderBar.java` / `ui/main/MainToolbarButtons.java` |
 
-**コードの流れ（LoginFrame → MainFrame）:**
+**コードの流れ（Main → MainFrame）:**
 
 ```
-LoginFrame.handleLogin()
-  → 入力バリデーション（空欄チェック）
-  → setLoginInProgress(true) (ボタンをビジー状態に)
-  → SwingWorker.doInBackground() (バックグラウンドで実行)
-    → AuthService.authenticate(username, password)
-      → AuthAttemptGuard.loginKey() でキー生成
-      → AuthAttemptGuard.isBlocked() でロック確認
-      → UserDao.authenticate() (DBで認証)
-        → 成功: AuthAttemptGuard.recordSuccess()
-        → 失敗: AuthAttemptGuard.recordFailure() → ロック判定
-      → 成功なら LoginResult.success(user)
-      → 失敗なら LoginResult.invalid() または locked()
-    → 成功なら SampleDataUtil.prepareLedgerForUser(userId) (サンプルデータ準備)
-  → SwingWorker.done() (EDTで結果処理)
-    → result.isSuccess() なら:
-      → saveRememberedUsername() (ユーザー名保存)
-      → UserSession.login(user) (セッション設定)
-      → TaskService.createDefault()
-        → UserSession.getCurrentUser() で現在ユーザー取得
-        → new TaskDao(userId) (ユーザー専用DAO作成)
-        → new TaskService(taskDao)
-      → new MainFrame(taskService) (メイン画面作成)
-        → ウィンドウ設定
-        → MainHeaderBar.create() (ヘッダー作成)
-        → createToolBarPanel() (ツールバー作成)
-        → new WbsPanel(taskService)
-        → new KanbanPanel(taskService)
-        → new GanttPanel(taskService)
-        → new CalendarPanel(taskService)
-        → addMainTab() で5つのタブ追加（今日 / WBS / カンバン / ガント / カレンダー）
-        → loadLastTabIndex() で最後のタブを復元
-        → addChangeListener() でタブ切り替えリスナー設定
-      → mainFrame.setVisible(true)
-      → LoginFrame.this.dispose() (ログイン画面を閉じる)
-    → 失敗なら:
-      → エラーメッセージ表示
-      → パスワードフィールドにフォーカス
+Main.openMainFrame()
+  → TaskService.createDefault()
+    → new TaskDao() (この PC のタスクの保存先)
+    → new TaskService(taskDao)
+  → new MainFrame(taskService) (メイン画面作成)
+    → ウィンドウ設定
+    → MainHeaderBar.create() (ヘッダー作成。共有で使う表示名を出す)
+    → createToolBarPanel() (ツールバー作成)
+    → new WbsPanel(taskService)
+    → new KanbanPanel(taskService)
+    → new GanttPanel(taskService)
+    → new CalendarPanel(taskService)
+    → addMainTab() で5つのタブ追加（今日 / WBS / カンバン / ガント / カレンダー）
+    → loadLastTabIndex() で最後のタブを復元
+    → addChangeListener() でタブ切り替えリスナー設定
+  → mainFrame.setVisible(true)
 ```
 
 できたチェック:
 
-- [ ] ログイン成功後、誰が `MainFrame` を `new` しているか言える
+- [ ] 誰が `MainFrame` を `new` しているか言える
 - [ ] UI が `new TaskDao()` せず `TaskService.createDefault()` を使う理由を言える
-- [ ] `AuthService.authenticate()` が `AuthAttemptGuard` で試行制限していると言える
-- [ ] `TaskService.createDefault()` が `UserSession.getCurrentUser()` からユーザーIDを取得していると言える
 
 ### 操作C: タブを切り替える（WBS / カンバン / ガント / カレンダー）
 
@@ -230,7 +196,7 @@ MainFrame.createToolBarPanel()
       → taskService.addTask(newTask)
         → TaskDao.addTask(newTask)
           → validateTask(newTask) (バリデーション)
-          → TaskCrudDao.add(newTask, ownerId)
+          → TaskCrudDao.add(newTask)
             → Database.connect() でDB接続取得
             → PreparedStatement で INSERT SQL 実行
             → getGeneratedKeys() で生成されたID取得
@@ -298,10 +264,10 @@ WbsPanel コンストラクタ
         → TaskService.updateTasks(List.of(task))
           → TaskDao.updateTasks(tasks)
             → 各タスクを validateTask() でバリデーション
-            → TaskCrudDao.updateAll(tasks, ownerId)
+            → TaskCrudDao.updateAll(tasks)
               → Database.withTransaction() でトランザクション開始
               → 各タスクを UPDATE SQL で更新
-              → getAll(connection, ownerId) で全タスク再取得
+              → getAll(connection) で全タスク再取得
               → TaskHierarchySupport.rollupAncestors() で祖先の進捗計算
               → updateProgressAndStatus() で親タスク更新
           → 各タスクに対して TaskEventBus.post(TASK_UPDATED, task)
@@ -358,7 +324,7 @@ MainFrame.createToolBarPanel()
                 → parentId を取得
                 → TaskHierarchySupport.collectDescendantIds(taskId, allTasks, targetIds)
                   → 再帰的に子孫タスクのIDを収集
-                → TaskCrudDao.deleteIds(targetIds, ownerId)
+                → TaskCrudDao.deleteIds(targetIds)
                   → Database.withTransaction() でトランザクション開始
                   → PreparedStatement で DELETE SQL をバッチ実行
                   → 全IDを1回のトランザクションで削除
@@ -606,7 +572,7 @@ changeTaskStatus(taskId, newStatus)
         → task.setProgress(TaskBusinessRules.resolveProgress(newStatus, task.getProgress()))
         → updateTask(task)
           → TaskDao.updateTasks(List.of(task))
-            → TaskCrudDao.updateAll(tasks, ownerId)
+            → TaskCrudDao.updateAll(tasks)
           → TaskEventBus.post(TASK_UPDATED, task)
             → 各 Panel が refresh() を実行
     → SwingWorker.done() (EDTで結果処理)
@@ -695,79 +661,7 @@ GanttPanel コンストラクタ
 
 ---
 
-## レベル4: 認証・入出力・テーマ
-
-### 操作N: 新規登録／パスワード再設定画面を開く
-
-| 区分 | ファイル |
-|------|----------|
-| 必読 | `ui/auth/RegisterFrame.java` または `ResetPasswordFrame.java` |
-| 必読 | `ui/auth/AuthFormWidgets.java` / `AuthPasswordPolicy.java` |
-| 関連 | `ui/auth/AuthNavigation.java` |
-| 関連 | `service/AuthService.java` / `service/VerificationManager.java` |
-
-**コードの流れ（新規登録）:**
-
-```
-LoginFrame で「新規登録」リンクをクリック
-  → AuthNavigation.openRegisterAndDispose(loginFrame)
-    → new RegisterFrame() (登録画面作成)
-    → registerFrame.setVisible(true)
-    → loginFrame.dispose()
-
-RegisterFrame コンストラクタ
-  → AuthFormWidgets.applyWindowDefaults() でウィンドウ設定
-  → ユーザー名、メール、パスワード、確認パスワードのフィールド作成
-  → registerButton.addActionListener(e -> handleRegister())
-
-ユーザーが情報を入力して「アカウント作成」をクリック
-  → handleRegister()
-    → 入力値取得
-    → AuthPasswordPolicy.validateRegisterForm() でバリデーション
-    → SwingWorker.doInBackground() (バックグラウンドで登録)
-      → AuthService.register(username, email, password)
-        → UserDao.create() でユーザー作成
-        → パスワードハッシュ化して保存
-    → SwingWorker.done() (EDTで結果処理)
-      → 成功なら AuthNavigation.openLoginAndDispose(this)
-      → 失敗なら errorArea にエラー表示（AuthFormWidgets.showError）
-```
-
-**コードの流れ（パスワード再設定）:**
-
-```
-LoginFrame で「パスワードを忘れた」リンクをクリック
-  → AuthNavigation.openResetPasswordAndDispose(loginFrame)
-    → new ResetPasswordFrame() (再設定画面作成)
-    → resetFrame.setVisible(true)
-    → loginFrame.dispose()
-
-ユーザーがメールを入力して「認証コード送信」をクリック
-  → handleSendAuthCode()
-    → VerificationManager.generateAuthCode() で認証コード生成
-    → EmailUtil.sendAuthCode() でメール送信（デモではログ出力）
-
-ユーザーが認証コードを入力して「認証」をクリック
-  → handleVerifyAuthCode()
-    → VerificationManager.verifyAuthCode() で認証コード検証
-    → emailVerified = true
-    → newPasswordField.setEnabled(true)
-    → resetButton.setEnabled(true)
-
-ユーザーが新パスワードを入力して「パスワード更新」をクリック
-  → handleResetPassword()
-    → AuthPasswordPolicy.validatePassword() でパスワードバリデーション
-    → SwingWorker.doInBackground()
-      → AuthService.resetPassword(email, newPassword)
-        → UserDao.updatePassword() でパスワード更新
-    → SwingWorker.done()
-      → 成功なら AuthNavigation.openLoginAndDispose(this)
-```
-
-できたチェック:
-
-- [ ] `AuthNavigation` がログイン画面と登録画面の切り替えを行っていると言える
-- [ ] `AuthPasswordPolicy` がパスワードのバリデーションを行っていると言える
+## レベル4: 入出力・テーマ
 
 ### 操作O: インポート／エクスポート
 
@@ -918,7 +812,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | 保存の失敗を画面に出す | `ErrorDialogUtil.findAppException` |
 | 編集の保存は成功したあとだけ知らせる | `WbsPanel.openEditDialog` → `TaskService.updateTask` → `updateTasks` |
 | 削除と並べ替えを途中で残さない | `TaskCrudDao.deleteIds` / `updateOrderIndexes` |
-| 再設定コードを DB に残す | `VerificationManager` / `V3__verification_codes.sql` |
+| ログインをやめても前のタスクを全部残す | `V6__drop_login.sql` / `DatabaseTest.upgradingFromLoginVersionKeepsEveryAccountsTasks` |
 | チーム共有の土台（教科書16章） | `team/TeamProject` → `TeamChangeLog`（読み書き）→ `TeamReplay`（組み立てと重なりの検出） |
 | 共有プロジェクトを作る・参加する・閉じる・表示名 | `ui/team/ProjectSwitcher`（メニュー）→ `ui/team/TeamSession` / `TeamDialogs` / `team/TeamSettings` |
 | メンバー・同期・重なりの表示 | `ProjectSwitcher.refresh` ← `TeamSession.Listener.statusChanged` / `TeamMembersDialog` |
@@ -960,7 +854,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 
 - [ ] 資料を見ずに、3分でアプリの形を説明できる
 - [ ] 「画面は保存しない。Service が保存して、Bus が他の画面を更新する」と言える
-- [ ] 「ログインした人のタスクだけが見える」と言える
+- [ ] 「ログインはなく、PC の守りは Windows のログインに任せる」と言える
 
 ### 操作R: わざと小さい修正をして、戻せるようにする
 
@@ -989,7 +883,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 4. 保存の失敗は画面に出ます。削除と並べ替えは、途中だけ残りません
 5. 状態変更のルールは `TaskService.changeStatus` の1か所にあります。全件の読み込みは1回の変更で1回だけで、5つの画面で使い回します
 6. テストは `mvn test` です。CI でも同じテストが動きます
-7. ログインした人ごとに台帳が分かれます。別のアカウントのタスクは見えません
+7. アプリにログインはありません。データは PC の中なので、守りは Windows のログインに任せています
 
 ---
 

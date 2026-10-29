@@ -34,7 +34,7 @@ WBS・カンバン・ガント・カレンダーを一つのウィンドウで�
 
 - CSV（Excel で編集して取り込み直せる）／JSON のエクスポート・インポート。取り込み前に件数とエラー行を確認でき、「追加」か「置き換え」を選べる。共有プロジェクトへの大量の取り込みは、全部の行をチェックしてから1回で書く
 - 削除の「元に戻す」（10秒間）、毎日の DB 自動バックアップ（7日分）
-- 認証（登録／ログイン／パスワード再設定、試行制限付き）。タスクはログインした人ごとに分かれる
+- ログインなしですぐ使える。データは PC の中（`%APPDATA%\TaskNavi`）なので、守りは Windows のログインに任せる。前の版でアカウントごとに分かれていたタスクは、更新時に全部残して1つにまとめる
 
 ### 使いやすさ
 
@@ -67,7 +67,7 @@ UI（ui/today・wbs・kanban・gantt・calendar ほか）
 - 画面間の再描画は `TaskEventBus`
 - チーム共有（`team` パッケージ）: サーバーなしで共有フォルダを使う。各 PC は自分の変更記録ファイルに追記するだけなので、同期で「競合したコピー」ができない。全員の記録を決まった順に組み立てて一覧にし、互いを知らずに同じ項目を変えた場合は検出して残す
 - パッケージは役割ごと（`model` / `service` / `persistence` / `team` / `io` / `util` / `event` / `ui`）。画面は `ui` の中でタブごとに分ける
-- テスト 189 件（JUnit 5）。共有の同期の遅れ・オフラインでの同時編集・同じ PC での2重起動も再現して確かめている
+- テスト 200 件（JUnit 5）。共有の同期の遅れ・オフラインでの同時編集・同じ PC での2重起動も再現して確かめている
 - 学習用の読み方: [`docs/beginner-handbook.md`](docs/beginner-handbook.md) / [`docs/study-checklist.md`](docs/study-checklist.md)
 
 ## 起動方法
@@ -78,12 +78,6 @@ mvn -B -DskipTests package
 java -jar target/TaskNavi-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
 
-ログイン省略（デモ／スモーク）:
-
-```bash
-java -Dtasknavi.skipLogin=true -jar target/TaskNavi-1.0-SNAPSHOT-jar-with-dependencies.jar
-```
-
 ## 配布（Windows）
 
 ```bash
@@ -91,7 +85,7 @@ mvn -Pdist -DskipTests verify
 ```
 
 - `target/jpackage/dist/TaskNavi/TaskNavi.exe` … ダブルクリックで起動。Java ごと入っているので、使うパソコンに Java は要りません
-- `target/TaskNavi-1.1.0-windows.zip` … 上のフォルダをまとめたもの。展開して `TaskNavi.exe` を起動します。名前の数字はアプリの版（`pom.xml` の `app.version`）なので、配った zip がどの版かが名前で分かります
+- `target/TaskNavi-1.2.0-windows.zip` … 上のフォルダをまとめたもの。展開して `TaskNavi.exe` を起動します。名前の数字はアプリの版（`pom.xml` の `app.version`）なので、配った zip がどの版かが名前で分かります
 - 版は `pom.xml` の `app.version`。新しい版を配るときは上げてから作る（チームは全員同じ版にそろえる）
 - `TaskNavi.exe --team-profile=test2` … 共有プロジェクトを別の人として使う（1台で2人分の共有を試すとき。手順は教科書16章）
 - データ・バックアップ・ログは `%APPDATA%\TaskNavi` に置きます（`tasknavi.db` / `backups` / `logs`）。アプリを入れ替えても消えません
@@ -99,7 +93,7 @@ mvn -Pdist -DskipTests verify
 
 ## デモ手順（約2分）
 
-1. 起動 → ログイン（または skipLogin）
+1. 起動 → すぐメイン画面（初回はサンプルのプロジェクト入り）
 2. 「追加」でタスクを作成
 3. カンバン／カレンダーで同じタスクが見えることを確認（EventBus）
 4. 検索欄で名前・担当者・メモ・コメントを絞る → フィルタ表示が変わる

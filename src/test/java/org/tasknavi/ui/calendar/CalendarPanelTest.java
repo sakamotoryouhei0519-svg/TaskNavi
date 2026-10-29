@@ -34,7 +34,7 @@ class CalendarPanelTest {
     void setUp() {
         Database.initialize();
         DatabaseTestConfig.clearTasksTable();
-        taskDao = new TaskDao(1);
+        taskDao = new TaskDao();
         taskService = new TaskService(taskDao);
     }
 

@@ -35,8 +35,7 @@ class TaskServiceSnapshotTest {
         Database.initialize();
         DatabaseTestConfig.clearTasksTable();
         unique = UUID.randomUUID().toString().substring(0, 8);
-        int ownerId = DatabaseTestConfig.insertUser("snap-" + unique, "snap-" + unique + "@example.com");
-        TaskDao countingDao = new TaskDao(ownerId) {
+        TaskDao countingDao = new TaskDao() {
             @Override
             public List<Task> getAllTasks() {
                 reads.incrementAndGet();

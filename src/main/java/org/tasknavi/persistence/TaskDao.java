@@ -19,18 +19,9 @@ public class TaskDao implements TaskStore {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskDao.class);
 
-    private final int ownerId;
-
-    public TaskDao(int ownerId) {
-        if (ownerId <= 0) {
-            throw new IllegalArgumentException("ownerId must be positive");
-        }
-        this.ownerId = ownerId;
-    }
-
     public int addTask(Task task) {
         validateTask(task);
-        int id = TaskCrudDao.add(task, ownerId);
+        int id = TaskCrudDao.add(task);
         Integer parentId = task.getParentId();
         if (parentId != null && parentId > 0) {
             updateParentProgress(parentId);
@@ -39,11 +30,11 @@ public class TaskDao implements TaskStore {
     }
 
     public List<Task> getAllTasks() {
-        return TaskCrudDao.getAll(ownerId);
+        return TaskCrudDao.getAll();
     }
 
     public Task getTaskById(int taskId) {
-        return TaskCrudDao.getById(taskId, ownerId);
+        return TaskCrudDao.getById(taskId);
     }
 
     public void updateTask(Task task) {
@@ -60,7 +51,7 @@ public class TaskDao implements TaskStore {
         for (Task task : tasks) {
             validateTask(task);
         }
-        TaskCrudDao.updateAll(tasks, ownerId);
+        TaskCrudDao.updateAll(tasks);
     }
 
     /** @return 消したタスク（子を含む）。{@link #restoreTasks} に渡せば元に戻せる */
@@ -85,7 +76,7 @@ public class TaskDao implements TaskStore {
 
         Set<Integer> targetIds = new HashSet<>();
         TaskHierarchySupport.collectDescendantIds(taskId, allTasks, targetIds);
-        TaskCrudDao.deleteIds(targetIds, ownerId);
+        TaskCrudDao.deleteIds(targetIds);
         if (parentId != null && parentId > 0 && !targetIds.contains(parentId)) {
             updateParentProgress(parentId);
         }
@@ -127,7 +118,7 @@ public class TaskDao implements TaskStore {
             }
         }
 
-        TaskCrudDao.insertWithIds(deletedTasks, ownerId);
+        TaskCrudDao.insertWithIds(deletedTasks);
         for (Integer parentId : outsideParentIds) {
             updateParentProgress(parentId);
         }
@@ -167,7 +158,7 @@ public class TaskDao implements TaskStore {
         if (valid.isEmpty()) {
             return;
         }
-        TaskImportDao.importTasks(valid, replaceExisting, ownerId);
+        TaskImportDao.importTasks(valid, replaceExisting);
     }
 
     public void updateParentProgress(int parentId) {
@@ -176,7 +167,7 @@ public class TaskDao implements TaskStore {
 
     private void updateParentProgress(int parentId, List<Task> allTasks) {
         for (Task rolled : TaskHierarchySupport.rollupAncestors(parentId, allTasks)) {
-            TaskCrudDao.updateProgressAndStatus(rolled, ownerId);
+            TaskCrudDao.updateProgressAndStatus(rolled);
         }
     }
 
@@ -185,7 +176,7 @@ public class TaskDao implements TaskStore {
     }
 
     public void updateTaskOrderIndex(int taskId, int newOrderIndex) {
-        TaskCrudDao.updateOrderIndex(taskId, newOrderIndex, ownerId);
+        TaskCrudDao.updateOrderIndex(taskId, newOrderIndex);
     }
 
     public void updateSiblingOrder(List<Task> orderedTasks) {
@@ -196,6 +187,6 @@ public class TaskDao implements TaskStore {
         for (Task task : orderedTasks) {
             orderByTaskId.put(task.getId(), task.getOrderIndex());
         }
-        TaskCrudDao.updateOrderIndexes(orderByTaskId, ownerId);
+        TaskCrudDao.updateOrderIndexes(orderByTaskId);
     }
 }

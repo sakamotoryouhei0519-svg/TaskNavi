@@ -42,8 +42,7 @@ class TaskServiceStatusChangeTest {
         Database.initialize();
         DatabaseTestConfig.clearTasksTable();
         String unique = UUID.randomUUID().toString().substring(0, 8);
-        int ownerId = DatabaseTestConfig.insertUser("status-" + unique, "status-" + unique + "@example.com");
-        taskDao = new TaskDao(ownerId);
+        taskDao = new TaskDao();
         service = new TaskService(taskDao);
 
         projectId = taskDao.addTask(new Task(0, "Project-" + unique, null, 1, 0, 0, Task.STATUS_NOT_STARTED,

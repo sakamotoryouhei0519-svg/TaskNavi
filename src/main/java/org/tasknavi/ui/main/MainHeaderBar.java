@@ -2,8 +2,6 @@ package org.tasknavi.ui.main;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
-import org.tasknavi.model.User;
-import org.tasknavi.service.UserSession;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.IconManager;
 
@@ -21,7 +19,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 
 /**
- * MainFrame 上部ヘッダー（ロゴ・ユーザー・I/O・テーマ・ログアウト）。
+ * MainFrame 上部ヘッダー（ロゴ・プロジェクト・表示名・I/O・テーマ）。
  */
 public final class MainHeaderBar {
 
@@ -32,14 +30,13 @@ public final class MainHeaderBar {
         void onImport();
 
         void onExport();
-
-        void onLogout();
     }
 
     private MainHeaderBar() {
     }
 
-    public static Result create(JToggleButton themeToggleButton, JComponent projectArea, Actions actions) {
+    public static Result create(JToggleButton themeToggleButton, JComponent projectArea, String userName,
+                                Actions actions) {
         JPanel panel = new JPanel(new MigLayout("fillx, insets 0, gap 10", "[grow][]"));
         panel.setBackground(AppTheme.PANEL_BG);
         panel.setBorder(javax.swing.BorderFactory.createCompoundBorder(
@@ -66,17 +63,11 @@ public final class MainHeaderBar {
         titleArea.add(projectArea, "gapleft 8");
         titleArea.add(subtitleLabel, "wmin 0, gapleft 4");
 
-        User currentUser = UserSession.getCurrentUser();
-        String currentUsername = currentUser != null
-                ? currentUser.getDisplayNameOrUsername()
-                : AppMessages.get("mainframe.user.guest");
-
-        JLabel userStatusLabel = new JLabel(IconManager.getIcon(IconManager.IconType.USER) + " " + currentUsername);
+        JLabel userStatusLabel = new JLabel();
         userStatusLabel.setFont(AppTheme.FONT_MAIN);
         userStatusLabel.setForeground(AppTheme.TEXT_PRIMARY);
-
-        JButton logoutButton = createHeaderIconButton(AppMessages.get("mainframe.button.logout"), IconManager.IconType.LOGOUT);
-        logoutButton.addActionListener(e -> actions.onLogout());
+        userStatusLabel.setToolTipText(AppMessages.get("mainframe.user.tooltip"));
+        showUserName(userStatusLabel, userName);
 
         JButton exportButton = createHeaderIconButton(AppMessages.get("mainframe.button.export"), IconManager.IconType.EXPORT);
         exportButton.addActionListener(e -> actions.onExport());
@@ -86,17 +77,24 @@ public final class MainHeaderBar {
 
         styleThemeToggle(themeToggleButton);
 
-        JPanel rightUserArea = new JPanel(new MigLayout("insets 0, gap 10, align right", "[][][][][]"));
+        JPanel rightUserArea = new JPanel(new MigLayout("insets 0, gap 10, align right, hidemode 3", "[][][][]"));
         rightUserArea.setOpaque(false);
         rightUserArea.add(userStatusLabel);
         rightUserArea.add(importButton);
         rightUserArea.add(exportButton);
         rightUserArea.add(themeToggleButton);
-        rightUserArea.add(logoutButton);
 
         panel.add(titleArea, "growx");
         panel.add(rightUserArea, "right");
         return new Result(panel, userStatusLabel);
+    }
+
+    /** 共有で使う表示名。まだ決めていなければ出さない。 */
+    static void showUserName(JLabel label, String name) {
+        boolean hasName = name != null && !name.isBlank();
+        // 絵文字は代わりのフォントで描かれ、測った幅より広くなるので、末尾に余白を足す
+        label.setText(hasName ? IconManager.getIcon(IconManager.IconType.USER) + " " + name + "  " : "");
+        label.setVisible(hasName);
     }
 
     private static JButton createHeaderIconButton(String text, IconManager.IconType iconType) {

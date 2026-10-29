@@ -11,7 +11,6 @@
           </option>
           <option name="goals">
             <list>
-              <option value="-Dtasknavi.skipLogin=true" />
               <option value="-Dtasknavi.uiDebug=true" />
               <option value="exec:java" />
             </list>

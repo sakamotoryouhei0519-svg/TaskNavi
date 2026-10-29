@@ -12,8 +12,6 @@ import org.tasknavi.event.TaskEventListener;
 import org.tasknavi.model.Task;
 import org.tasknavi.service.TaskService;
 
-import java.sql.Connection;
-import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -34,9 +32,7 @@ class TaskDaoIntegrationTest {
     void setUp() {
         Database.initialize();
         DatabaseTestConfig.clearTasksTable();
-        String unique = UUID.randomUUID().toString().substring(0, 8);
-        int ownerId = DatabaseTestConfig.insertUser("owner-" + unique, "owner-" + unique + "@example.com");
-        taskDao = new TaskDao(ownerId);
+        taskDao = new TaskDao();
     }
 
     @AfterEach
@@ -245,42 +241,18 @@ class TaskDaoIntegrationTest {
     }
 
     @Test
-    void anotherUserCannotSeeOrChangeTasks() {
-        String unique = UUID.randomUUID().toString().substring(0, 8);
-        int otherId = DatabaseTestConfig.insertUser("other-" + unique, "other-" + unique + "@example.com");
-        TaskDao otherDao = new TaskDao(otherId);
+    void sampleTasksAreInsertedOnlyIntoAnEmptyLedger() {
+        SampleDataUtil.insertSampleTasksIfEmpty();
+        int sampleCount = taskDao.getAllTasks().size();
+        assertTrue(sampleCount > 0);
 
-        int id = taskDao.addTask(new Task(0, "Mine-" + unique, null, 1, 0, 0, "未着手",
-                LocalDate.now(), LocalDate.now().plusDays(1)));
+        SampleDataUtil.insertSampleTasksIfEmpty();
+        assertEquals(sampleCount, taskDao.getAllTasks().size(), "2 回目は入れない");
 
-        assertNull(otherDao.getTaskById(id));
-        assertTrue(otherDao.getAllTasks().isEmpty());
-        assertThrows(AppException.class, () -> otherDao.deleteTask(id));
-
-        Task stored = taskDao.getTaskById(id);
-        assertNotNull(stored);
-        stored.setName("Stolen-" + unique);
-        assertThrows(AppException.class, () -> otherDao.updateTask(stored));
-        assertEquals("Mine-" + unique, taskDao.getTaskById(id).getName());
-    }
-
-    @Test
-    void unownedTasksAreClaimedByTheFirstUserOnly() throws Exception {
-        String unique = UUID.randomUUID().toString().substring(0, 8);
-        try (Connection conn = Database.connect();
-             Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("INSERT INTO tasks (name, owner_id) VALUES ('Legacy-" + unique + "', NULL)");
-        }
-
-        int firstId = DatabaseTestConfig.insertUser("first-" + unique, "first-" + unique + "@example.com");
-        int secondId = DatabaseTestConfig.insertUser("second-" + unique, "second-" + unique + "@example.com");
-        SampleDataUtil.prepareLedgerForUser(firstId);
-        SampleDataUtil.prepareLedgerForUser(secondId);
-
-        TaskDao firstDao = new TaskDao(firstId);
-        TaskDao secondDao = new TaskDao(secondId);
-        assertTrue(firstDao.getAllTasks().stream().anyMatch(task -> ("Legacy-" + unique).equals(task.getName())));
-        assertTrue(secondDao.getAllTasks().stream().noneMatch(task -> ("Legacy-" + unique).equals(task.getName())));
+        DatabaseTestConfig.clearTasksTable();
+        taskDao.addTask(importRow(0, null, 1, 0, "自分のプロジェクト"));
+        SampleDataUtil.insertSampleTasksIfEmpty();
+        assertEquals(List.of("自分のプロジェクト"), taskDao.getAllTasks().stream().map(Task::getName).toList());
     }
 
     private static Task importRow(int id, Integer parentId, int level, int order, String name) {
@@ -313,16 +285,12 @@ class TaskDaoIntegrationTest {
     }
 
     @Test
-    void importReplaceRemovesOnlyOwnTasks() {
+    void importReplaceRemovesExistingTasks() {
         taskDao.addTask(importRow(0, null, 1, 0, "消えるプロジェクト"));
-        String unique = UUID.randomUUID().toString().substring(0, 8);
-        TaskDao otherDao = new TaskDao(DatabaseTestConfig.insertUser("other-" + unique, "other-" + unique + "@example.com"));
-        otherDao.addTask(importRow(0, null, 1, 0, "他人のプロジェクト"));
 
         taskDao.importTasks(List.of(importRow(1, null, 1, 0, "新しいプロジェクト")), true);
 
         assertEquals(List.of("新しいプロジェクト"), taskDao.getAllTasks().stream().map(Task::getName).toList());
-        assertEquals(List.of("他人のプロジェクト"), otherDao.getAllTasks().stream().map(Task::getName).toList());
     }
 
     @Test

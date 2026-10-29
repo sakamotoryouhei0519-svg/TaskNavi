@@ -5,11 +5,9 @@ import org.tasknavi.AppMessages;
 import org.tasknavi.AppVersion;
 import org.tasknavi.model.Task;
 import org.tasknavi.service.TaskService;
-import org.tasknavi.service.UserSession;
 import org.tasknavi.team.TeamNotice;
 import org.tasknavi.team.TeamProject;
 import org.tasknavi.team.TeamSettings;
-import org.tasknavi.ui.AppDialog;
 import org.tasknavi.ui.AppIcon;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.IconManager;
@@ -18,7 +16,6 @@ import org.tasknavi.ui.TaskDataIoHelper;
 import org.tasknavi.ui.TaskDeleteHelper;
 import org.tasknavi.ui.TaskEditHelper;
 import org.tasknavi.ui.UiConstants;
-import org.tasknavi.ui.auth.LoginFrame;
 import org.tasknavi.ui.calendar.CalendarPanel;
 import org.tasknavi.ui.gantt.GanttMetrics;
 import org.tasknavi.ui.gantt.GanttPanel;
@@ -97,12 +94,14 @@ public class MainFrame extends JFrame {
                 projectSources.invalidate();
                 taskService.useStore(opened != null ? teamSession.storeOf(opened) : null);
                 projectSwitcher.refresh();
+                refreshUserName();
             }
 
             @Override
             public void otherProjectsChanged() {
                 projectSources.invalidate();
                 taskService.reload();
+                refreshUserName();
             }
 
             @Override
@@ -116,6 +115,7 @@ public class MainFrame extends JFrame {
             @Override
             public void statusChanged() {
                 projectSwitcher.refresh();
+                refreshUserName();
             }
 
             @Override
@@ -127,7 +127,7 @@ public class MainFrame extends JFrame {
         });
 
         MainHeaderBar.Result header = MainHeaderBar.create(themeToggleButton, projectSwitcher.component(),
-                new MainHeaderBar.Actions() {
+                teamSession.displayName(), new MainHeaderBar.Actions() {
             @Override
             public void onImport() {
                 handleImport();
@@ -136,11 +136,6 @@ public class MainFrame extends JFrame {
             @Override
             public void onExport() {
                 handleExport();
-            }
-
-            @Override
-            public void onLogout() {
-                handleLogout();
             }
         });
         headerPanel = header.panel();
@@ -462,18 +457,9 @@ public class MainFrame extends JFrame {
         return selected != null ? selected : taskService;
     }
 
-    private void handleLogout() {
-        boolean confirmed = AppDialog.confirm(
-                this,
-                AppMessages.get("mainframe.logout.confirm.title"),
-                AppMessages.get("mainframe.logout.confirm"));
-        if (confirmed) {
-            UserSession.logout();
-            this.dispose();
-            SwingUtilities.invokeLater(() -> {
-                LoginFrame loginFrame = new LoginFrame();
-                loginFrame.setVisible(true);
-            });
+    private void refreshUserName() {
+        if (userStatusLabel != null) {
+            MainHeaderBar.showUserName(userStatusLabel, teamSession.displayName());
         }
     }
 

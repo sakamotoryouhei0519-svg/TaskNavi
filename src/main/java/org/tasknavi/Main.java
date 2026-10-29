@@ -2,16 +2,12 @@ package org.tasknavi;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tasknavi.model.User;
 import org.tasknavi.persistence.AppDataLocation;
 import org.tasknavi.persistence.Database;
 import org.tasknavi.persistence.SampleDataUtil;
-import org.tasknavi.persistence.UserDao;
 import org.tasknavi.service.TaskService;
-import org.tasknavi.service.UserSession;
 import org.tasknavi.team.TeamSettings;
 import org.tasknavi.ui.AppTheme;
-import org.tasknavi.ui.auth.LoginFrame;
 import org.tasknavi.ui.main.MainFrame;
 
 import javax.swing.JLabel;
@@ -27,7 +23,7 @@ import java.awt.BorderLayout;
 
 /**
  * アプリケーション起動入口。
- * DB／サンプル準備のあと、スプラッシュを表示しログインまたはメイン画面へ進む。
+ * DB／サンプル準備のあと、スプラッシュを表示してメイン画面へ進む。ログインはない（PC は Windows のログインで守る）。
  */
 public class Main {
 
@@ -65,38 +61,12 @@ public class Main {
 
             Timer timer = new Timer(SPLASH_DELAY_MS, e -> {
                 splash.dispose();
-                if (shouldSkipLogin()) {
-                    autoLoginForTest();
-                    openMainFrame();
-                    return;
-                }
-                LoginFrame loginFrame = new LoginFrame();
-                loginFrame.setVisible(true);
+                SampleDataUtil.insertSampleTasksIfEmpty();
+                openMainFrame();
             });
             timer.setRepeats(false);
             timer.start();
         });
-    }
-
-    /** `-Dtasknavi.skipLogin=true` または環境変数 {@code TASKNAVI_SKIP_LOGIN} でログインを省略。 */
-    public static boolean shouldSkipLogin() {
-        String value = System.getProperty("tasknavi.skipLogin");
-        if (value == null || value.isBlank()) {
-            value = System.getenv("TASKNAVI_SKIP_LOGIN");
-        }
-        return Boolean.parseBoolean(value);
-    }
-
-    /** テスト／デモ用の自動ログイン。skipLogin が有効なときだけ動作する。 */
-    public static void autoLoginForTest() {
-        if (!shouldSkipLogin()) {
-            return;
-        }
-        String username = System.getProperty("tasknavi.autoLoginUser", "testuser");
-        String email = System.getProperty("tasknavi.autoLoginEmail", username + "@example.com");
-        User user = new UserDao().ensureDemoUser(username, email);
-        SampleDataUtil.prepareLedgerForUser(user.getId());
-        UserSession.login(user);
     }
 
     private static void applyGlobalUiDefaults() {

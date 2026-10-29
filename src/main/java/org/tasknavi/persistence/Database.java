@@ -15,7 +15,7 @@ import java.sql.Statement;
 import java.time.LocalDate;
 
 /**
- * 自分だけのタスクとユーザーを入れる SQLite の入口。接続・テーブルの準備（Flyway）・トランザクションをまとめる。
+ * 自分だけのタスクを入れる SQLite の入口。接続・テーブルの準備（Flyway）・トランザクションをまとめる。
  */
 public class Database {
     private static final Logger logger = LoggerFactory.getLogger(Database.class);

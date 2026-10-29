@@ -1,12 +1,10 @@
 package org.tasknavi.service;
 
-import org.tasknavi.AppException;
 import org.tasknavi.event.TaskEvent;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.model.Task;
 import org.tasknavi.model.TaskBusinessRules;
 import org.tasknavi.model.TaskHierarchyUtil;
-import org.tasknavi.model.User;
 import org.tasknavi.persistence.TaskDao;
 import org.tasknavi.persistence.TaskStore;
 
@@ -54,13 +52,9 @@ public class TaskService {
         invalidateSnapshot();
     }
 
-    /** 本番起動用。ログイン中の人のタスクだけを扱う。UI からは {@code TaskDao} を直接 new しない。 */
+    /** 本番起動用。この PC のタスクを扱う。UI からは {@code TaskDao} を直接 new しない。 */
     public static TaskService createDefault() {
-        User user = UserSession.getCurrentUser();
-        if (user == null || user.getId() <= 0) {
-            throw AppException.validation("ログインが必要です。", "ログインしてから操作してください。");
-        }
-        return new TaskService(new TaskDao(user.getId()));
+        return new TaskService(new TaskDao());
     }
 
     /**

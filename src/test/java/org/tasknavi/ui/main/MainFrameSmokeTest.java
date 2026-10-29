@@ -3,10 +3,8 @@ package org.tasknavi.ui.main;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.tasknavi.DatabaseTestConfig;
-import org.tasknavi.model.User;
 import org.tasknavi.persistence.TaskDao;
 import org.tasknavi.service.TaskService;
-import org.tasknavi.service.UserSession;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.SearchablePanel;
 import org.tasknavi.ui.calendar.CalendarPanel;
@@ -20,8 +18,6 @@ import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.lang.reflect.Field;
-import java.time.LocalDateTime;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,39 +34,34 @@ class MainFrameSmokeTest {
 
     @Test
     void mainFrameOpensTabsAndSurvivesThemeToggle() throws Exception {
-        UserSession.login(new User(0, "smoke", "smoke@example.com", "USER", "smoke", LocalDateTime.now()));
-        try {
-            SwingUtilities.invokeAndWait(() -> {
-                MainFrame frame = new MainFrame(new TaskService(new TaskDao(1)));
-                try {
-                    JTabbedPane tabs = getField(frame, "mainTabbedPane", JTabbedPane.class);
-                    assertEquals(5, tabs.getTabCount());
+        SwingUtilities.invokeAndWait(() -> {
+            MainFrame frame = new MainFrame(new TaskService(new TaskDao()));
+            try {
+                JTabbedPane tabs = getField(frame, "mainTabbedPane", JTabbedPane.class);
+                assertEquals(5, tabs.getTabCount());
 
-                    assertTabContent(tabs, 0, TodayPanel.class);
-                    assertTabContent(tabs, 1, WbsPanel.class);
-                    assertTabContent(tabs, 2, KanbanPanel.class);
-                    assertTabContent(tabs, 3, GanttPanel.class);
-                    assertTabContent(tabs, 4, CalendarPanel.class);
+                assertTabContent(tabs, 0, TodayPanel.class);
+                assertTabContent(tabs, 1, WbsPanel.class);
+                assertTabContent(tabs, 2, KanbanPanel.class);
+                assertTabContent(tabs, 3, GanttPanel.class);
+                assertTabContent(tabs, 4, CalendarPanel.class);
 
-                    for (int i = 0; i < tabs.getTabCount(); i++) {
-                        tabs.setSelectedIndex(i);
-                        Component active = unwrap(tabs.getSelectedComponent());
-                        assertTrue(active instanceof SearchablePanel, "tab " + i + " should be searchable");
-                        ((SearchablePanel) active).applySearchFilter("smoke", null);
-                        ((SearchablePanel) active).handleClearFilter();
-                    }
-
-                    AppTheme.setDarkMode(!AppTheme.isDarkMode());
-                    AppTheme.setDarkMode(!AppTheme.isDarkMode());
-                    frame.revalidate();
-                    frame.repaint();
-                } finally {
-                    frame.dispose();
+                for (int i = 0; i < tabs.getTabCount(); i++) {
+                    tabs.setSelectedIndex(i);
+                    Component active = unwrap(tabs.getSelectedComponent());
+                    assertTrue(active instanceof SearchablePanel, "tab " + i + " should be searchable");
+                    ((SearchablePanel) active).applySearchFilter("smoke", null);
+                    ((SearchablePanel) active).handleClearFilter();
                 }
-            });
-        } finally {
-            UserSession.logout();
-        }
+
+                AppTheme.setDarkMode(!AppTheme.isDarkMode());
+                AppTheme.setDarkMode(!AppTheme.isDarkMode());
+                frame.revalidate();
+                frame.repaint();
+            } finally {
+                frame.dispose();
+            }
+        });
     }
 
     private static void assertTabContent(JTabbedPane tabs, int index, Class<?> expectedType) {
