@@ -258,11 +258,16 @@ final class AppThemeControls {
             c.setFont(comboBox.getFont());
             c.setForeground(comboBox.isEnabled() ? comboBox.getForeground() : AppTheme.textDisabled());
             c.setBackground(comboBox.getBackground());
+            // 同じ部品を一覧の行にも使うので、透明にしたままだと選んだ行の地が塗られず白い文字が消える
+            boolean wasOpaque = c instanceof JComponent jc && jc.isOpaque();
             if (c instanceof JComponent jc) {
                 jc.setOpaque(false);
             }
             currentValuePane.paintComponent(g, c, comboBox, bounds.x, bounds.y, bounds.width, bounds.height,
                     c instanceof javax.swing.JPanel);
+            if (c instanceof JComponent jc) {
+                jc.setOpaque(wasOpaque);
+            }
         }
 
         @Override
@@ -272,7 +277,7 @@ final class AppThemeControls {
                 public void show() {
                     list.setBackground(AppTheme.PANEL_BG);
                     list.setForeground(AppTheme.TEXT_PRIMARY);
-                    list.setSelectionBackground(AppTheme.PRIMARY);
+                    list.setSelectionBackground(AppTheme.primaryFill());
                     list.setSelectionForeground(Color.WHITE);
                     setBorder(javax.swing.BorderFactory.createLineBorder(AppTheme.BORDER_COLOR, 1));
                     super.show();
