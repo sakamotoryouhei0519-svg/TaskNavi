@@ -117,6 +117,10 @@ public final class ProjectSwitcher {
             syncButton.setText(AppMessages.get("project.sync.newer", "アプリの更新が必要"));
             syncButton.setIcon(new Dot(AppTheme.warning()));
             syncButton.setForeground(AppTheme.warning());
+        } else if (!project.tooLargeFiles().isEmpty()) {
+            syncButton.setText(AppMessages.get("project.sync.tooLarge", "読めないファイルがあります"));
+            syncButton.setIcon(new Dot(AppTheme.warning()));
+            syncButton.setForeground(AppTheme.warning());
         } else if (newer != null) {
             syncButton.setText(AppMessages.format("project.sync.update", "新しい版 {0} があります", newer.appVersion()));
             syncButton.setIcon(new Dot(AppTheme.warning()));
@@ -141,6 +145,11 @@ public final class ProjectSwitcher {
             tooltip = AppMessages.format("team.unreadable",
                     "同期の途中で読めなかった記録が {0} 行あります。少し待ってから読み直してください。",
                     project.unreadableLines()) + " " + tooltip;
+        }
+        if (!project.tooLargeFiles().isEmpty()) {
+            tooltip = AppMessages.format("team.tooLarge",
+                    "大きすぎるので読まなかったファイルがあります（{0}）。共有フォルダの changes の中を確かめてください。",
+                    String.join(", ", project.tooLargeFiles())) + " " + tooltip;
         }
         if (newer != null || project.newerFormatLines() > 0) {
             tooltip = AppMessages.get("team.update.click", "押すと入れ替え方が出ます");

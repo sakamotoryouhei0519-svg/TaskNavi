@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -32,7 +31,7 @@ final class TeamProjectFile {
         json.addProperty("name", name.trim());
         json.addProperty("createdBy", author);
         json.addProperty("createdAt", Instant.now(clock).toString());
-        Files.writeString(file, new GsonBuilder().setPrettyPrinting().create().toJson(json), StandardCharsets.UTF_8);
+        TeamFiles.writeAtomically(file, new GsonBuilder().setPrettyPrinting().create().toJson(json));
     }
 
     /** @return プロジェクト名。書かれていなければフォルダ名 */
@@ -43,7 +42,7 @@ final class TeamProjectFile {
         }
         JsonObject json;
         try {
-            json = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
+            json = JsonParser.parseString(TeamFiles.readText(file, TeamFiles.MAX_JSON_BYTES)).getAsJsonObject();
         } catch (RuntimeException e) {
             throw new IOException(TeamProject.PROJECT_FILE + " を読めません: " + e.getMessage(), e);
         }

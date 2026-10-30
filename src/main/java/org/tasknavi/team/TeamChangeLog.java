@@ -27,16 +27,20 @@ public final class TeamChangeLog {
     /**
      * @param unreadableLines  同期途中や壊れていて読めなかった行の数
      * @param newerFormatLines 新しい版のアプリで書かれていて、この版では読めない行の数（待っても読めない）
+     * @param tooLargeFiles    大きすぎて読まなかったファイルの名前
      */
-    public record ReadResult(List<TeamEvent> events, int unreadableLines, int newerFormatLines) {
+    public record ReadResult(List<TeamEvent> events, int unreadableLines, int newerFormatLines,
+                             List<String> tooLargeFiles) {
         public ReadResult {
             events = List.copyOf(events);
+            tooLargeFiles = List.copyOf(tooLargeFiles);
         }
     }
 
     private static final class Skipped {
         int unreadable;
         int newerFormat;
+        final List<String> tooLarge = new ArrayList<>();
     }
 
     private TeamChangeLog() {
@@ -55,18 +59,27 @@ public final class TeamChangeLog {
 
     /** changes フォルダの全 .jsonl を読む。同期ツールが作った複製ファイルも読み、重複は組み立て時に除く。 */
     public static ReadResult readAll(Path projectDir) throws IOException {
+        return readAll(projectDir, TeamFiles.MAX_LOG_BYTES);
+    }
+
+    static ReadResult readAll(Path projectDir, long maxFileBytes) throws IOException {
         Path dir = projectDir.resolve(CHANGES_DIR);
         List<TeamEvent> events = new ArrayList<>();
         Skipped skipped = new Skipped();
         if (!Files.isDirectory(dir)) {
-            return new ReadResult(events, 0, 0);
+            return new ReadResult(events, 0, 0, List.of());
         }
         try (DirectoryStream<Path> files = Files.newDirectoryStream(dir, "*" + EXTENSION)) {
             for (Path file : files) {
-                readFile(file, events, skipped);
+                try {
+                    readFile(file, maxFileBytes, events, skipped);
+                } catch (TeamFiles.TooLargeException e) {
+                    skipped.tooLarge.add(file.getFileName().toString());
+                }
             }
         }
-        return new ReadResult(events, skipped.unreadable, skipped.newerFormat);
+        skipped.tooLarge.sort(null);
+        return new ReadResult(events, skipped.unreadable, skipped.newerFormat, skipped.tooLarge);
     }
 
     /**
@@ -91,8 +104,8 @@ public final class TeamChangeLog {
         return String.join("\n", parts);
     }
 
-    private static void readFile(Path file, List<TeamEvent> out, Skipped skipped) throws IOException {
-        String text = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+    private static void readFile(Path file, long maxBytes, List<TeamEvent> out, Skipped skipped) throws IOException {
+        String text = TeamFiles.readText(file, maxBytes);
         for (String line : text.split("\r?\n")) {
             if (line.isBlank()) {
                 continue;

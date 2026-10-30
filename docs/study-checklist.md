@@ -821,6 +821,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | ログインをやめても前のタスクを全部残す | `V6__drop_login.sql` / `DatabaseTest.upgradingFromLoginVersionKeepsEveryAccountsTasks` |
 | サンプルの段階名の番号を外し、自分で付けた名前は触らない | `V7__unnumber_sample_stages.sql` / `DatabaseTest.upgradingRemovesNumbersOnlyFromSampleStageNames` |
 | チーム共有の土台（教科書16章） | `team/TeamProject` → `TeamChangeLog`（読み書き）→ `TeamReplay`（組み立てと重なりの検出）/ `TeamProjectFile`（`project.json`）/ `TeamMembers`（`members`）/ `TeamTaskRules`（書く前の確かめ）/ `TeamImport`（取り込み） |
+| 共有フォルダのファイルを壊さない・信用しない | `TeamFiles.writeAtomically`（`.tmp` に書き切って付け替え）/ `TeamFiles.readText`（大きさの上限）→ `ReadResult.tooLargeFiles` → `ProjectSwitcher.refresh`（「読めないファイルがあります」） |
 | 共有プロジェクトを作る・参加する・閉じる・表示名 | `ui/team/ProjectSwitcher`（メニュー）→ `ui/team/TeamSession` / `TeamDialogs` / `team/TeamSettings` |
 | メンバー・同期・重なりの表示 | `ProjectSwitcher.refresh` ← `TeamSession.Listener.statusChanged` / `TeamMembersDialog` |
 | 担当者をメンバーから選ぶ | `TaskDialog` → `TaskService.assigneeOptions` → `TeamTaskStore.assigneeOptions` |
@@ -891,7 +892,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 3. 追った操作は「追加」（操作D）です。道は MainFrame → Helper → Dialog → Service → Bus です
 4. 保存の失敗は画面に出ます。削除と並べ替えは、途中だけ残りません
 5. 状態変更のルールは `TaskService.changeStatus` の1か所にあります。全件の読み込みは1回の変更で1回だけで、5つの画面で使い回します
-6. テストは 234 件で、CI で毎回動きます。通った行の割合は全体 63%、画面以外 87%、共有の記録の読み書き 94% で、`team` が 90% を下回ると CI が止まります
+6. テストは 238 件で、CI で毎回動きます。通った行の割合は全体 63%、画面以外 87%、共有の記録の読み書き 94% で、`team` が 90% を下回ると CI が止まります
 7. アプリにログインはありません。データは PC の中なので、守りは Windows のログインに任せています
 8. （社内で使い始めたら）使ってみてどうなったかを、`docs/results-log.md` の数字で話します。会社名や人の名前は出しません
 

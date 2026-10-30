@@ -5,7 +5,6 @@ import com.google.gson.JsonParser;
 import org.tasknavi.AppVersion;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,7 +36,7 @@ final class TeamMembers {
                     continue;
                 }
                 try {
-                    JsonObject json = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8))
+                    JsonObject json = JsonParser.parseString(TeamFiles.readText(file, TeamFiles.MAX_JSON_BYTES))
                             .getAsJsonObject();
                     String memberName = json.get("name").getAsString();
                     Instant joinedAt = json.has("joinedAt") ? Instant.parse(json.get("joinedAt").getAsString()) : null;
@@ -45,6 +44,8 @@ final class TeamMembers {
                     result.add(new TeamMember(id, memberName, joinedAt, version));
                 } catch (RuntimeException e) {
                     // 同期の途中。次の読み直しで読める。
+                } catch (TeamFiles.TooLargeException e) {
+                    // 1 人分の情報がこの大きさになることはない。壊れたか細工されたファイルなので読まない。
                 }
             }
         }
@@ -77,7 +78,7 @@ final class TeamMembers {
         }
         Path file = dir.resolve(TeamProject.MEMBERS_DIR).resolve(deviceId + ".json");
         Files.createDirectories(file.getParent());
-        Files.writeString(file, json.toString(), StandardCharsets.UTF_8);
+        TeamFiles.writeAtomically(file, json.toString());
         return true;
     }
 

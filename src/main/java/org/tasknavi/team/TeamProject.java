@@ -52,6 +52,7 @@ public final class TeamProject {
     private volatile List<TeamMember> members = List.of();
     private volatile int unreadableLines;
     private volatile int newerFormatLines;
+    private volatile List<String> tooLargeFiles = List.of();
     private String fingerprint = "";
     /** 読み込んだことのある記録の ID。最初の読み込みまでは null（開いたときの分は知らせない）。 */
     private Set<String> knownEventIds;
@@ -171,6 +172,11 @@ public final class TeamProject {
         return newerFormatLines;
     }
 
+    /** 直近の読み込みで、大きすぎて読まなかった changes\ のファイルの名前（壊れたか細工されたファイル）。 */
+    public List<String> tooLargeFiles() {
+        return tooLargeFiles;
+    }
+
     /** 新しい順の変更履歴。 */
     public List<TeamHistory.Entry> history() {
         List<TeamEvent> copy;
@@ -196,6 +202,7 @@ public final class TeamProject {
         events.addAll(result.events());
         unreadableLines = result.unreadableLines();
         newerFormatLines = result.newerFormatLines();
+        tooLargeFiles = result.tooLargeFiles();
         state = TeamReplay.replay(events);
         members = TeamMembers.read(dir);
         return state;
