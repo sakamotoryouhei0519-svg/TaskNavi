@@ -26,11 +26,38 @@ jobs:
       - name: Install Xvfb
         run: sudo apt-get update && sudo apt-get install -y xvfb
 
+      # verify でテストのあと、通った行の割合（JaCoCo）が決めた値を下回っていないかも確かめる
       - name: Run tests
         shell: bash
         run: |
           set -o pipefail
-          xvfb-run -a mvn -B test 2>&1 | tee build.log
+          xvfb-run -a mvn -B verify 2>&1 | tee build.log
+
+      - name: Coverage summary
+        if: always() && hashFiles('target/site/jacoco/jacoco.csv') != ''
+        shell: python
+        run: |
+          import csv, os
+          rows = list(csv.DictReader(open("target/site/jacoco/jacoco.csv", encoding="utf-8")))
+          def ratio(items, kind):
+              missed = sum(int(r[kind + "_MISSED"]) for r in items)
+              covered = sum(int(r[kind + "_COVERED"]) for r in items)
+              return f"{100 * covered / (missed + covered):.1f}%" if missed + covered else "-"
+          lines = ["### テストが通った割合（JaCoCo）", "", "| パッケージ | 行 | 分岐 |", "|---|---:|---:|",
+                   f"| **全体** | **{ratio(rows, 'LINE')}** | **{ratio(rows, 'BRANCH')}** |"]
+          for name in sorted({r["PACKAGE"] for r in rows}):
+              items = [r for r in rows if r["PACKAGE"] == name]
+              lines.append(f"| {name} | {ratio(items, 'LINE')} | {ratio(items, 'BRANCH')} |")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
+              out.write("\n".join(lines) + "\n")
+
+      - name: Upload coverage report
+        if: always() && hashFiles('target/site/jacoco/index.html') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: target/site/jacoco/
+          retention-days: 14
 
       # 失敗した理由を、ログを開かなくても GitHub の画面（注釈）で読めるようにする
       - name: Report failures

@@ -14,6 +14,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- 配布用 exe に付ける版（jpackage は数字と . だけ受け付ける） -->
         <app.version>1.2.0</app.version>
+        <!-- -DskipTests で上書きされる。テストを飛ばしたときは割合の確認も飛ばす -->
+        <skipTests>false</skipTests>
     </properties>
 
     <dependencies>
@@ -110,6 +112,64 @@
                         <tasknavi.dataDir>${project.build.directory}/test-data</tasknavi.dataDir>
                     </systemPropertyVariables>
                 </configuration>
+            </plugin>
+
+            <!-- テストが通った行の割合: mvn test で target/site/jacoco/index.html（と jacoco.csv）ができる -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <!-- mvn verify（CI）で、割合が下がっていたら止める。1つのテストだけ動かす mvn test では見ない -->
+                    <execution>
+                        <id>check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipTests}</skip>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.60</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                                <!-- 共有の記録の読み書き。壊れるとチーム全員のデータに響く -->
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <includes>
+                                        <include>org.tasknavi.team</include>
+                                    </includes>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.90</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- IDE / CLI: mvn exec:java （mainClass はここに寄せる） -->

@@ -9,7 +9,7 @@
 2. テストと配布物を作る
 
 ```powershell
-mvn test
+mvn verify
 mvn -Pdist -DskipTests verify
 ```
 

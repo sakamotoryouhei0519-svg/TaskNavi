@@ -158,7 +158,7 @@
 - 窓は 960×560 より小さくできません（`UiConstants.WINDOW_MIN_WIDTH_MAIN`）。画面を直したら、この大きさでも切れないか確かめます
 - 画面から `TaskDao` を呼ばない。必ず `TaskService` を通します
 - 本番の `TaskService` は `TaskService.createDefault()` で作ります。画面が `new TaskDao()` することはありません
-- GitHub Actions（`.github/workflows/ci.yml`）で `mvn test` が動きます。自分のパソコンでも同じコマンドで確かめます
+- GitHub Actions（`.github/workflows/ci.yml`）で `mvn verify` が動きます。テストのあと、テストが通った行の割合（JaCoCo）を確かめ、全体で 60%、共有の記録の読み書き（`team`）で 90% を下回ると止まります。割合の表は実行結果の Summary に出て、詳しい HTML は `coverage-report` として14日残ります。自分のパソコンでも `mvn verify` で同じことを確かめ、`target/site/jacoco/index.html` をブラウザで開くと、どの行が通っていないかが色で分かります。1つのテストだけ動かすときは `mvn test` で、割合は確かめません
 - 画面の土台を壊していないかは `MainFrameSmokeTest` で確かめます。タブの切り替え、検索欄を空にすること、テーマの切り替えを試しています
 
 ## 8. ファイルの場所（辞書）
@@ -349,7 +349,7 @@ WBS でタスクを選ぶ。右側は読めるだけで、その場では名前�
 2. 画面は表示と入力だけです。保存は `TaskService`、データベースは `TaskDao`、画面の更新は `TaskEventBus` です
 3. 自分が直したところは、保存の失敗が画面下の帯に出ること、選択が残ること、保存は成功したあとだけ他の画面に知らせること、削除と並べ替えを途中で残さないことです
 4. 状態を変えるルールは、カンバンとカレンダーの3か所にあったものを、`TaskService.changeStatus` の1か所に集めました。全件の読み込みも、1回の変更につき1回にしました
-5. テストは `mvn test` です。GitHub Actions でも同じテストが動きます
+5. テストは 234 件で、GitHub Actions で毎回動きます。テストが通った行の割合も測っていて、全体で 63%、画面以外で 87%、共有の記録の読み書きは 94% です。共有はチーム全員のデータに響くので、ここが 90% を下回ると CI が止まるようにしています
 6. アプリにログインはありません。データは PC の中にあるので、守りは Windows のログインに任せ、パスワードを忘れて開けなくなることをなくしました
 
 聞かれたら、操作Dの矢印を紙に書いて説明する。4番の続きを聞かれたら、11章の最後の約束（読み込みの使い回し）を話す。
@@ -376,7 +376,7 @@ WBS でタスクを選ぶ。右側は読めるだけで、その場では名前�
 | WBS の見た目と選択 | `ui/wbs/WbsPanel` |
 | 検索の条件 | `util/TaskViewFilter` |
 | 文言 | `messages_ja.properties` |
-| 壊していないか | `mvn test` |
+| 壊していないか | `mvn verify`（テストと、通った行の割合） |
 | 配布用の `TaskNavi.exe` と zip を作る | `mvn -Pdist -DskipTests verify`（`pom.xml` の `dist`）。アイコンは `ui/AppIcon` と `src/main/packaging/TaskNavi.ico` |
 
 ルールは1つです。画面から `TaskDao` を直接呼ばない。

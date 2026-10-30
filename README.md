@@ -51,7 +51,8 @@ WBS・カンバン・ガント・カレンダーを一つのウィンドウで�
 | UI | Swing + MigLayout |
 | DB | SQLite + Flyway |
 | ビルド／テスト | Maven, JUnit 5 |
-| CI | GitHub Actions（Xvfb 上で `mvn test`。失敗したテストは注釈で表示） |
+| CI | GitHub Actions（Xvfb 上で `mvn verify`。失敗したテストは注釈で表示）、Qodana |
+| テストの網羅率 | JaCoCo（割合が決めた値を下回ると CI が止まる） |
 | 配布 | jpackage（Java 入りの `TaskNavi.exe`） |
 
 ## 設計の要点（面接用）
@@ -69,6 +70,16 @@ UI（ui/today・wbs・kanban・gantt・calendar ほか）
 - チーム共有（`team` パッケージ）: サーバーなしで共有フォルダを使う。各 PC は自分の変更記録ファイルに追記するだけなので、同期で「競合したコピー」ができない。全員の記録を決まった順に組み立てて一覧にし、互いを知らずに同じ項目を変えた場合は検出して残す
 - パッケージは役割ごと（`model` / `service` / `persistence` / `team` / `io` / `util` / `event` / `ui`）。画面は `ui` の中でタブごとに分ける
 - テスト 234 件（JUnit 5）。共有の同期の遅れ・オフラインでの同時編集・同じ PC での2重起動も再現して確かめている。本物のメイン画面を両方のテーマで開き、読みにくい文字がないかも確かめている
+- テストが通った行の割合（JaCoCo）は次のとおり。共有の記録はチーム全員のデータに響くので、`team` が 90%、全体が 60% を下回ると CI が止まる。パッケージごとの表は CI の実行結果の Summary に出る
+
+  | 範囲 | 行 | 分岐 |
+  |---|---:|---:|
+  | 全体 | 63% | 52% |
+  | 画面以外（`ui` 以外） | 87% | 78% |
+  | 共有の記録の読み書き（`team`） | 94% | 82% |
+  | 取り込み・書き出し（`io`） | 97% | 85% |
+
+  画面（`ui`）は低め（50〜70%、共有の画面 `ui/team` は 11%）。画面の操作は、メイン画面を開くテストと、配る前のチェック表（[`docs/home-test-checklist.md`](docs/home-test-checklist.md)）で確かめている
 - 学習用の読み方: [`docs/beginner-handbook.md`](docs/beginner-handbook.md) / [`docs/study-checklist.md`](docs/study-checklist.md)
 - 使う人向けの説明（ダウンロードと使い方）: [`docs/user-guide.md`](docs/user-guide.md)
 - 配る前に共有・バックアップ・インポートを試す表: [`docs/home-test-checklist.md`](docs/home-test-checklist.md)
@@ -77,7 +88,7 @@ UI（ui/today・wbs・kanban・gantt・calendar ほか）
 ## 起動方法
 
 ```bash
-mvn -B test
+mvn -B verify          # テストと、通った行の割合の確認（表は target/site/jacoco/index.html）
 mvn -B -DskipTests package
 java -jar target/TaskNavi-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
