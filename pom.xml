@@ -55,7 +55,7 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>10.22.0</version>
+            <version>13.11.1</version>
         </dependency>
 
         <!-- JUnit 5 for unit testing -->
