@@ -82,7 +82,7 @@ Main.openMainFrame()
     → new GanttPanel(taskService)
     → new CalendarPanel(taskService)
     → addMainTab() で5つのタブ追加（今日 / WBS / カンバン / ガント / カレンダー）
-    → loadLastTabIndex() で最後のタブを復元
+    → setSelectedIndex() でいつも「今日」のタブを選ぶ
     → addChangeListener() でタブ切り替えリスナー設定
   → mainFrame.setVisible(true)
 ```
@@ -110,7 +110,7 @@ MainFrame コンストラクタ
   → new KanbanPanel(taskService)
   → new GanttPanel(taskService)
   → new CalendarPanel(taskService)
-  → addMainTab() で4つのパネルをタブに追加
+  → addMainTab() で「今日」と上の4つのパネルをタブに追加
   → 起動時はいつも「今日」のタブを選ぶ（前回のタブは覚えない）
   → mainTabbedPane.addChangeListener(e -> {
       → MainTabChrome.updateTabTextColors(mainTabbedPane)
@@ -122,20 +122,18 @@ MainFrame コンストラクタ
         → refreshFilterSummary() でフィルタ要約ラベル更新
       → MainThemeSupport.updateViewTheme(getActiveComponent())
         → アクティブなパネルのテーマを更新
-      → saveLastTabIndex(mainTabbedPane.getSelectedIndex())
-        → Preferences に現在のタブインデックスを保存
     })
   → MainTabChrome.updateTabTextColors(mainTabbedPane) (初期表示時の色設定)
 
 ユーザーがタブをクリック
   → ChangeListener が発火
-  → 上記の4つの処理が実行される
+  → 上記の3つの処理が実行される
 ```
 
 できたチェック:
 
 - [ ] タブ本体のクラス名を4つ言える
-- [ ] 「最後のタブを Preferences で覚える」場所を `MainFrame` 内で指せる
+- [ ] 起動したとき必ず「今日」のタブが選ばれる行を `MainFrame` 内で指せる（前回のタブは覚えない。毎朝まず今日のタスクを見るため）
 - [ ] タブ切り替え時に `syncActive()` が呼ばれてフィルタが再適用されると言える
 - [ ] `SearchablePanel` インターフェースが各タブで共通の検索メソッドを提供していると言える
 
@@ -642,25 +640,27 @@ CalendarPanel コンストラクタ
 
 ```
 GanttPanel コンストラクタ
-  → visibleStartDate = LocalDate.now().minusDays(14)
-  → visibleEndDate = LocalDate.now().plusDays(30)
   → dayWidth = GanttMetrics.DEFAULT_DAY_WIDTH
   → GanttMouseController 作成（ドラッグ操作用）
+  → addHierarchyListener() (初めて画面に出たら centerOnToday())
   → TaskEventBus.getInstance().register(taskEventListener) (イベントリスナー登録)
-  → refreshGantt() (初期表示)
+  → refreshTaskCache() (初期表示用にタスクを読む)
     → taskService.getAllTasks() で全タスク取得
     → GanttTaskFilter でフィルタリング
-    → GanttSideViews.createTaskNameColumn() でタスク名列作成
-    → createDateHeader() で日付ヘッダー作成
-    → paintComponent() でガントバー描画
-      → GanttPainter.paintBars() で各タスクのバーを描画
-      → 開始日・終了日に基づいてバーの位置と長さを計算
-      → 進捗率に応じてバーの色を変更
+MainFrame
+  → createTaskNameColumn() / createDateHeader() / createCorner() で左の列・上の日付・左上の角を付ける
+paintComponent()
+  → GanttDisplayDates.calculateVisibleDateWindow() で表示する期間を決める（今日の前後30日は必ず入る）
+  → GanttPainter.drawRowStripes() / overlayDayColumns() で地を塗る
+  → GanttPainter.drawBar() で各タスクのバーを描画
+    → 開始日・終了日に基づいてバーの位置と長さを計算
+    → 進捗率の分だけ状態の色で塗り、数字は見えている部分に置く（GanttBarGeometry.progressLabel）
+  → GanttPainter.drawTodayLine() で今日の線
 ```
 
 できたチェック:
 
-- [ ] `GanttPainter.paintBars()` がタスクの開始日・終了日に基づいてバーを描画していると言える
+- [ ] `GanttPainter.drawBar()` がタスクの開始日・終了日に基づいてバーを描画していると言える
 - [ ] `GanttSideViews` がタスク名列と日付ヘッダーを作成していると言える
 - [ ] ガントを開いたとき今日が真ん中に来る理由を、`centerOnToday()` と `GanttViewportSupport.centeredScrollX()` で言える
 
