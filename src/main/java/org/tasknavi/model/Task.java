@@ -97,10 +97,6 @@ public class Task {
         return id;
     }
 
-    public int getTaskId() {
-        return id;
-    }
-
     public void setId(int id) {
         this.id = id;
     }
@@ -187,10 +183,6 @@ public class Task {
 
     public void setStatus(String status) {
         this.status = TaskStatus.fromString(status);
-    }
-
-    public TaskStatus getStatusEnum() {
-        return getStatus();
     }
 
     public boolean isNotStarted() {

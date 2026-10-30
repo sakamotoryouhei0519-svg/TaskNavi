@@ -2,19 +2,12 @@ package org.tasknavi.ui;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.prefs.Preferences;
 
 /**
- * ボタンなどのアイコン。絵文字と画像のアイコンを、設定で切り替える。
+ * ボタンなどのアイコン。絵文字で描く。
  */
 public class IconManager {
-    
-    private static final String USE_CUSTOM_ICONS_PREF_KEY = "tasknavi.icons.custom";
-    private static final String ICONS_PATH_PREF_KEY = "tasknavi.icons.path";
-    
-    private static boolean useCustomIcons = loadUseCustomIconsPreference();
-    private static String customIconsPath = loadCustomIconsPathPreference();
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(IconManager.class);
+
     // アイコン識別子
     public enum IconType {
         // タブアイコン
@@ -23,48 +16,30 @@ public class IconManager {
         TAB_KANBAN,
         TAB_GANTT,
         TAB_CALENDAR,
-        TAB_TEAM,
-        
+
         // ロゴ・ユーザー
         LOGO,
         USER,
-        
+
         // テーマ
         THEME,
-        
+
         // ツールバー
         ADD,
-        SEARCH,
-        FILTER,
         DELETE,
         REFRESH,
-        
+
         // ヘッダー
         EXPORT,
-        IMPORT,
-        
-        // カレンダー
-        CALENDAR,
-        
-        // アクション
-        CHECK,
-        CROSS,
-        FOLDER
+        IMPORT
     }
-    
-    
+
     /**
-     * アイコンを取得します。
-     * カスタムアイコンが有効で画像が存在すれば画像を、
-     * そうでなければリソースから読み込み、なければ絵文字を返します。
+     * アイコンを取得します。ふつうは絵文字の文字列、カレンダーだけは色付き絵文字の画像です。
      */
     public static Object getIcon(IconType type) {
-        if (type == IconType.CALENDAR || type == IconType.TAB_CALENDAR) {
+        if (type == IconType.TAB_CALENDAR) {
             return createEmojiImageIcon(getEmoji(type), 18f);
-        }
-        ImageIcon imageIcon = loadImageIcon(type);
-        if (imageIcon != null) {
-            return imageIcon;
         }
         return getEmoji(type);
     }
@@ -110,7 +85,7 @@ public class IconManager {
             button = new JButton((ImageIcon) icon);
         } else {
             button = new JButton((String) icon);
-            button.setFont(resolveEmojiFont(type == IconType.CALENDAR || type == IconType.TAB_CALENDAR ? 18f : 20f));
+            button.setFont(resolveEmojiFont(type == IconType.TAB_CALENDAR ? 18f : 20f));
             button.setHorizontalAlignment(SwingConstants.CENTER);
             button.setHorizontalTextPosition(SwingConstants.CENTER);
             button.setVerticalTextPosition(SwingConstants.CENTER);
@@ -211,86 +186,5 @@ public class IconManager {
             g2.dispose();
         }
         return new ImageIcon(img);
-    }
-    
-    /**
-     * 画像アイコンを読み込みます。
-     */
-    private static ImageIcon loadImageIcon(IconType type) {
-        if (!useCustomIcons) {
-            return null;
-        }
-        
-        String filename = getIconFilename(type);
-        if (filename == null) {
-            return null;
-        }
-        
-        try {
-            // カスタムパスからの読み込みを試みる
-            if (customIconsPath != null && !customIconsPath.isEmpty()) {
-                java.io.File file = new java.io.File(customIconsPath, filename);
-                if (file.exists()) {
-                    return new ImageIcon(file.getAbsolutePath());
-                }
-            }
-            
-            // クラスパスからの読み込み
-            java.net.URL url = IconManager.class.getResource("/icons/" + filename);
-            if (url != null) {
-                return new ImageIcon(url);
-            }
-        } catch (SecurityException e) {
-            logger.warn("アイコンの読み込みに失敗しました: " + type, e);
-        }
-        
-        return null;
-    }
-    
-    /**
-     * アイコンファイル名を取得します。
-     */
-    private static String getIconFilename(IconType type) {
-        return IconGlyphs.filename(type);
-    }
-    
-    /**
-     * カスタムアイコンの使用設定
-     */
-    public static void setUseCustomIcons(boolean use) {
-        useCustomIcons = use;
-        Preferences prefs = Preferences.userNodeForPackage(IconManager.class);
-        prefs.putBoolean(USE_CUSTOM_ICONS_PREF_KEY, use);
-    }
-    
-    public static boolean isUseCustomIcons() {
-        return useCustomIcons;
-    }
-    
-    /**
-     * カスタムアイコンのパス設定
-     */
-    public static void setCustomIconsPath(String path) {
-        customIconsPath = path;
-        Preferences prefs = Preferences.userNodeForPackage(IconManager.class);
-        if (path != null) {
-            prefs.put(ICONS_PATH_PREF_KEY, path);
-        } else {
-            prefs.remove(ICONS_PATH_PREF_KEY);
-        }
-    }
-    
-    public static String getCustomIconsPath() {
-        return customIconsPath;
-    }
-    
-    private static boolean loadUseCustomIconsPreference() {
-        Preferences prefs = Preferences.userNodeForPackage(IconManager.class);
-        return prefs.getBoolean(USE_CUSTOM_ICONS_PREF_KEY, false);
-    }
-    
-    private static String loadCustomIconsPathPreference() {
-        Preferences prefs = Preferences.userNodeForPackage(IconManager.class);
-        return prefs.get(ICONS_PATH_PREF_KEY, null);
     }
 }

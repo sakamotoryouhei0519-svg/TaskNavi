@@ -81,11 +81,6 @@ public final class AppMessages {
         return statusDisplay(status != null ? status.name() : FILTER_ALL);
     }
 
-    /** 画面のステータス選択肢に対応するドメイン値（永続化コード）を返す。 */
-    public static String statusDomain(TaskStatus status) {
-        return status != null ? status.name() : TaskStatus.NOT_STARTED.name();
-    }
-
     public static String priorityDisplay(String domainPriority) {
         Priority p = Priority.fromString(domainPriority);
         return switch (p) {
@@ -106,9 +101,5 @@ public final class AppMessages {
             case PHASE -> get("dialog.type.phase", EntryType.PHASE.getLabel());
             case TASK -> get("dialog.type.task", EntryType.TASK.getLabel());
         };
-    }
-
-    public static String htmlUnderline(String text) {
-        return "<html><u>" + text + "</u></html>";
     }
 }

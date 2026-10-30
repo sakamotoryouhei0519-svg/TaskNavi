@@ -68,9 +68,6 @@ public class AppTheme {
     public static final Color PRIORITY_HIGH = new Color(248, 113, 113);
     public static final Color PRIORITY_MEDIUM = new Color(96, 165, 250);
     public static final Color PRIORITY_LOW = new Color(148, 163, 184);
-    public static final Color PRIORITY_HIGH_SOFT = new Color(254, 226, 226);
-    public static final Color PRIORITY_MEDIUM_SOFT = new Color(219, 234, 254);
-    public static final Color PRIORITY_LOW_SOFT = new Color(243, 244, 246);
 
     // 状態色
     public static final Color STATUS_NOT_STARTED = new Color(148, 163, 184);
@@ -214,11 +211,6 @@ public class AppTheme {
         return isDarkMode() ? new Color(51, 65, 85) : new Color(226, 232, 240);
     }
 
-    /** ガントの日の区切りなどの罫線。 */
-    public static Color gridLine() {
-        return isDarkMode() ? new Color(71, 85, 105) : new Color(148, 163, 184);
-    }
-
     /** ガントのバーの、まだ進んでいない部分。ダークでは淡い色だと地から浮いて眩しいので、状態の色を暗く混ぜる。 */
     public static Color ganttBarTrack(String status) {
         if (!isDarkMode()) {
@@ -282,13 +274,6 @@ public class AppTheme {
 
     public static Color saturdayText() {
         return isDarkMode() ? new Color(96, 165, 250) : new Color(37, 99, 235);
-    }
-
-    public static Color getPrioritySoftColor(String priority) {
-        Priority p = Priority.fromString(priority);
-        if (p == Priority.HIGH) return PRIORITY_HIGH_SOFT;
-        if (p == Priority.LOW) return PRIORITY_LOW_SOFT;
-        return PRIORITY_MEDIUM_SOFT;
     }
 
     public static final Font FONT_MAIN = new Font("SansSerif", Font.PLAIN, 13);

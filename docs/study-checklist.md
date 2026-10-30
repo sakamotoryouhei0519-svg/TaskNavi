@@ -782,7 +782,7 @@ MainFrame コンストラクタ
 
 色の決まり:
 
-- 画面のファイルに `new Color(...)` を直接書かない。ライトとダークで変わる色は `AppTheme` のメソッドから取る（`cardBackground()`・`controlBackground()`・`textStrong()`・`danger()`・`warning()`・`success()`・`progressTrack()`・`gridLine()`・`sundayText()` / `saturdayText()` など）
+- 画面のファイルに `new Color(...)` を直接書かない。ライトとダークで変わる色は `AppTheme` のメソッドから取る（`cardBackground()`・`controlBackground()`・`textStrong()`・`danger()`・`warning()`・`success()`・`progressTrack()`・`sundayText()` / `saturdayText()` など）
 - 白い文字を載せる札やボタンの塗りは、ライトとダークで同じ `AppTheme.FILL_*` を使う
 - `static final` に色を入れない。テーマを切り替えても変わらなくなるため
 

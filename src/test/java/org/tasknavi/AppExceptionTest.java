@@ -25,7 +25,7 @@ class AppExceptionTest {
         AppException ex = AppException.validation("名前が未入力です", "名前を入力してください。");
 
         assertEquals(AppException.ErrorCode.VALIDATION_FAILED, ex.getErrorCode());
-        assertEquals("VAL001", ex.getErrorCodeString());
+        assertEquals("VAL001", ex.getErrorCode().getCode());
         assertEquals("名前を入力してください。", ex.getUserMessage());
     }
 
@@ -34,7 +34,7 @@ class AppExceptionTest {
         AppException ex = AppException.requiredField("担当者");
 
         assertTrue(ex.getUserMessage().contains("担当者"));
-        assertEquals("VAL003", ex.getErrorCodeString());
+        assertEquals(AppException.ErrorCode.REQUIRED_FIELD_MISSING, ex.getErrorCode());
     }
 
     @Test

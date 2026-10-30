@@ -7,38 +7,11 @@ package org.tasknavi;
 public class AppException extends RuntimeException {
     /** エラーの種類。画面の文言は messages の {@code error.*} から引く。 */
     public enum ErrorCode {
-        // データベース関連のエラー
-        DATABASE_CONNECTION_FAILED("DB001", "データベース接続に失敗しました"),
         DATABASE_QUERY_FAILED("DB002", "データベースクエリの実行に失敗しました"),
-        DATABASE_TRANSACTION_FAILED("DB003", "データベーストランザクションに失敗しました"),
-
-        // 認証・認可関連のエラー
-        AUTHENTICATION_FAILED("AUTH001", "認証に失敗しました"),
-        AUTHORIZATION_FAILED("AUTH002", "権限がありません"),
-        TOKEN_INVALID("AUTH003", "トークンが無効です"),
-
-        // バリデーション関連のエラー
         VALIDATION_FAILED("VAL001", "入力値の検証に失敗しました"),
-        INVALID_INPUT("VAL002", "無効な入力値です"),
         REQUIRED_FIELD_MISSING("VAL003", "必須項目が入力されていません"),
-        INVALID_DATE_RANGE("VAL004", "日付の範囲が不正です"),
-
-        // ビジネスロジック関連のエラー
         BUSINESS_RULE_VIOLATION("BIZ001", "ビジネスルール違反です"),
-        DUPLICATE_RESOURCE("BIZ002", "重複するリソースが存在します"),
         RESOURCE_NOT_FOUND("BIZ003", "リソースが見つかりません"),
-        DATA_INTEGRITY_ERROR("BIZ004", "データの整合性が破損しています"),
-
-        // ファイルI/O関連のエラー
-        FILE_NOT_FOUND("FILE001", "ファイルが見つかりません"),
-        FILE_READ_FAILED("FILE002", "ファイルの読み込みに失敗しました"),
-        FILE_WRITE_FAILED("FILE003", "ファイルの書き込みに失敗しました"),
-
-        // 取り込み・移行関連のエラー
-        IMPORT_FAILED("IMP001", "データの取り込みに失敗しました"),
-        MIGRATION_FAILED("IMP002", "データベース移行に失敗しました"),
-
-        // その他のエラー
         UNKNOWN_ERROR("ERR999", "不明なエラーが発生しました");
 
         private final String code;
@@ -61,41 +34,12 @@ public class AppException extends RuntimeException {
     private final ErrorCode errorCode;
     private final String userMessage;
 
-    public AppException(String message) {
-        super(message);
-        this.errorCode = ErrorCode.UNKNOWN_ERROR;
-        this.userMessage = resolveUserMessage(this.errorCode, null);
-    }
-
-    public AppException(ErrorCode errorCode) {
-        this(errorCode, errorCode.getDefaultMessage(), null, null);
-    }
-
-    public AppException(ErrorCode errorCode, String message) {
-        this(errorCode, message, null, null);
-    }
-
-    public AppException(ErrorCode errorCode, String message, Throwable cause) {
-        this(errorCode, message, null, cause);
-    }
-
-    public AppException(ErrorCode errorCode, String message, String userMessage, Throwable cause) {
+    private AppException(ErrorCode errorCode, String message, String userMessage, Throwable cause) {
         super(message, cause);
         this.errorCode = errorCode;
-        this.userMessage = resolveUserMessage(errorCode, userMessage);
-    }
-
-    public AppException(String message, Throwable cause) {
-        super(message, cause);
-        this.errorCode = ErrorCode.UNKNOWN_ERROR;
-        this.userMessage = resolveUserMessage(this.errorCode, null);
-    }
-
-    private static String resolveUserMessage(ErrorCode errorCode, String explicitUserMessage) {
-        if (explicitUserMessage != null && !explicitUserMessage.isBlank()) {
-            return explicitUserMessage;
-        }
-        return AppMessages.getUserMessage(errorCode);
+        this.userMessage = userMessage != null && !userMessage.isBlank()
+                ? userMessage
+                : AppMessages.getUserMessage(errorCode);
     }
 
     public ErrorCode getErrorCode() {
@@ -109,32 +53,12 @@ public class AppException extends RuntimeException {
         return errorCode.getDefaultMessage();
     }
 
-    public String getErrorCodeString() {
-        return errorCode.getCode();
-    }
-
-    public static AppException from(Throwable throwable) {
-        if (throwable instanceof AppException appException) {
-            return appException;
-        }
-        String message = throwable == null ? "不明なエラーが発生しました" : throwable.getMessage();
-        return new AppException(ErrorCode.UNKNOWN_ERROR, message, null, throwable);
-    }
-
     public static AppException database(String message) {
         return new AppException(ErrorCode.DATABASE_QUERY_FAILED, message, null, null);
     }
 
     public static AppException database(String message, Throwable cause) {
         return new AppException(ErrorCode.DATABASE_QUERY_FAILED, message, null, cause);
-    }
-
-    public static AppException authentication(String message) {
-        return new AppException(ErrorCode.AUTHENTICATION_FAILED, message, null, null);
-    }
-
-    public static AppException authorization(String message) {
-        return new AppException(ErrorCode.AUTHORIZATION_FAILED, message, null, null);
     }
 
     public static AppException validation(String message) {
@@ -161,10 +85,6 @@ public class AppException extends RuntimeException {
     public static AppException notFound(String resourceName) {
         String message = resourceName + (AppMessages.getLocale().getLanguage().equals("ja") ? "が見つかりません" : " was not found.");
         return new AppException(ErrorCode.RESOURCE_NOT_FOUND, message, message, null);
-    }
-
-    public static AppException user(String message) {
-        return new AppException(ErrorCode.UNKNOWN_ERROR, message, null, null);
     }
 
     @Override

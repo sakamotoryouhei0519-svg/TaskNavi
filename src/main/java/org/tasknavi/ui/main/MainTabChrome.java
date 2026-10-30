@@ -133,7 +133,6 @@ public final class MainTabChrome {
                     case TAB_KANBAN -> paintKanban(g2, x, y);
                     case TAB_GANTT -> paintGantt(g2, x, y);
                     case TAB_CALENDAR -> paintCalendar(g2, x, y);
-                    case TAB_TEAM -> paintTeam(g2, x, y);
                     default -> {
                     }
                 }
@@ -175,13 +174,6 @@ public final class MainTabChrome {
 
         private void paintCalendar(Graphics2D g2, int x, int y) {
             IconManager.paintCalendarOutline(g2, x, y);
-        }
-
-        private void paintTeam(Graphics2D g2, int x, int y) {
-            g2.drawOval(x + 3, y + 3, 5, 5);
-            g2.drawArc(x + 1, y + 10, 9, 8, 0, 180);
-            g2.drawOval(x + 11, y + 4, 4, 4);
-            g2.drawArc(x + 10, y + 10, 7, 7, 0, 180);
         }
     }
 }

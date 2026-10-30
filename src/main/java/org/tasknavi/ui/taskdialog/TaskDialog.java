@@ -278,16 +278,8 @@ public class TaskDialog extends JDialog {
         return (String) typeCombo.getSelectedItem();
     }
 
-    public void setEntryType(String type) {
-        typeCombo.setSelectedItem(EntryType.fromString(type).name());
-    }
-
     public String getTaskName() {
         return nameField.getText().trim();
-    }
-
-    public void setTaskName(String name) {
-        nameField.setText(name);
     }
 
     public String getAssignee() {

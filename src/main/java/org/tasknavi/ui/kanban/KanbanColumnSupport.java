@@ -1,15 +1,11 @@
 package org.tasknavi.ui.kanban;
 
 import org.tasknavi.model.Task;
-import org.tasknavi.ui.TaskDragData;
 
 import javax.swing.JComponent;
 import javax.swing.TransferHandler;
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.datatransfer.DataFlavor;
-import java.util.OptionalInt;
-import java.util.function.BiConsumer;
 
 /**
  * カンバン列の見出し文言とステータス列への振り分け。
@@ -54,28 +50,6 @@ public final class KanbanColumnSupport {
             current = current.getParent();
         }
         return null;
-    }
-
-    public static TransferHandler importHandler(BiConsumer<Integer, Component> onDrop) {
-        return new TransferHandler() {
-            @Override
-            public boolean canImport(TransferSupport support) {
-                return support.isDataFlavorSupported(DataFlavor.stringFlavor);
-            }
-
-            @Override
-            public boolean importData(TransferSupport support) {
-                if (!canImport(support)) {
-                    return false;
-                }
-                OptionalInt taskId = TaskDragData.taskId(support);
-                if (taskId.isEmpty()) {
-                    return false;
-                }
-                onDrop.accept(taskId.getAsInt(), support.getComponent());
-                return true;
-            }
-        };
     }
 
     public static void attachDrop(Component component, TransferHandler handler) {

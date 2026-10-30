@@ -117,7 +117,6 @@ AI エージェントを活用して構築・リファクタを加速しまし�
 
 ## 開発メモ
 
-- 調査メモ: `AI_HISTORY.md`
 - パッケージ／Maven `groupId` はともに `org.tasknavi`
 
 ## ライセンス

@@ -47,10 +47,6 @@ public class Database {
         return dbUrl;
     }
 
-    public static void resetToDefaultUrl() {
-        setJdbcUrl(DEFAULT_DB_URL);
-    }
-
     public static Connection connect() throws SQLException {
         ensureMigrated();
 
