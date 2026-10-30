@@ -17,7 +17,7 @@
 - `model` はデータの形（`Task` など）
 - `service` は保存の仕事（`TaskService`、期限の判定の `DueTasks`）
 - `persistence` は自分だけのタスクのデータベース（`Database`、`TaskDao`）
-- `team` は共有プロジェクトの記録の読み書き（`TeamProject`。16章）
+- `team` は共有プロジェクトの記録の読み書き（入口は `TeamProject`。16章）
 - `io` は CSV と JSON の読み書き（`TaskCsv`、`TaskJson`）
 - `util` は絞り込みと状態の小さな計算（`TaskViewFilter`、`TaskStatusCycle`）
 - `event` は画面への知らせ（`TaskEventBus`）
@@ -183,7 +183,8 @@
 - 色は `AppTheme`、文言は `AppMessages` から取ります
 - 確認や選択の窓は `AppDialog` を使います。タスク編集の窓と同じ見た目になります
 - フォルダの分け方は2章のとおりです。画面のフォルダは、WBS やガントごとにさらに分かれます
-- 使わなくなったクラスやメソッドは、残さずに消します。残すと、どれが本物の処理か読む人が迷うためです（検索は `TaskViewFilter` だけ、入力チェックは `TaskWriteValidator` と `TeamProject` だけ）
+- 使わなくなったクラスやメソッドは、残さずに消します。残すと、どれが本物の処理か読む人が迷うためです（検索は `TaskViewFilter` だけ、入力チェックは `TaskWriteValidator` と `TeamTaskRules` だけ）
+- 1つのクラスが大きくなったら、役割ごとに分けます。たとえば共有プロジェクトの入口の `TeamProject` は、`project.json` の読み書き（`TeamProjectFile`）・`members` フォルダ（`TeamMembers`）・書く前の確かめ（`TeamTaskRules`）・取り込み（`TeamImport`）を外に出し、記録を持って書き足すことだけをします。画面側の `TeamSession` も、裏側の列（`TeamBackground`）・開いていないプロジェクト（`TeamOtherProjects`）・5秒ごとの確認（`TeamPoll`）・更新の案内（`TeamUpdateHelp`）に分けています。外から呼ぶメソッドは変えないので、呼ぶ側とテストは直さずに済みます
 
 ## 10. 辞書の使い方
 
@@ -213,7 +214,7 @@
 
 配った後に「何が起きたか」をログで追えるように、次の決まりで受けます。
 
-- **操作の入口では何でも受けて、必ずログに残す。** 保存や削除の結果を受け取る所（`SwingWorker.done`）や共有フォルダの読み書き（`TeamSession.runInBackground`）は、どんな失敗でも画面に出して止めずに続けます。画面に出すのは `ErrorDialogUtil.showBackgroundError` で、ここがログも書きます。入力の誤りなどの `AppException` は info に、想定外の失敗はスタックトレースごと error に残します。呼ぶ側では書きません（2回書かないため）
+- **操作の入口では何でも受けて、必ずログに残す。** 保存や削除の結果を受け取る所（`SwingWorker.done`）や共有フォルダの読み書き（`TeamBackground.run`）は、どんな失敗でも画面に出して止めずに続けます。画面に出すのは `ErrorDialogUtil.showBackgroundError` で、ここがログも書きます。入力の誤りなどの `AppException` は info に、想定外の失敗はスタックトレースごと error に残します。呼ぶ側では書きません（2回書かないため）
 - **起こりうる失敗が決まっている所では、その種類だけ受ける。** 日付の読み取りは `DateTimeParseException`、フォルダ名は `InvalidPathException`、テーマの保存は `SecurityException | IllegalStateException`、ドラッグしたタスクの ID は `TaskDragData.taskId` が読み取りの失敗だけを受けます。前はカンバンのドロップで状態の変更まで `catch (Exception)` で囲んでいて、変更に失敗しても何も出ず、ログにも残りませんでした
 - **どこでも受けなかった例外は `Main.handleUncaught` が受ける。** 必ずログに残します。起動の途中なら続けられないので知らせて終わり、メイン画面が出た後はお知らせ帯で知らせて使い続けられるようにします（保存は操作ごとに済んでいるため）。描画の中の失敗は続けて起きるので、お知らせは 30 秒に 1 回までです
 - **5 秒ごとの確認の失敗は、変わり目だけ残す。** 共有フォルダを読めなくなったときに warn、また読めたときに info を 1 回ずつ書きます（`TeamSession.logPollResult`）。毎回書くとログがそれで埋まるためです
@@ -369,7 +370,7 @@ WBS でタスクを選ぶ。右側は読めるだけで、その場では名前�
 | ボタンやタブの位置 | `ui/main/MainFrame` と `ui/main/MainHeaderBar` など |
 | 追加・保存・削除の流れ | `service/TaskService` |
 | データベースへの書き方 | `persistence/TaskDao` と `persistence/TaskCrudDao` |
-| 入力チェック | `persistence/TaskWriteValidator`（共有プロジェクトは `team/TeamProject`） |
+| 入力チェック | `persistence/TaskWriteValidator`（共有プロジェクトは `team/TeamTaskRules`） |
 | 状態と進捗率の関係 | `model/TaskBusinessRules` |
 | 画面に出るエラー | `AppException` と `ui/ErrorDialogUtil` |
 | WBS の見た目と選択 | `ui/wbs/WbsPanel` |
@@ -416,7 +417,7 @@ WBS でタスクを選ぶ。右側は読めるだけで、その場では名前�
 - 担当者の欄の横のボタンから、メンバーの名前を選べます。`TaskDialog` が `TaskService.assigneeOptions()` を聞き、共有プロジェクトなら `TeamTaskStore` がメンバーと、メンバー以外の担当者（社外の人など）を返します。自分だけのタスクでは空なのでボタンは出ません
 - 共有のタスクの ID は UUID ですが、画面は int で扱うので、`TeamTaskStore` が番号を振ります。番号はアプリを閉じるまで変えません。読み直すたびに振り直すと、選んでいたタスクが別のタスクにすり替わるからです
 - `TeamTaskStore` は渡したタスクに、そのとき見せた状態の版（`Task.revision`）を付けます。保存のときはその版の状態と比べるので、編集画面を開いたあとに届いた他の人の変更は、黙って上書きせず「重なり」として残ります。変わっていない項目は記録に書きません
-- WBS で親を変えると `PARENT` の変更として書きます。階層の深さは記録に書かず、並べるときに親のたどり方から決めます（`TeamReplay`）。自分の下への移動と、3段を超える移動は `TeamProject.requireMovable` が断ります。2人が同時に逆向きに動かして輪になったときは、輪の中で最初に作られたタスクを一番上に出します
+- WBS で親を変えると `PARENT` の変更として書きます。階層の深さは記録に書かず、並べるときに親のたどり方から決めます（`TeamReplay`）。自分の下への移動と、3段を超える移動は `TeamTaskRules.requireMovable` が断ります。2人が同時に逆向きに動かして輪になったときは、輪の中で最初に作られたタスクを一番上に出します
 - 他の人の変更が届くと、`TeamSession` の自動の読み直しが `Listener.dataChanged` を呼び、`TaskService.reload()` で全タブが描き直されます。ツールバーの「更新」と、ヘッダーの「同期中」を押したときも、共有フォルダを読み直します
 - 自動の読み直しと前回のプロジェクトを開くのは `TeamSession.start()` で、`MainFrame.startDueReminders` から呼びます。コンストラクタで始めると、画面のテストが本物の共有フォルダを読みに行くためです。窓を閉じると `MainFrame.dispose` が `TeamSession.stop()` を呼び、読み直しを止めます
 - 以前は「チーム」タブにチーム用の一覧と編集画面がありましたが、全タブで共有プロジェクトを扱えるようになったのでなくしました。同じことをする画面が2つあると、どちらを使えばよいか迷うためです
@@ -433,7 +434,7 @@ TodayPanel / DueReminder → ProjectSources.all() → TaskSource（名前・今�
 ```
 
 - 選んでいないプロジェクトにも、それぞれ専用の `TaskService` を作ります（`ui/main/ProjectSources`）。`MainFrame` の `TaskService` は1つしか保存先を持てないためです。保存先ごとに1つだけ作って使い回します
-- `TeamSession` は、最近開いたプロジェクトも裏側で開いて持っておきます（`loadOthers`）。5 秒ごとの読み直しでそちらも見て、変わっていたら `Listener.otherProjectsChanged` を呼びます。`MainFrame` はそこで `TaskService.reload()` を呼び、「今日」タブを描き直させます
+- `TeamSession` は、最近開いたプロジェクトも裏側で開いて持っておきます（`loadOthers`。持つのは `TeamOtherProjects`）。5 秒ごとの読み直しでそちらも見て、変わっていたら `Listener.otherProjectsChanged` を呼びます。`MainFrame` はそこで `TaskService.reload()` を呼び、「今日」タブを描き直させます
 - 番号（ID）はプロジェクトごとに 1 から振るので、別のプロジェクトで同じ番号が出ます。そこで `DueTasks` はプロジェクトごとに作ってから `DueTasks.merge` でつなぎます。全部を混ぜてから作ると、あるプロジェクトの1番を、別のプロジェクトの1番の親と取り違えます（`DueTasksTest.mergeKeepsEachProjectsParentsApart`）
 - 「今日」タブでは、行ごとにどのプロジェクトの `TaskService` かを覚えています。Enter と Delete のキーも、`SearchablePanel.selectedTaskService()` で選んだ行のプロジェクトに書きます
 - 期限の通知は、`TeamSession.start` が裏側で共有プロジェクトを開き終わってから始めます。先に始めると、最初の通知に共有プロジェクトの分が入らないためです
@@ -447,7 +448,7 @@ TodayPanel / DueReminder → ProjectSources.all() → TaskSource（名前・今�
 
 ### インポートを速くする
 
-CSV や JSON から共有プロジェクトへ大量に取り込むときは、1件ずつ追加せず `TeamProject.importTasks` でまとめて書きます。
+CSV や JSON から共有プロジェクトへ大量に取り込むときは、1件ずつ追加せず `TeamProject.importTasks` でまとめて書きます（記録を作って確かめるのは `TeamImport`）。
 
 - 1件ずつだと、そのたびにファイルを開いて1行足し、ディスクに書き切り（force）、全部の記録を頭から当てはめ直します。件数が増えるほど遅くなり、Google ドライブ上ではとくに遅くなります
 - `importTasks` は、先に全部の行をチェックし、1つでもだめなら何も書きません（エラーは「3 件目: 」のように何件目かを付けます）。通ったら `TeamChangeLog.appendAll` で全部の行を1回で書き、当てはめ直しも1回だけです
@@ -469,7 +470,7 @@ CSV や JSON から共有プロジェクトへ大量に取り込むときは、1
 
 - ファイル名の `tanaka-1a2b3c` は端末 ID です。PC ごとに一度だけ作り、Windows の設定に保存します（`TeamSettings`）。同じ人が2台で使っても、別のファイルになります
 - 表示名・最近開いたプロジェクト・前回開いていたプロジェクトも `TeamSettings` が覚えます。起動時、前回のプロジェクトを裏側で開きます。ドライブがまだ準備中なら、黙って何もしません
-- プロジェクトを作る・参加する・読み直す・重なりを戻すときの読み書きは、`TeamSession` が裏側の1本の列（`team-io` スレッド）に順番に並べます。ネットワークドライブが遅くても画面は止まらず、書き込みの途中に読み直しが割り込むこともありません。作る・表示名の入力の画面は `TeamDialogs`、メンバーの一覧は `TeamMembersDialog`
+- プロジェクトを作る・参加する・読み直す・重なりを戻すときの読み書きは、`TeamSession` が裏側の1本の列（`TeamBackground`。`team-io` スレッド）に順番に並べます。ネットワークドライブが遅くても画面は止まらず、書き込みの途中に読み直しが割り込むこともありません。作る・表示名の入力の画面は `TeamDialogs`、メンバーの一覧は `TeamMembersDialog`
 - 親タスクの進捗と状態は、記録に書かずに表示のたびに子の平均から出します（`TeamReplay.rollUpProgress`）。書くと、子を変えた人全員が親も書き換えることになり、重なりが増えるためです
 
 - 変更は1件ずつ、自分のファイルの最後に1行足すだけです（`TeamChangeLog.append`）。1つのファイルを2台が書かないので、同期で「競合したコピー」ができません
@@ -504,10 +505,10 @@ CSV や JSON から共有プロジェクトへ大量に取り込むときは、1
 - 古い版のアプリは、自分より大きい番号の行を読まずに数えます（`TeamChangeLog.ReadResult.newerFormatLines`）。同期の途中で切れた行（`unreadableLines`）とは分けて数えます。切れた行は待てば読めますが、新しい形の行はアプリを新しくするまで読めないためです
 - 新しい形の行があると、ヘッダーがオレンジの「アプリの更新が必要」になり、マウスを乗せると行数と今の版が出ます（`ProjectSwitcher.refresh`）
 - アプリの版は `pom.xml` の `app.version` です。配布用の JAR の manifest に書き、`AppVersion.current()` が読んでウィンドウのタイトルと起動時のログに出します。IntelliJ から動かしたときは manifest が無いので「開発版」と出ます（`AppVersion.release()` は null）。新しい版を配るときは、`app.version` を上げてから exe を作ります。zip の名前にも版が入ります（`TaskNavi-1.2.0-windows.zip`）
-- 記録の形が変わらない更新でも、新しい版に気づけるようにしています。共有フォルダを開くと、`members\<端末ID>.json` に自分のアプリの版（`appVersion`）も書きます（`TeamProject.registerSelf`。版が変わったときだけ書き直す）。ほかのメンバーが自分より新しい版を使っていると、`TeamProject.newerAppMember()` がその人を返し、ヘッダーがオレンジの「新しい版 1.3.0 があります」になります。押すと入れ替え方と、リリースのページを開くボタンが出ます（`TeamSession.showUpdateHelp`。「アプリの更新が必要」を押したときも同じ）。配る係は、自分が最初に新しい版で開くだけで全員に知らせが届きます
+- 記録の形が変わらない更新でも、新しい版に気づけるようにしています。共有フォルダを開くと、`members\<端末ID>.json` に自分のアプリの版（`appVersion`）も書きます（`TeamMembers.register`。版が変わったときだけ書き直す）。ほかのメンバーが自分より新しい版を使っていると、`TeamProject.newerAppMember()` がその人を返し、ヘッダーがオレンジの「新しい版 1.3.0 があります」になります。押すと入れ替え方と、リリースのページを開くボタンが出ます（`TeamUpdateHelp`。「アプリの更新が必要」を押したときも同じ）。配る係は、自分が最初に新しい版で開くだけで全員に知らせが届きます
 - 版は `AppVersion.compare` で、点で区切った数を前から比べます（`1.10.0` は `1.9.0` より新しい）。開発版は版を書かず、前に書いた版も消しません。開発版では知らせも出しません。この仕組みより前に作ったアプリは `appVersion` を書かないので、その人の版は分かりません（古い版は知らない項目を読み飛ばすので、困ることはありません）
 - メンバーの一覧（「メンバー ○人」）には各自の版が出て、いちばん新しい版より古い人はオレンジになります。誰が入れ替えていないかを配る係が確かめられます
-- 入口は `TeamProject`（作る・開く・追加・変更・削除・読み直し）。テストは `TeamProjectTest` で、2つのフォルダ間でファイルをコピーして「同期の遅れ」や「オフラインで同時に編集」を再現しています
+- 入口は `TeamProject`（作る・開く・追加・変更・削除・読み直し）。`project.json` は `TeamProjectFile`、`members` は `TeamMembers`、名前・日付・階層・コメントの確かめと親子のたどり方は `TeamTaskRules`、取り込みの記録づくりは `TeamImport` が受け持ちます。テストは `TeamProjectTest` で、2つのフォルダ間でファイルをコピーして「同期の遅れ」や「オフラインで同時に編集」を再現しています
 
 ### 置き場所
 

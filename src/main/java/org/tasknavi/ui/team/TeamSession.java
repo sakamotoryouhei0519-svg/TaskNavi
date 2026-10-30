@@ -3,14 +3,12 @@ package org.tasknavi.ui.team;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tasknavi.AppMessages;
-import org.tasknavi.AppVersion;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
 import org.tasknavi.model.Assignees;
 import org.tasknavi.team.GoogleDriveFolders;
 import org.tasknavi.team.TeamConflictGroup;
 import org.tasknavi.team.TeamField;
-import org.tasknavi.team.TeamMember;
 import org.tasknavi.team.TeamNotice;
 import org.tasknavi.team.TeamProject;
 import org.tasknavi.team.TeamSettings;
@@ -23,27 +21,21 @@ import org.tasknavi.ui.NoticeBar;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import java.awt.Component;
-import java.awt.Desktop;
-import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 
 /**
  * 開いている共有プロジェクト。作る・参加する・閉じる、自動の読み直し、重なった変更と履歴の表示を受け持つ。
  * タスクの表示と編集は各タブが {@code TaskService} 経由で行うので、ここでは扱わない。
  *
- * <p>フォルダの読み書きは裏側の 1 本の列に並べ、ネットワークドライブが遅くても画面を止めない。</p>
+ * <p>フォルダの読み書きは {@link TeamBackground} の 1 本の列に並べ、ネットワークドライブが遅くても画面を止めない。
+ * 開いていない最近のプロジェクトは {@link TeamOtherProjects} が持つ。</p>
  */
 public final class TeamSession {
 
@@ -71,22 +63,33 @@ public final class TeamSession {
 
     private final TeamSettings settings;
     private final Component owner;
-    /** 読み書きを 1 本の列に並べる。書き込みの途中に読み直しが割り込まない。 */
-    private final ExecutorService io = Executors.newSingleThreadExecutor(runnable -> {
-        Thread thread = new Thread(runnable, "team-io");
-        thread.setDaemon(true);
-        return thread;
+    private final TeamBackground background = new TeamBackground(new TeamBackground.Hooks() {
+        @Override
+        public void started() {
+            fireStatusChanged();
+        }
+
+        @Override
+        public void succeeded() {
+            lastChecked = Instant.now();
+            lastPollFailed = false;
+        }
+
+        @Override
+        public void finished() {
+            if (!notifyIfChanged()) {
+                fireStatusChanged();
+            }
+        }
     });
     private final Timer pollTimer = new Timer(POLL_MS, e -> poll());
     private final TaskEventListener busListener = event -> fireStatusChanged();
     private Listener listener;
     private TeamProject project;
-    /** 最近開いた共有プロジェクトのうち、今開いていないもの。読むだけで、画面の切り替えには使わない。 */
-    private final Map<Path, TeamProject> others = new LinkedHashMap<>();
+    private final TeamOtherProjects others = new TeamOtherProjects();
     /** 画面の番号を保つため、プロジェクトごとに 1 つだけ作る。 */
     private final Map<TeamProject, TeamTaskStore> stores = new IdentityHashMap<>();
     private TeamState lastNotifiedState;
-    private int pending;
     private boolean polling;
     private Instant lastChecked;
     private boolean lastPollFailed;
@@ -113,13 +116,13 @@ public final class TeamSession {
             settings.lastProject().ifPresent(dir -> open(dir, true));
             loadOthers();
         }
-        io.execute(() -> SwingUtilities.invokeLater(onReady));
+        background.execute(() -> SwingUtilities.invokeLater(onReady));
     }
 
     public void stop() {
         pollTimer.stop();
         TaskEventBus.getInstance().unregister(busListener);
-        io.shutdownNow();
+        background.shutdown();
     }
 
     // ---------------------------------------------------------------- 状態
@@ -138,7 +141,7 @@ public final class TeamSession {
     }
 
     public boolean busy() {
-        return pending > 0;
+        return background.busy();
     }
 
     /** まだ一度も確認していなければ null。 */
@@ -154,9 +157,9 @@ public final class TeamSession {
         return project != null ? unacknowledgedConflicts(project).size() : 0;
     }
 
-    /** 最近開いた共有プロジェクトのうち、今開いていて読めたもの（最近開いた順）。 */
+    /** 最近開いた共有プロジェクトのうち、今開いていなくて読めたもの（最近開いた順）。 */
     public List<TeamProject> otherProjects() {
-        return List.copyOf(others.values());
+        return others.list();
     }
 
     public TeamTaskStore storeOf(TeamProject opened) {
@@ -175,7 +178,7 @@ public final class TeamSession {
         }
         String deviceId = settings.deviceId();
         String author = settings.displayName();
-        runInBackground(() -> TeamProject.create(request.folder(), request.name(), deviceId, author), created -> {
+        background.run(() -> TeamProject.create(request.folder(), request.name(), deviceId, author), created -> {
             setProject(created);
             settings.remember(created.directory());
             NoticeBar.info(owner, AppMessages.format("team.notice.created",
@@ -206,31 +209,30 @@ public final class TeamSession {
         }
         String deviceId = settings.deviceId();
         String author = settings.displayName();
-        Path key = key(dir);
-        TeamProject loaded = others.get(key);
+        TeamProject loaded = others.get(dir);
         Callable<TeamProject> work = loaded != null
                 ? () -> {
                     loaded.reload();
                     return loaded;
                 }
                 : () -> TeamProject.open(dir, deviceId, author);
-        runInBackground(work, opened -> {
+        background.run(work, opened -> {
             TeamProject previous = project;
-            others.remove(key);
+            others.remove(dir);
             setProject(opened);
-            keepAsOther(previous);
+            others.keep(previous, settings.recentProjects());
             settings.remember(opened.directory());
         }, e -> {
             if (quiet) {
                 return;
             }
-            boolean recent = settings.recentProjects().contains(key);
+            boolean recent = settings.recentProjects().contains(TeamOtherProjects.key(dir));
             if (recent && AppDialog.confirm(owner, AppMessages.get("project.title", "プロジェクト"),
                     AppMessages.format("team.open.forget",
                             "「{0}」を開けませんでした。\n{1}\n最近開いたプロジェクトから外しますか？",
                             dir.getFileName(), e.getMessage()))) {
                 settings.forget(dir);
-                if (others.remove(key) != null) {
+                if (others.remove(dir)) {
                     fireOthersChanged();
                 }
             } else if (!recent) {
@@ -240,62 +242,31 @@ public final class TeamSession {
         });
     }
 
-    /** 共有プロジェクトを閉じ、自分だけのタスクに戻る。 */
+    /** 共有プロジェクトを閉じ、自分だけのタスクに戻る。閉じたものも「今日」と期限の通知には出し続ける。 */
     public void close() {
         if (project == null) {
             return;
         }
         TeamProject previous = project;
         setProject(null);
-        keepAsOther(previous);
+        others.keep(previous, settings.recentProjects());
         settings.clearLastProject();
-    }
-
-    /** 閉じた・切り替えたプロジェクトも、「今日」と期限の通知には出し続ける。 */
-    private void keepAsOther(TeamProject previous) {
-        if (previous == null) {
-            return;
-        }
-        Path key = key(previous.directory());
-        if (settings.recentProjects().contains(key)) {
-            others.put(key, previous);
-        }
     }
 
     /** 最近開いたプロジェクトを読むだけのために開く。前回開いていたものは別に開くので除く。 */
     private void loadOthers() {
         String deviceId = settings.deviceId();
         String author = settings.displayName();
-        Path last = settings.lastProject().map(TeamSession::key).orElse(null);
+        Path last = settings.lastProject().map(TeamOtherProjects::key).orElse(null);
         List<Path> dirs = settings.recentProjects().stream().filter(dir -> !dir.equals(last)).toList();
-        io.execute(() -> {
-            List<TeamProject> loaded = new ArrayList<>();
-            for (Path dir : dirs) {
-                try {
-                    loaded.add(TeamProject.open(dir, deviceId, author));
-                } catch (IOException | RuntimeException e) {
-                    logger.info("最近のプロジェクトを開けませんでした（ドライブの準備中かもしれません）: {}", dir, e);
-                }
-            }
+        background.execute(() -> {
+            List<TeamProject> loaded = TeamOtherProjects.openAll(dirs, deviceId, author);
             SwingUtilities.invokeLater(() -> {
-                boolean added = false;
-                for (TeamProject opened : loaded) {
-                    Path key = key(opened.directory());
-                    boolean isCurrent = project != null && key(project.directory()).equals(key);
-                    if (!isCurrent && !others.containsKey(key)) {
-                        others.put(key, opened);
-                        added = true;
-                    }
-                }
-                if (added) {
+                if (others.addLoaded(loaded, project)) {
                     fireOthersChanged();
                 }
             });
         });
-    }
-
-    private static Path key(Path dir) {
-        return dir.toAbsolutePath().normalize();
     }
 
     public void reload() {
@@ -303,7 +274,7 @@ public final class TeamSession {
         if (opened == null) {
             return;
         }
-        runInBackground(() -> {
+        background.run(() -> {
             opened.reload();
             return opened;
         }, reloaded -> {
@@ -323,13 +294,13 @@ public final class TeamSession {
         if (project != null) {
             opened.add(project);
         }
-        opened.addAll(others.values());
+        opened.addAll(others.list());
         if (opened.isEmpty()) {
             fireStatusChanged();
             return;
         }
         boolean reassign = askReassign(oldName, name, opened);
-        runInBackground(() -> {
+        background.run(() -> {
             for (TeamProject each : opened) {
                 each.rename(name);
                 if (reassign) {
@@ -372,34 +343,8 @@ public final class TeamSession {
     /** 新しい版のアプリを使っている人がいるときの、入れ替え方。 */
     public void showUpdateHelp() {
         TeamProject opened = project;
-        if (opened == null) {
-            return;
-        }
-        TeamMember newer = opened.newerAppMember();
-        String who = newer != null
-                ? AppMessages.format("team.update.who", "{0} さんが TaskNavi {1} を使っています。この PC は {2} です。",
-                        newer.name(), newer.appVersion(), AppVersion.current())
-                : AppMessages.format("team.update.who.unknown",
-                        "新しい版の TaskNavi で書かれた記録があります。この PC は {0} です。", AppVersion.current());
-        String appPath = System.getProperty("jpackage.app-path");
-        String folder = appPath != null && Path.of(appPath).getParent() != null
-                ? Path.of(appPath).getParent().toString()
-                : AppMessages.get("team.update.folder.default", "C:\\TaskNavi\\TaskNavi など");
-        String steps = AppMessages.format("team.update.steps",
-                "入れ替え方:\n1. TaskNavi を閉じる\n2. 新しい zip を受け取る（配った人から、またはリリースのページから）\n"
-                        + "3. 今のアプリのフォルダ（{0}）を消して、同じ場所に zip を展開する\n4. TaskNavi.exe を起動する\n\n"
-                        + "タスクのデータは別の場所にあるので消えません。", folder);
-        int choice = AppDialog.choose(owner, AppMessages.get("team.update.title", "アプリの更新"), who + "\n\n" + steps,
-                AppMessages.get("team.update.open", "リリースのページを開く"),
-                AppMessages.get("team.conflict.close", "閉じる"));
-        if (choice == 0) {
-            try {
-                Desktop.getDesktop().browse(URI.create(AppVersion.RELEASES_URL));
-            } catch (IOException | UnsupportedOperationException | SecurityException e) {
-                logger.warn("リリースのページを開けませんでした", e);
-                ErrorDialogUtil.showError(owner, AppMessages.format("team.update.open.failed",
-                        "ブラウザを開けませんでした。次のアドレスを開いてください: {0}", AppVersion.RELEASES_URL));
-            }
+        if (opened != null) {
+            TeamUpdateHelp.show(owner, opened);
         }
     }
 
@@ -421,7 +366,7 @@ public final class TeamSession {
         }
         TeamConflictGroup group = choice.group();
         if (choice.kind() == TeamConflictDialog.Choice.Kind.RESTORE) {
-            runInBackground(() -> opened.restoreTask(group.taskId()), restored -> {
+            background.run(() -> opened.restoreTask(group.taskId()), restored -> {
                 settings.acknowledge(opened.directory(), group.keys());
                 NoticeBar.info(owner, AppMessages.format("team.notice.restored", "{0} 件のタスクを戻しました。", restored));
             }, this::showSaveError);
@@ -429,7 +374,7 @@ public final class TeamSession {
         }
         Map<TeamField, String> lost = new EnumMap<>(TeamField.class);
         group.items().forEach(item -> lost.put(item.field(), item.lostValue()));
-        runInBackground(() -> {
+        background.run(() -> {
             opened.updateTask(group.taskId(), lost);
             return group.taskId();
         }, id -> {
@@ -443,7 +388,7 @@ public final class TeamSession {
         if (opened == null) {
             return;
         }
-        runInBackground(opened::history, history -> SwingUtilities.invokeLater(
+        background.run(opened::history, history -> SwingUtilities.invokeLater(
                         () -> TeamHistoryDialog.show(owner, history, null, "")),
                 e -> ErrorDialogUtil.showError(owner, e.getMessage()));
     }
@@ -458,55 +403,27 @@ public final class TeamSession {
     /** ファイルが変わっていたときだけ読み直す。開いていないプロジェクトも「今日」のために見る。 */
     private void poll() {
         TeamProject opened = project;
-        List<TeamProject> otherList = List.copyOf(others.values());
+        List<TeamProject> otherList = others.list();
         if ((opened == null && otherList.isEmpty()) || busy() || polling) {
             return;
         }
         polling = true;
-        io.execute(() -> {
-            Exception failure = null;
-            if (opened != null) {
-                try {
-                    opened.reloadIfChanged();
-                } catch (IOException | RuntimeException e) {
-                    failure = e;
-                }
-            }
-            boolean othersChanged = false;
-            for (TeamProject other : otherList) {
-                try {
-                    othersChanged |= other.reloadIfChanged();
-                } catch (IOException | RuntimeException e) {
-                    logger.debug("共有フォルダの確認に失敗しました: {}", other.directory(), e);
-                }
-            }
-            Map<String, List<TeamNotice>> notices = new LinkedHashMap<>();
-            List<TeamProject> all = new ArrayList<>(otherList);
-            if (opened != null) {
-                all.add(0, opened);
-            }
-            for (TeamProject each : all) {
-                List<TeamNotice> taken = each.takeNotices();
-                if (!taken.isEmpty()) {
-                    notices.put(each.name(), taken);
-                }
-            }
-            Exception finalFailure = failure;
-            boolean finalOthersChanged = othersChanged;
+        background.execute(() -> {
+            TeamPoll result = TeamPoll.check(opened, otherList);
             SwingUtilities.invokeLater(() -> {
                 polling = false;
-                if (finalOthersChanged) {
+                if (result.othersChanged()) {
                     fireOthersChanged();
                 }
-                if (!notices.isEmpty() && listener != null) {
-                    listener.noticesArrived(notices);
+                if (!result.notices().isEmpty() && listener != null) {
+                    listener.noticesArrived(result.notices());
                 }
                 if (opened == null || project != opened) {
                     return;
                 }
                 lastChecked = Instant.now();
-                logPollResult(opened, finalFailure);
-                lastPollFailed = finalFailure != null;
+                logPollResult(opened, result.failure());
+                lastPollFailed = result.failure() != null;
                 if (!notifyIfChanged()) {
                     fireStatusChanged();
                 }
@@ -546,36 +463,6 @@ public final class TeamSession {
         if (listener != null) {
             listener.statusChanged();
         }
-    }
-
-    private <T> void runInBackground(Callable<T> work, Consumer<T> onSuccess, Consumer<Exception> onFailure) {
-        pending++;
-        fireStatusChanged();
-        io.execute(() -> {
-            T result = null;
-            Exception error = null;
-            try {
-                result = work.call();
-            } catch (Exception e) {
-                error = e;
-            }
-            T finalResult = result;
-            Exception finalError = error;
-            SwingUtilities.invokeLater(() -> {
-                pending--;
-                if (finalError == null) {
-                    lastChecked = Instant.now();
-                    lastPollFailed = false;
-                    onSuccess.accept(finalResult);
-                } else {
-                    logger.warn("チームプロジェクトの読み書きに失敗しました", finalError);
-                    onFailure.accept(finalError);
-                }
-                if (!notifyIfChanged()) {
-                    fireStatusChanged();
-                }
-            });
-        });
     }
 
     private void showSaveError(Exception e) {

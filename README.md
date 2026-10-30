@@ -68,7 +68,7 @@ UI（ui/today・wbs・kanban・gantt・calendar ほか）
 - 画面間の再描画は `TaskEventBus`
 - チーム共有（`team` パッケージ）: サーバーなしで共有フォルダを使う。各 PC は自分の変更記録ファイルに追記するだけなので、同期で「競合したコピー」ができない。全員の記録を決まった順に組み立てて一覧にし、互いを知らずに同じ項目を変えた場合は検出して残す
 - パッケージは役割ごと（`model` / `service` / `persistence` / `team` / `io` / `util` / `event` / `ui`）。画面は `ui` の中でタブごとに分ける
-- テスト 226 件（JUnit 5）。共有の同期の遅れ・オフラインでの同時編集・同じ PC での2重起動も再現して確かめている。本物のメイン画面を両方のテーマで開き、読みにくい文字がないかも確かめている
+- テスト 234 件（JUnit 5）。共有の同期の遅れ・オフラインでの同時編集・同じ PC での2重起動も再現して確かめている。本物のメイン画面を両方のテーマで開き、読みにくい文字がないかも確かめている
 - 学習用の読み方: [`docs/beginner-handbook.md`](docs/beginner-handbook.md) / [`docs/study-checklist.md`](docs/study-checklist.md)
 - 使う人向けの説明（ダウンロードと使い方）: [`docs/user-guide.md`](docs/user-guide.md)
 - 配る前に共有・バックアップ・インポートを試す表: [`docs/home-test-checklist.md`](docs/home-test-checklist.md)

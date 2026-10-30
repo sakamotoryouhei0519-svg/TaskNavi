@@ -820,29 +820,29 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | 削除と並べ替えを途中で残さない | `TaskCrudDao.deleteIds` / `updateOrderIndexes` |
 | ログインをやめても前のタスクを全部残す | `V6__drop_login.sql` / `DatabaseTest.upgradingFromLoginVersionKeepsEveryAccountsTasks` |
 | サンプルの段階名の番号を外し、自分で付けた名前は触らない | `V7__unnumber_sample_stages.sql` / `DatabaseTest.upgradingRemovesNumbersOnlyFromSampleStageNames` |
-| チーム共有の土台（教科書16章） | `team/TeamProject` → `TeamChangeLog`（読み書き）→ `TeamReplay`（組み立てと重なりの検出） |
+| チーム共有の土台（教科書16章） | `team/TeamProject` → `TeamChangeLog`（読み書き）→ `TeamReplay`（組み立てと重なりの検出）/ `TeamProjectFile`（`project.json`）/ `TeamMembers`（`members`）/ `TeamTaskRules`（書く前の確かめ）/ `TeamImport`（取り込み） |
 | 共有プロジェクトを作る・参加する・閉じる・表示名 | `ui/team/ProjectSwitcher`（メニュー）→ `ui/team/TeamSession` / `TeamDialogs` / `team/TeamSettings` |
 | メンバー・同期・重なりの表示 | `ProjectSwitcher.refresh` ← `TeamSession.Listener.statusChanged` / `TeamMembersDialog` |
 | 担当者をメンバーから選ぶ | `TaskDialog` → `TaskService.assigneeOptions` → `TeamTaskStore.assigneeOptions` |
-| チームの自動の読み直し | `TeamSession.poll`（5秒ごと）→ `TeamProject.reloadIfChanged` → `TeamChangeLog.fingerprint` → `Listener.dataChanged` → `TaskService.reload` |
+| チームの自動の読み直し | `TeamSession.poll`（5秒ごと）→ `TeamPoll.check`（`team-io` スレッド。列は `TeamBackground`）→ `TeamProject.reloadIfChanged` → `TeamChangeLog.fingerprint` → `Listener.dataChanged` → `TaskService.reload` |
 | 共有プロジェクトを全タブに出す | `ProjectSwitcher` → `TeamSession.Listener.projectChanged` → `TaskService.useStore(teamSession.storeOf(...))` |
 | 「今日」タブと期限の通知を全プロジェクトで出す | `ProjectSources.all` → `TaskSource` の一覧 → `TodayPanel.collect` / `DueReminder.dueAcross` → `DueTasks.merge`（プロジェクトごとに作ってからつなぐ） |
 | 「自分の担当だけ」 | `TodayPanel.onlyMine`（切り替えを覚える）→ `TaskSource.isMine`（表示名と担当者を比べる）→ `DueTasks.of(..., include)` |
 | 表示名を変えたら担当者も直す | `TeamSession.changeDisplayName` → `askReassign`（件数を数えて聞く）→ `TeamProject.reassign`（1回で書く）/ 比べ方は `Assignees.same` |
-| 自分の担当が変わったら通知 | `TeamProject.reload`（届いた記録を取っておく）→ `TeamSession.poll` → `takeNotices` → `TeamNotice.forMe`（担当にした／変えた）→ `MainFrame.noticesArrived` → `DueReminder.showNotices` |
+| 自分の担当が変わったら通知 | `TeamProject.reload`（届いた記録を取っておく）→ `TeamSession.poll` → `TeamPoll.check` → `takeNotices` → `TeamNotice.forMe`（担当にした／変えた）→ `MainFrame.noticesArrived` → `DueReminder.showNotices` |
 | アプリの版と、新しい版の記録 | `AppVersion.current`（manifest の版）/ `TeamEventCodec.NewerFormatException` → `TeamChangeLog.ReadResult.newerFormatLines` → `ProjectSwitcher.refresh`（「アプリの更新が必要」） |
-| 新しい版を使っている人がいたら知らせる | `TeamProject.registerSelf`（`members\<端末ID>.json` に `appVersion`）→ `readMembers` → `newerAppMember`（`AppVersion.compare`）→ `ProjectSwitcher.refresh`（「新しい版 ○ があります」）→ 押すと `TeamSession.showUpdateHelp` |
-| 最近のプロジェクトも裏で開いて見張る | `TeamSession.loadOthers` / `poll` → `Listener.otherProjectsChanged` → `ProjectSources.invalidate` + `TaskService.reload` |
-| 共有プロジェクトへのまとめての取り込み | `TeamTaskStore.importTasks` → `TeamProject.importTasks`（全部チェックしてから）→ `TeamChangeLog.appendAll`（1回で書く） |
+| 新しい版を使っている人がいたら知らせる | `TeamMembers.register`（`members\<端末ID>.json` に `appVersion`）→ `TeamMembers.read` → `TeamProject.newerAppMember`（`TeamMembers.newest` / `AppVersion.compare`）→ `ProjectSwitcher.refresh`（「新しい版 ○ があります」）→ 押すと `TeamSession.showUpdateHelp` → `TeamUpdateHelp` |
+| 最近のプロジェクトも裏で開いて見張る | `TeamSession.loadOthers`（`TeamOtherProjects.openAll` / `addLoaded`）/ `poll` → `Listener.otherProjectsChanged` → `ProjectSources.invalidate` + `TaskService.reload` |
+| 共有プロジェクトへのまとめての取り込み | `TeamTaskStore.importTasks` → `TeamProject.importTasks` → `TeamImport.build`（全部チェックしてから）→ `TeamChangeLog.appendAll`（1回で書く） |
 | 共有のタスクを画面の番号で扱う・見ていた版と比べる | `TeamTaskStore`（`idOf` / `Task.revision` → `seenState`）→ `TeamProject.updateTask(id, 変更, 見ていた状態)` |
-| WBS で親を変える（深さは並べるときに決める） | `TeamProject.requireMovable` / `TeamReplay.visibleTasks`（`cycleTop` で輪をほどく） |
-| 重なった変更の確認と戻す | `TeamSession.showConflicts` → `TeamConflictDialog` → `TeamConflictGroup` / `TeamProject.restoreTask` / `TeamSettings.acknowledge` |
+| WBS で親を変える（深さは並べるときに決める） | `TeamTaskRules.requireMovable` / `TeamReplay.visibleTasks`（`cycleTop` で輪をほどく） |
+| 重なった変更の確認と戻す | `TeamSession.showConflicts` → `TeamConflictDialog` → `TeamConflictGroup` / `TeamProject.restoreTask`（戻す範囲は `TeamTaskRules.restoreTargets`）/ `TeamSettings.acknowledge` |
 | チームの変更履歴 | `TeamSession.showHistory` → `TeamProject.history` → `TeamHistory.build` → `TeamHistoryDialog` |
 | タスクのコメント | `TaskDialog.commentsFor` → `TaskCommentsPanel.submit` → `TeamProject.addComment`（`COMMENT` の記録を足す）→ `TeamReplay.applyComment` → `TeamState.comments` / 編集・削除は `TaskCommentsPanel.startEditing` / `confirmDelete` → `TeamProject.editComment` / `deleteComment`（`canChange` で自分のものか確かめる）→ `TeamReplay.applyCommentChange` / 行の形は `TeamEventCodec.formatOf` / 件数は `TeamTaskStore.toTask`（`Task.comments`）→ `CommentCount` → `KanbanCardFactory` / `WbsTreeCellRenderer` / 通知は `TeamNotice.forMe`（`COMMENTED` / `REPLIED`） |
 | 置き場所の初期値（共有ドライブ → マイドライブ） | `TeamSession.defaultLocation` → `team/GoogleDriveFolders` |
 | 1台で2人目として起動する | `Main` → `TeamSettings.applyLaunchArguments`（`--team-profile=名前`）→ `TeamSettings.userDefault` |
 | 同じ PC で2つ起動しても記録が壊れない | `TeamChangeLog.append`（PC 内のファイルでロック）/ `TeamChangeLogConcurrencyTest` |
-| テスト | `TaskOverdueTest` / `MainGlobalSearchBarDescribeTest` / `TaskDaoIntegrationTest` / `TeamProjectTest` / `TeamChangeLogTest` / `TeamSettingsTest` / `TeamTaskStoreTest` / `DueTasksTest` / `DueReminderTest` / `TaskSourceTest` |
+| テスト | `TaskOverdueTest` / `MainGlobalSearchBarDescribeTest` / `TaskDaoIntegrationTest` / `TeamProjectTest` / `TeamTaskRulesTest` / `TeamOtherProjectsTest` / `TeamChangeLogTest` / `TeamSettingsTest` / `TeamTaskStoreTest` / `DueTasksTest` / `DueReminderTest` / `TaskSourceTest` |
 
 ---
 
