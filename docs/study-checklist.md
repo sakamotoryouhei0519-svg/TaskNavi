@@ -842,6 +842,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | 置き場所の初期値（共有ドライブ → マイドライブ） | `TeamSession.defaultLocation` → `team/GoogleDriveFolders` |
 | 1台で2人目として起動する | `Main` → `TeamSettings.applyLaunchArguments`（`--team-profile=名前`）→ `TeamSettings.userDefault` |
 | 同じ PC で2つ起動しても記録が壊れない | `TeamChangeLog.append`（PC 内のファイルでロック）/ `TeamChangeLogConcurrencyTest` |
+| README の画面の写真を撮る | `tools/ScreenshotTool`（`tasknavi.dataDir` と `--team-profile` と同じ仕組みで、見本のデータと別の設定を使う → `TeamProject.create` で3人分の共有プロジェクトを作る → タブを選んで `printAll` で PNG に） |
 | テスト | `TaskOverdueTest` / `MainGlobalSearchBarDescribeTest` / `TaskDaoIntegrationTest` / `TeamProjectTest` / `TeamTaskRulesTest` / `TeamOtherProjectsTest` / `TeamChangeLogTest` / `TeamSettingsTest` / `TeamTaskStoreTest` / `DueTasksTest` / `DueReminderTest` / `TaskSourceTest` |
 
 ---

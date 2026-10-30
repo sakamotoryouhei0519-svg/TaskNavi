@@ -377,6 +377,7 @@ WBS でタスクを選ぶ。右側は読めるだけで、その場では名前�
 | 検索の条件 | `util/TaskViewFilter` |
 | 文言 | `messages_ja.properties` |
 | 壊していないか | `mvn verify`（テストと、通った行の割合） |
+| README の画面の写真 | `src/test/java/org/tasknavi/tools/ScreenshotTool`（見本のデータだけで本物の画面を開いて撮る。動かし方は README の「開発メモ」）。画面を変えたら撮り直す |
 | 配布用の `TaskNavi.exe` と zip を作る | `mvn -Pdist -DskipTests verify`（`pom.xml` の `dist`）。アイコンは `ui/AppIcon` と `src/main/packaging/TaskNavi.ico` |
 
 ルールは1つです。画面から `TaskDao` を直接呼ばない。
