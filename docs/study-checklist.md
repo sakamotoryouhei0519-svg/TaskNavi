@@ -372,7 +372,7 @@ MainFrame.createToolBarPanel()
       → KanbanPanel の taskEventListener が発火
         → refreshKanban()
       → GanttPanel の taskEventListener が発火
-        → refreshGantt()
+        → onTaskEvent() → refreshTaskCache() と notifyLayoutChanged()
       → CalendarPanel の taskEventListener が発火
         → refreshCalendar()
 ```

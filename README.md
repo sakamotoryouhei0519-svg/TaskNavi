@@ -69,7 +69,7 @@ UI（ui/today・wbs・kanban・gantt・calendar ほか）
 - パッケージは役割ごと（`model` / `service` / `persistence` / `team` / `io` / `util` / `event` / `ui`）。画面は `ui` の中でタブごとに分ける
 - テスト 214 件（JUnit 5）。共有の同期の遅れ・オフラインでの同時編集・同じ PC での2重起動も再現して確かめている。本物のメイン画面を両方のテーマで開き、読みにくい文字がないかも確かめている
 - 学習用の読み方: [`docs/beginner-handbook.md`](docs/beginner-handbook.md) / [`docs/study-checklist.md`](docs/study-checklist.md)
-- 配る前に家の PC 1台で共有とバックアップを試す表: [`docs/home-test-checklist.md`](docs/home-test-checklist.md)
+- 配る前に共有・バックアップ・インポートを試す表: [`docs/home-test-checklist.md`](docs/home-test-checklist.md)
 
 ## 起動方法
 
