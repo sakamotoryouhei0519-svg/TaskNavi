@@ -129,6 +129,7 @@ UI（ui/today・wbs・kanban・gantt・calendar ほか）
 - 使う人向けの説明（ダウンロードと使い方）: [`docs/user-guide.md`](docs/user-guide.md)
 - 配る前に共有・バックアップ・インポートを試す表: [`docs/home-test-checklist.md`](docs/home-test-checklist.md)
 - 本番の始め方（見本の消し方・共有の始め方）と新しい版の配り方: [`docs/rollout-guide.md`](docs/rollout-guide.md)
+- 社内で使ってみた結果の記録（始める前と後の数字、不具合と直すまでの日数）: [`docs/results-log.md`](docs/results-log.md)
 
 ## 起動方法
 
