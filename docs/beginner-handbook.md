@@ -153,7 +153,7 @@
 - 画面のファイルに `new Color(...)` を直接書きません。ライトとダークで変わる色は `AppTheme.cardBackground()`・`textStrong()`・`danger()`・`progressTrack()` などのメソッドから取ります。色を `static final` の定数に入れると、テーマを切り替えても古い色のまま残ります（カンバンの進捗バーの溝がダークモードで白く光っていたのはこれです）。白い文字を載せる札の塗りだけは、どちらのテーマでも同じ `AppTheme.FILL_*` です。状態の文字（未着手・完了など）は `AppTheme.statusText(...)`、ガントの地の色は `ganttStripe()`・`ganttWeekend()` などから取ります
 - スクロールバー・分割の仕切り・スクロール欄の枠は、Metal のままだとダークモードで白く浮きます。`ModernScrollBarUI`・`ModernSplitPaneUI`・`AppTheme.ThemeLineBorder` が描くたびにテーマの色を取るので、画面ごとに直す必要はありません。テーマ切り替えで色が戻らない部品は、`MainThemeSupport.applyToContainer` に1行足します
 - 白い文字を載せる青のボタンは `AppTheme.primaryFill()` で塗ります。ダークの `PRIMARY` は線や文字用の明るい青なので、白い文字を載せると読めません
-- `ThemeContrastTest` が本物のメイン画面を両方のテーマで開き、切り替えたあとも含めて全タブの文字と背景の差（コントラスト比 3 以上）を確かめます。画面を直してこのテストが落ちたら、名前の出た部品の色をテーマから取るように直します
+- `ThemeContrastTest` が本物のメイン画面を両方のテーマで開き、切り替えたあとも含めて全タブの文字と背景の差（コントラスト比 3 以上）を確かめます。選択欄の開いた一覧の行（カーソルを合わせた行も）と、タスクの編集画面も見ます。画面を直してこのテストが落ちたら、名前の出た部品の色をテーマから取るように直します
 - 縦にスクロールする一覧や詳細は、`WidthTrackingPanel` の上に置きます。置かないと、長い名前で横にはみ出し、右端のボタンが切れます。縮めてよい文字には MigLayout で `wmin 0` を付けます
 - 窓は 960×560 より小さくできません（`UiConstants.WINDOW_MIN_WIDTH_MAIN`）。画面を直したら、この大きさでも切れないか確かめます
 - 画面から `TaskDao` を呼ばない。必ず `TaskService` を通します

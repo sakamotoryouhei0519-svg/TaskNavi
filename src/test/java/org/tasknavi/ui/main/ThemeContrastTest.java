@@ -8,9 +8,18 @@ import org.tasknavi.persistence.SampleDataUtil;
 import org.tasknavi.service.TaskService;
 import org.tasknavi.ui.AppTheme;
 
+import org.tasknavi.model.Task;
+import org.tasknavi.ui.taskdialog.TaskDialog;
+
 import javax.swing.AbstractButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.ListCellRenderer;
+import javax.swing.plaf.basic.ComboPopup;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import javax.swing.JTabbedPane;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
@@ -71,13 +80,18 @@ class ThemeContrastTest {
         SwingUtilities.invokeAndWait(() -> {
             AppTheme.setDarkMode(dark);
             AppTheme.applySwingDefaults();
-            MainFrame frame = new MainFrame(TaskService.createDefault());
+            TaskService taskService = TaskService.createDefault();
+            MainFrame frame = new MainFrame(taskService);
             try {
                 frame.setSize(1400, 860);
                 frame.setVisible(true);
-                collectAcrossTabs(frame, dark ? "dark" : "light", problems);
+                String first = dark ? "dark" : "light";
+                collectAcrossTabs(frame, first, problems);
+                collectTaskDialog(frame, taskService, first, problems);
                 themeToggle(frame).doClick();
-                collectAcrossTabs(frame, dark ? "dark→light" : "light→dark", problems);
+                String switched = dark ? "dark→light" : "light→dark";
+                collectAcrossTabs(frame, switched, problems);
+                collectTaskDialog(frame, taskService, switched, problems);
             } finally {
                 frame.dispose();
             }
@@ -90,7 +104,82 @@ class ThemeContrastTest {
         for (int i = 0; i < tabs.getTabCount(); i++) {
             tabs.setSelectedIndex(i);
             frame.validate();
-            collect(frame.getContentPane(), theme + " / " + tabs.getTitleAt(i).trim(), problems);
+            String where = theme + " / " + tabs.getTitleAt(i).trim();
+            collect(frame.getContentPane(), where, problems);
+            paintOnce(frame.getContentPane());
+            collectComboLists(frame.getContentPane(), where, problems);
+        }
+    }
+
+    private static void collectTaskDialog(MainFrame frame, TaskService taskService, String theme, List<String> problems) {
+        Task task = taskService.getAllTasks().stream().filter(t -> t.getParentId() != null).findFirst().orElseThrow();
+        TaskDialog dialog = new TaskDialog(frame, taskService, task);
+        dialog.setModal(false);
+        try {
+            dialog.setVisible(true);
+            dialog.validate();
+            String where = theme + " / 編集画面";
+            collect(dialog.getContentPane(), where, problems);
+            paintOnce(dialog.getContentPane());
+            collectComboLists(dialog.getContentPane(), where, problems);
+        } finally {
+            dialog.dispose();
+        }
+    }
+
+    /** 選択欄は「今の値」を描いたあとで一覧の行がおかしくなったことがあるので、一度描いてから一覧を見る。 */
+    private static void paintOnce(Container container) {
+        int w = Math.max(1, container.getWidth());
+        int h = Math.max(1, container.getHeight());
+        BufferedImage image = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = image.createGraphics();
+        try {
+            container.paint(g);
+        } finally {
+            g.dispose();
+        }
+    }
+
+    /** 開いた一覧の中の行。カーソルを合わせた行（選んだ行）とそれ以外の両方を見る。 */
+    private static void collectComboLists(Container container, String where, List<String> problems) {
+        for (Component child : container.getComponents()) {
+            if (!child.isVisible()) {
+                continue;
+            }
+            if (child instanceof JComboBox<?> combo && combo.isShowing() && combo.getItemCount() > 0) {
+                combo.showPopup();
+                try {
+                    if (combo.getUI().getAccessibleChild(combo, 0) instanceof ComboPopup popup) {
+                        checkListRows(popup.getList(), where + " / 一覧", problems);
+                    }
+                } finally {
+                    combo.hidePopup();
+                }
+            }
+            if (child instanceof Container nested) {
+                collectComboLists(nested, where, problems);
+            }
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void checkListRows(JList list, String where, List<String> problems) {
+        ListCellRenderer renderer = list.getCellRenderer();
+        int rows = Math.min(list.getModel().getSize(), 5);
+        for (int i = 0; i < rows; i++) {
+            for (boolean selected : new boolean[]{false, true}) {
+                Component c = renderer.getListCellRendererComponent(list, list.getModel().getElementAt(i), i, selected, false);
+                Color bg = c.isOpaque() ? c.getBackground() : list.getBackground();
+                double ratio = contrast(c.getForeground(), bg);
+                if (ratio < MIN_CONTRAST) {
+                    String text = c instanceof JLabel label ? label.getText() : String.valueOf(list.getModel().getElementAt(i));
+                    String line = String.format("%s: %s「%s」 文字%s 背景%s 比%.1f",
+                            where, selected ? "選んだ行" : "行", text, rgb(c.getForeground()), rgb(bg), ratio);
+                    if (!problems.contains(line)) {
+                        problems.add(line);
+                    }
+                }
+            }
         }
     }
 
