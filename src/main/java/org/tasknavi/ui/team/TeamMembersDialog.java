@@ -2,6 +2,7 @@ package org.tasknavi.ui.team;
 
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
+import org.tasknavi.AppVersion;
 import org.tasknavi.team.TeamMember;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.DialogKeys;
@@ -16,9 +17,11 @@ import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
 import java.awt.Component;
 import java.awt.Dialog;
+import java.awt.Font;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 
 /** 共有プロジェクトのメンバー一覧と、自分の表示名の変更。 */
 final class TeamMembersDialog {
@@ -34,6 +37,8 @@ final class TeamMembersDialog {
                 AppMessages.format("team.members", "メンバー {0}人", members.size()), Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
+        String newest = members.stream().map(TeamMember::appVersion).filter(Objects::nonNull)
+                .max(AppVersion::compare).orElse(null);
         JPanel content = new JPanel(new MigLayout("fillx, insets 16 20 12 20, gap 6, wrap", "[grow,fill]", ""));
         content.setBackground(AppTheme.PANEL_BG);
         content.add(TeamDialogs.wrapping(AppMessages.get("team.members.intro",
@@ -41,7 +46,7 @@ final class TeamMembersDialog {
                 440), "w 440!");
         for (TeamMember member : members) {
             boolean self = member.deviceId().equals(selfDeviceId);
-            JPanel row = new JPanel(new MigLayout("insets 6 0 6 0, gap 8", "[grow,fill][]", "[]"));
+            JPanel row = new JPanel(new MigLayout("insets 6 0 6 0, gap 8", "[grow,fill][][]", "[]"));
             row.setOpaque(false);
             row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.BORDER_COLOR));
             JLabel name = new JLabel(self
@@ -50,6 +55,13 @@ final class TeamMembersDialog {
             name.setFont(self ? AppTheme.FONT_BOLD : AppTheme.FONT_MAIN);
             name.setForeground(AppTheme.TEXT_PRIMARY);
             row.add(name, "wmin 0");
+            if (member.appVersion() != null) {
+                boolean behind = AppVersion.compare(member.appVersion(), newest) < 0;
+                JLabel version = new JLabel(AppMessages.format("team.member.version", "版 {0}", member.appVersion()));
+                version.setFont(behind ? AppTheme.FONT_SMALL.deriveFont(Font.BOLD) : AppTheme.FONT_SMALL);
+                version.setForeground(behind ? AppTheme.warning() : AppTheme.TEXT_MUTED);
+                row.add(version);
+            }
             if (member.joinedAt() != null) {
                 JLabel joined = new JLabel(AppMessages.format("team.member.joined", "{0} 参加",
                         member.joinedAt().atZone(ZoneId.systemDefault()).format(JOINED_AT)));

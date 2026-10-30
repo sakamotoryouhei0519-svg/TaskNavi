@@ -17,6 +17,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -432,6 +433,51 @@ class TeamProjectTest {
         assertEquals(2, tanaka.members().size());
         assertEquals("鈴木 花子", tanaka.state().find(id).orElseThrow().createdBy());
         assertThrows(IllegalArgumentException.class, () -> suzuki.rename(" "));
+    }
+
+    @Test
+    void aMemberOnANewerAppVersionIsFound() throws Exception {
+        Path dir = root.resolve("p");
+        TeamProject.create(dir, "P", "pc-tanaka", "田中", NOW);
+        TeamProject tanaka = TeamProject.open(dir, "pc-tanaka", "田中", NOW, "1.2.0");
+        TeamProject suzuki = TeamProject.open(dir, "pc-suzuki", "鈴木", NOW, "1.10.0");
+        tanaka.reload();
+
+        assertEquals("鈴木", tanaka.newerAppMember().name());
+        assertEquals("1.10.0", tanaka.newerAppMember().appVersion());
+        assertNull(suzuki.newerAppMember());
+
+        TeamProject updated = TeamProject.open(dir, "pc-tanaka", "田中", NOW, "1.10.0");
+        assertNull(updated.newerAppMember());
+        suzuki.reload();
+        assertTrue(suzuki.members().stream().allMatch(m -> "1.10.0".equals(m.appVersion())));
+    }
+
+    @Test
+    void aDevelopmentBuildKeepsTheRecordedVersionAndIsNotAskedToUpdate() throws Exception {
+        Path dir = root.resolve("p");
+        TeamProject.create(dir, "P", "pc-tanaka", "田中", NOW);
+        TeamProject.open(dir, "pc-tanaka", "田中", NOW, "1.2.0");
+        TeamProject.open(dir, "pc-suzuki", "鈴木", NOW, "1.3.0");
+
+        TeamProject dev = TeamProject.open(dir, "pc-tanaka", "田中", NOW, null);
+        dev.rename("田中 太郎");
+
+        assertNull(dev.newerAppMember());
+        assertTrue(Files.readString(dir.resolve(TeamProject.MEMBERS_DIR).resolve("pc-tanaka.json")).contains("\"1.2.0\""));
+    }
+
+    @Test
+    void memberFilesFromOlderAppsHaveNoVersion() throws Exception {
+        Path dir = root.resolve("p");
+        TeamProject.create(dir, "P", "pc-tanaka", "田中", NOW);
+        Files.writeString(dir.resolve(TeamProject.MEMBERS_DIR).resolve("pc-sato.json"),
+                "{\"name\":\"佐藤\",\"joinedAt\":\"2026-10-01T00:00:00Z\"}");
+
+        TeamProject tanaka = TeamProject.open(dir, "pc-tanaka", "田中", NOW, "1.3.0");
+
+        assertNull(tanaka.newerAppMember());
+        assertNull(tanaka.members().stream().filter(m -> m.name().equals("佐藤")).findFirst().orElseThrow().appVersion());
     }
 
     @Test

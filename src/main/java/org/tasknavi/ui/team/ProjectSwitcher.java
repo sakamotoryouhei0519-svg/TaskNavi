@@ -3,6 +3,7 @@ package org.tasknavi.ui.team;
 import net.miginfocom.swing.MigLayout;
 import org.tasknavi.AppMessages;
 import org.tasknavi.AppVersion;
+import org.tasknavi.team.TeamMember;
 import org.tasknavi.team.TeamProject;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.team.TeamSession;
@@ -54,7 +55,14 @@ public final class ProjectSwitcher {
         button.setToolTipText(AppMessages.get("project.switcher.tooltip", "表示するプロジェクトを切り替えます"));
         button.addActionListener(e -> showMenu());
         membersButton.addActionListener(e -> session.showMembers());
-        syncButton.addActionListener(e -> session.reload());
+        syncButton.addActionListener(e -> {
+            TeamProject project = session.project();
+            if (project != null && (project.newerFormatLines() > 0 || project.newerAppMember() != null)) {
+                session.showUpdateHelp();
+            } else {
+                session.reload();
+            }
+        });
         conflictButton.setFont(AppTheme.FONT_BOLD);
         conflictButton.setForeground(Color.WHITE);
         conflictButton.setBackground(AppTheme.FILL_WARNING);
@@ -100,12 +108,17 @@ public final class ProjectSwitcher {
 
         String at = session.lastChecked() != null
                 ? session.lastChecked().atZone(ZoneId.systemDefault()).format(CHECKED_AT) : "-";
+        TeamMember newer = project.newerAppMember();
         if (session.busy()) {
             syncButton.setText(AppMessages.get("team.loading", "読み込み中…"));
             syncButton.setIcon(new Dot(AppTheme.TEXT_MUTED));
             syncButton.setForeground(AppTheme.TEXT_MUTED);
         } else if (project.newerFormatLines() > 0) {
             syncButton.setText(AppMessages.get("project.sync.newer", "アプリの更新が必要"));
+            syncButton.setIcon(new Dot(AppTheme.warning()));
+            syncButton.setForeground(AppTheme.warning());
+        } else if (newer != null) {
+            syncButton.setText(AppMessages.format("project.sync.update", "新しい版 {0} があります", newer.appVersion()));
             syncButton.setIcon(new Dot(AppTheme.warning()));
             syncButton.setForeground(AppTheme.warning());
         } else if (project.unreadableLines() > 0) {
@@ -129,10 +142,17 @@ public final class ProjectSwitcher {
                     "同期の途中で読めなかった記録が {0} 行あります。少し待ってから読み直してください。",
                     project.unreadableLines()) + " " + tooltip;
         }
-        if (project.newerFormatLines() > 0) {
-            tooltip = AppMessages.format("team.newerFormat",
-                    "新しい版の TaskNavi で書かれた記録が {0} 行あり、この版（{1}）では読めません。アプリを新しくしてください。",
-                    project.newerFormatLines(), AppVersion.current()) + " " + tooltip;
+        if (newer != null || project.newerFormatLines() > 0) {
+            tooltip = AppMessages.get("team.update.click", "押すと入れ替え方が出ます");
+            if (newer != null) {
+                tooltip = AppMessages.format("team.update.tooltip", "{0} さんが {1} を使っています（この PC は {2}）。",
+                        newer.name(), newer.appVersion(), AppVersion.current()) + " " + tooltip;
+            }
+            if (project.newerFormatLines() > 0) {
+                tooltip = AppMessages.format("team.newerFormat",
+                        "新しい版の TaskNavi で書かれた記録が {0} 行あり、この版（{1}）では読めません。アプリを新しくしてください。",
+                        project.newerFormatLines(), AppVersion.current()) + " " + tooltip;
+            }
         }
         syncButton.setToolTipText(tooltip);
 

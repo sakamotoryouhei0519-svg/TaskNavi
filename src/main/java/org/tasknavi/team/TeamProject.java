@@ -3,6 +3,7 @@ package org.tasknavi.team;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.tasknavi.AppVersion;
 import org.tasknavi.model.Assignees;
 
 import java.io.IOException;
@@ -32,7 +33,7 @@ import java.util.UUID;
  * プロジェクトフォルダ\
  *   project.json          プロジェクト名など
  *   members\
- *     &lt;端末ID&gt;.json       その PC の表示名（その PC しか書かない）
+ *     &lt;端末ID&gt;.json       その PC の表示名とアプリの版（その PC しか書かない）
  *   changes\
  *     &lt;端末ID&gt;.jsonl      その PC が書いた変更の記録（その PC しか書かない）
  * </pre>
@@ -52,6 +53,8 @@ public final class TeamProject {
     private final String deviceId;
     private volatile String author;
     private final Clock clock;
+    /** この PC のアプリの版。開発版なら null。 */
+    private final String appVersion;
     private final List<TeamEvent> events = new ArrayList<>();
     /** 書き込みは裏側のスレッド、読み取りは画面のスレッドから来る。どれも作り直して差し替えるだけ。 */
     private volatile TeamState state = TeamState.empty();
@@ -64,7 +67,7 @@ public final class TeamProject {
     /** ほかの PC から届いて、まだ {@link #takeNotices()} していない変更。 */
     private final List<TeamEvent> arrived = new ArrayList<>();
 
-    private TeamProject(Path dir, String name, String deviceId, String author, Clock clock) {
+    private TeamProject(Path dir, String name, String deviceId, String author, Clock clock, String appVersion) {
         if (!TeamChangeLog.isValidDeviceId(deviceId)) {
             throw new IllegalArgumentException("端末 ID に使えない文字があります: " + deviceId);
         }
@@ -73,6 +76,7 @@ public final class TeamProject {
         this.deviceId = deviceId;
         this.author = author == null || author.isBlank() ? deviceId : author.trim();
         this.clock = clock;
+        this.appVersion = appVersion;
     }
 
     /** プロジェクト名から、Windows のフォルダ名に使えない文字を除いた名前を作る。 */
@@ -114,6 +118,11 @@ public final class TeamProject {
     }
 
     static TeamProject open(Path dir, String deviceId, String author, Clock clock) throws IOException {
+        return open(dir, deviceId, author, clock, AppVersion.release());
+    }
+
+    static TeamProject open(Path dir, String deviceId, String author, Clock clock, String appVersion)
+            throws IOException {
         Path file = dir.resolve(PROJECT_FILE);
         if (!Files.isRegularFile(file)) {
             throw new IOException("共有プロジェクトのフォルダではありません: " + dir);
@@ -129,7 +138,7 @@ public final class TeamProject {
             throw new IOException("新しい版の TaskNavi で作られたプロジェクトです。アプリを更新してください");
         }
         String projectName = json.has("name") ? json.get("name").getAsString() : dir.getFileName().toString();
-        TeamProject project = new TeamProject(dir, projectName, deviceId, author, clock);
+        TeamProject project = new TeamProject(dir, projectName, deviceId, author, clock, appVersion);
         project.reload();
         project.registerSelf();
         return project;
@@ -144,19 +153,26 @@ public final class TeamProject {
         registerSelf();
     }
 
-    /** members\&lt;自分の端末ID&gt;.json を、無いときか名前が変わったときだけ書く。 */
+    /**
+     * members\&lt;自分の端末ID&gt;.json を、無いとき・名前か版が変わったときだけ書く。
+     * 開発版で開いても、前に書いた版は消さない。
+     */
     private void registerSelf() throws IOException {
         TeamMember current = members.stream()
                 .filter(member -> member.deviceId().equals(deviceId))
                 .findFirst()
                 .orElse(null);
-        if (current != null && current.name().equals(author)) {
+        String version = appVersion != null ? appVersion : current != null ? current.appVersion() : null;
+        if (current != null && current.name().equals(author) && Objects.equals(current.appVersion(), version)) {
             return;
         }
-        Instant joinedAt = current != null ? current.joinedAt() : Instant.now(clock);
+        Instant joinedAt = current != null && current.joinedAt() != null ? current.joinedAt() : Instant.now(clock);
         JsonObject json = new JsonObject();
         json.addProperty("name", author);
         json.addProperty("joinedAt", joinedAt.toString());
+        if (version != null) {
+            json.addProperty("appVersion", version);
+        }
         Path file = dir.resolve(MEMBERS_DIR).resolve(deviceId + ".json");
         Files.createDirectories(file.getParent());
         Files.writeString(file, json.toString(), StandardCharsets.UTF_8);
@@ -181,7 +197,8 @@ public final class TeamProject {
                             .getAsJsonObject();
                     String memberName = json.get("name").getAsString();
                     Instant joinedAt = json.has("joinedAt") ? Instant.parse(json.get("joinedAt").getAsString()) : null;
-                    result.add(new TeamMember(id, memberName, joinedAt));
+                    String version = json.has("appVersion") ? json.get("appVersion").getAsString() : null;
+                    result.add(new TeamMember(id, memberName, joinedAt, version));
                 } catch (RuntimeException e) {
                     // 同期の途中。次の読み直しで読める。
                 }
@@ -214,6 +231,29 @@ public final class TeamProject {
     /** 名前順。同じ人が 2 台で参加していれば 2 件になる。 */
     public List<TeamMember> members() {
         return members;
+    }
+
+    /** この PC のアプリの版。開発版なら null。 */
+    public String appVersion() {
+        return appVersion;
+    }
+
+    /**
+     * この PC より新しい版のアプリを使っているメンバーのうち、いちばん新しい版の人。
+     * いなければ、またはこの PC が開発版なら null。
+     */
+    public TeamMember newerAppMember() {
+        if (appVersion == null) {
+            return null;
+        }
+        TeamMember newest = null;
+        for (TeamMember member : members) {
+            String version = member.appVersion();
+            if (version != null && AppVersion.compare(version, newest != null ? newest.appVersion() : appVersion) > 0) {
+                newest = member;
+            }
+        }
+        return newest;
     }
 
     /** 直近の読み込みで読めなかった行の数（同期途中なら次の読み込みで直る）。 */

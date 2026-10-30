@@ -3,12 +3,14 @@ package org.tasknavi.ui.team;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tasknavi.AppMessages;
+import org.tasknavi.AppVersion;
 import org.tasknavi.event.TaskEventBus;
 import org.tasknavi.event.TaskEventListener;
 import org.tasknavi.model.Assignees;
 import org.tasknavi.team.GoogleDriveFolders;
 import org.tasknavi.team.TeamConflictGroup;
 import org.tasknavi.team.TeamField;
+import org.tasknavi.team.TeamMember;
 import org.tasknavi.team.TeamNotice;
 import org.tasknavi.team.TeamProject;
 import org.tasknavi.team.TeamSettings;
@@ -21,6 +23,8 @@ import org.tasknavi.ui.NoticeBar;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import java.awt.Component;
+import java.awt.Desktop;
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -361,6 +365,39 @@ public final class TeamSession {
         TeamProject opened = project;
         if (opened != null) {
             TeamMembersDialog.show(owner, opened.members(), opened.deviceId(), this::changeDisplayName);
+        }
+    }
+
+    /** 新しい版のアプリを使っている人がいるときの、入れ替え方。 */
+    public void showUpdateHelp() {
+        TeamProject opened = project;
+        if (opened == null) {
+            return;
+        }
+        TeamMember newer = opened.newerAppMember();
+        String who = newer != null
+                ? AppMessages.format("team.update.who", "{0} さんが TaskNavi {1} を使っています。この PC は {2} です。",
+                        newer.name(), newer.appVersion(), AppVersion.current())
+                : AppMessages.format("team.update.who.unknown",
+                        "新しい版の TaskNavi で書かれた記録があります。この PC は {0} です。", AppVersion.current());
+        String appPath = System.getProperty("jpackage.app-path");
+        String folder = appPath != null && Path.of(appPath).getParent() != null
+                ? Path.of(appPath).getParent().toString()
+                : AppMessages.get("team.update.folder.default", "C:\\TaskNavi\\TaskNavi など");
+        String steps = AppMessages.format("team.update.steps",
+                "入れ替え方:\n1. TaskNavi を閉じる\n2. 新しい zip を受け取る（配った人から、またはリリースのページから）\n"
+                        + "3. 今のアプリのフォルダ（{0}）を消して、同じ場所に zip を展開する\n4. TaskNavi.exe を起動する\n\n"
+                        + "タスクのデータは別の場所にあるので消えません。", folder);
+        int choice = AppDialog.choose(owner, AppMessages.get("team.update.title", "アプリの更新"), who + "\n\n" + steps,
+                AppMessages.get("team.update.open", "リリースのページを開く"),
+                AppMessages.get("team.conflict.close", "閉じる"));
+        if (choice == 0) {
+            try {
+                Desktop.getDesktop().browse(URI.create(AppVersion.RELEASES_URL));
+            } catch (Exception e) {
+                ErrorDialogUtil.showError(owner, AppMessages.format("team.update.open.failed",
+                        "ブラウザを開けませんでした。次のアドレスを開いてください: {0}", AppVersion.RELEASES_URL));
+            }
         }
     }
 

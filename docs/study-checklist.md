@@ -830,6 +830,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | 表示名を変えたら担当者も直す | `TeamSession.changeDisplayName` → `askReassign`（件数を数えて聞く）→ `TeamProject.reassign`（1回で書く）/ 比べ方は `Assignees.same` |
 | 自分の担当が変わったら通知 | `TeamProject.reload`（届いた記録を取っておく）→ `TeamSession.poll` → `takeNotices` → `TeamNotice.forMe`（担当にした／変えた）→ `MainFrame.noticesArrived` → `DueReminder.showNotices` |
 | アプリの版と、新しい版の記録 | `AppVersion.current`（manifest の版）/ `TeamEventCodec.NewerFormatException` → `TeamChangeLog.ReadResult.newerFormatLines` → `ProjectSwitcher.refresh`（「アプリの更新が必要」） |
+| 新しい版を使っている人がいたら知らせる | `TeamProject.registerSelf`（`members\<端末ID>.json` に `appVersion`）→ `readMembers` → `newerAppMember`（`AppVersion.compare`）→ `ProjectSwitcher.refresh`（「新しい版 ○ があります」）→ 押すと `TeamSession.showUpdateHelp` |
 | 最近のプロジェクトも裏で開いて見張る | `TeamSession.loadOthers` / `poll` → `Listener.otherProjectsChanged` → `ProjectSources.invalidate` + `TaskService.reload` |
 | 共有プロジェクトへのまとめての取り込み | `TeamTaskStore.importTasks` → `TeamProject.importTasks`（全部チェックしてから）→ `TeamChangeLog.appendAll`（1回で書く） |
 | 共有のタスクを画面の番号で扱う・見ていた版と比べる | `TeamTaskStore`（`idOf` / `Task.revision` → `seenState`）→ `TeamProject.updateTask(id, 変更, 見ていた状態)` |
