@@ -24,6 +24,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import java.awt.Component;
 import java.awt.Desktop;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -272,8 +273,8 @@ public final class TeamSession {
             for (Path dir : dirs) {
                 try {
                     loaded.add(TeamProject.open(dir, deviceId, author));
-                } catch (Exception e) {
-                    logger.debug("最近のプロジェクトを開けませんでした: {}", dir, e);
+                } catch (IOException | RuntimeException e) {
+                    logger.info("最近のプロジェクトを開けませんでした（ドライブの準備中かもしれません）: {}", dir, e);
                 }
             }
             SwingUtilities.invokeLater(() -> {
@@ -394,7 +395,8 @@ public final class TeamSession {
         if (choice == 0) {
             try {
                 Desktop.getDesktop().browse(URI.create(AppVersion.RELEASES_URL));
-            } catch (Exception e) {
+            } catch (IOException | UnsupportedOperationException | SecurityException e) {
+                logger.warn("リリースのページを開けませんでした", e);
                 ErrorDialogUtil.showError(owner, AppMessages.format("team.update.open.failed",
                         "ブラウザを開けませんでした。次のアドレスを開いてください: {0}", AppVersion.RELEASES_URL));
             }
@@ -462,20 +464,19 @@ public final class TeamSession {
         }
         polling = true;
         io.execute(() -> {
-            boolean failed = false;
+            Exception failure = null;
             if (opened != null) {
                 try {
                     opened.reloadIfChanged();
-                } catch (Exception e) {
-                    failed = true;
-                    logger.debug("共有フォルダの確認に失敗しました", e);
+                } catch (IOException | RuntimeException e) {
+                    failure = e;
                 }
             }
             boolean othersChanged = false;
             for (TeamProject other : otherList) {
                 try {
                     othersChanged |= other.reloadIfChanged();
-                } catch (Exception e) {
+                } catch (IOException | RuntimeException e) {
                     logger.debug("共有フォルダの確認に失敗しました: {}", other.directory(), e);
                 }
             }
@@ -490,7 +491,7 @@ public final class TeamSession {
                     notices.put(each.name(), taken);
                 }
             }
-            boolean finalFailed = failed;
+            Exception finalFailure = failure;
             boolean finalOthersChanged = othersChanged;
             SwingUtilities.invokeLater(() -> {
                 polling = false;
@@ -504,12 +505,22 @@ public final class TeamSession {
                     return;
                 }
                 lastChecked = Instant.now();
-                lastPollFailed = finalFailed;
+                logPollResult(opened, finalFailure);
+                lastPollFailed = finalFailure != null;
                 if (!notifyIfChanged()) {
                     fireStatusChanged();
                 }
             });
         });
+    }
+
+    /** 5 秒ごとに同じ失敗を書かないよう、読めなくなったときと戻ったときだけ残す。 */
+    private void logPollResult(TeamProject opened, Exception failure) {
+        if (failure != null && !lastPollFailed) {
+            logger.warn("共有フォルダを読めなくなりました: {}", opened.directory(), failure);
+        } else if (failure == null && lastPollFailed) {
+            logger.info("共有フォルダをまた読めるようになりました: {}", opened.directory());
+        }
     }
 
     private void fireOthersChanged() {

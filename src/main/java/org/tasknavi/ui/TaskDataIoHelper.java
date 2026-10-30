@@ -13,6 +13,7 @@ import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.Component;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -85,7 +86,7 @@ public final class TaskDataIoHelper {
                     "エクスポートが正常に完了しました（{0}件）。\n保存先: {1}",
                     toExport.size(),
                     file.getAbsolutePath()));
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             ErrorDialogUtil.showError(parent,
                     AppMessages.format("mainframe.export.failed", "エクスポートに失敗しました: {0}", e.getMessage()));
             logger.error("エクスポートエラー", e);
@@ -161,7 +162,7 @@ public final class TaskDataIoHelper {
             read = isJson(file)
                     ? new TaskCsv.ReadResult(TaskJson.read(file.toPath()), List.of())
                     : TaskCsv.read(file.toPath());
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             ErrorDialogUtil.showError(parent,
                     AppMessages.format("mainframe.import.failed", "インポートに失敗しました: {0}", e.getMessage()));
             logger.error("インポートファイルの読み込みエラー", e);
@@ -195,7 +196,7 @@ public final class TaskDataIoHelper {
             }
             try {
                 backup = backupBeforeReplace(current);
-            } catch (Exception e) {
+            } catch (IOException | RuntimeException e) {
                 ErrorDialogUtil.showError(parent, AppMessages.format(
                         "mainframe.import.backup.failed",
                         "置き換え前のバックアップを作れなかったため、中止しました: {0}", e.getMessage()));
@@ -206,7 +207,7 @@ public final class TaskDataIoHelper {
 
         try {
             taskService.importTasks(read.tasks(), replace);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             AppException appException = ErrorDialogUtil.findAppException(e);
             ErrorDialogUtil.showError(parent, appException != null
                     ? appException.getUserMessage()
@@ -263,7 +264,7 @@ public final class TaskDataIoHelper {
         return text.toString();
     }
 
-    private static Path backupBeforeReplace(List<Task> current) throws Exception {
+    private static Path backupBeforeReplace(List<Task> current) throws IOException {
         Path dir = AppDataLocation.backupDirectory();
         Files.createDirectories(dir);
         String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));

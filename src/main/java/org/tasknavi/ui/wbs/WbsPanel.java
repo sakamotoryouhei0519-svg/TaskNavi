@@ -473,7 +473,6 @@ public class WbsPanel extends JPanel implements SearchablePanel {
                 } catch (Exception e) {
                     ErrorDialogUtil.showBackgroundError(WbsPanel.this, e,
                             AppMessages.get("wbs.error.update", "更新中に予期せぬエラーが発生しました。"));
-                    logger.error("タスク保存時の予期せぬエラー", e);
                 }
             }
         };

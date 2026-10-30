@@ -4,6 +4,7 @@ import org.tasknavi.AppMessages;
 import org.tasknavi.model.Task;
 import org.tasknavi.service.TaskService;
 import org.tasknavi.ui.ErrorDialogUtil;
+import org.tasknavi.ui.TaskDragData;
 
 import javax.swing.JComponent;
 import javax.swing.JTree;
@@ -19,6 +20,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalInt;
 
 /**
  * WBS ツリーのドラッグ＆ドロップ（親子付け替え・兄弟並び替え）。
@@ -96,59 +98,44 @@ public class WbsTreeTransferHandler extends TransferHandler {
             return false;
         }
 
-        try {
-            String draggedIdText = (String) support.getTransferable().getTransferData(DataFlavor.stringFlavor);
-            int draggedId = Integer.parseInt(draggedIdText);
-            if (draggedId == targetTask.getId()) {
-                host.clearDropHighlight();
-                return false;
-            }
-
-            int childIndex = dropLocation.getChildIndex();
-            TaskService taskService = host.taskService();
-
-            if (childIndex == -1) {
-                int newLevel = targetTask.getLevel() + 1;
-                if (newLevel > 3) {
-                    host.clearDropHighlight();
-                    return false;
-                }
-
-                boolean valid = !WbsHierarchyOps.wouldCreateCycle(taskService, draggedId, targetTask.getId());
-                host.setHighlightDropPath(valid ? targetPath : null);
-                if (host.tree() != null) {
-                    host.tree().repaint();
-                }
-                support.setShowDropLocation(valid);
-                return valid;
-            }
-
-            Task movedTask = taskService.getTaskById(draggedId);
-            if (movedTask == null) {
-                host.clearDropHighlight();
-                return false;
-            }
-
-            if (!Objects.equals(movedTask.getParentId(), targetTask.getParentId())) {
-                host.clearDropHighlight();
-                return false;
-            }
-
-            if (movedTask.getId() == targetTask.getId()) {
-                host.clearDropHighlight();
-                return false;
-            }
-
-            host.setHighlightDropPath(targetPath);
-            if (host.tree() != null) {
-                host.tree().repaint();
-            }
-            support.setShowDropLocation(true);
-            return true;
-        } catch (Exception e) {
+        OptionalInt dragged = TaskDragData.taskId(support);
+        if (dragged.isEmpty() || dragged.getAsInt() == targetTask.getId()) {
             host.clearDropHighlight();
             return false;
         }
+        int draggedId = dragged.getAsInt();
+
+        int childIndex = dropLocation.getChildIndex();
+        TaskService taskService = host.taskService();
+
+        if (childIndex == -1) {
+            int newLevel = targetTask.getLevel() + 1;
+            if (newLevel > 3) {
+                host.clearDropHighlight();
+                return false;
+            }
+
+            boolean valid = !WbsHierarchyOps.wouldCreateCycle(taskService, draggedId, targetTask.getId());
+            host.setHighlightDropPath(valid ? targetPath : null);
+            if (host.tree() != null) {
+                host.tree().repaint();
+            }
+            support.setShowDropLocation(valid);
+            return valid;
+        }
+
+        Task movedTask = taskService.getTaskById(draggedId);
+        if (movedTask == null || !Objects.equals(movedTask.getParentId(), targetTask.getParentId())) {
+            host.clearDropHighlight();
+            return false;
+        }
+
+        host.setHighlightDropPath(targetPath);
+        if (host.tree() != null) {
+            host.tree().repaint();
+        }
+        support.setShowDropLocation(true);
+        return true;
     }
 
     @Override
@@ -156,9 +143,12 @@ public class WbsTreeTransferHandler extends TransferHandler {
         if (!canImport(support)) {
             return false;
         }
+        OptionalInt dragged = TaskDragData.taskId(support);
+        if (dragged.isEmpty()) {
+            return false;
+        }
+        int draggedId = dragged.getAsInt();
         try {
-            String draggedIdText = (String) support.getTransferable().getTransferData(DataFlavor.stringFlavor);
-            int draggedId = Integer.parseInt(draggedIdText);
             JTree.DropLocation dropLocation = (JTree.DropLocation) support.getDropLocation();
             TreePath targetPath = dropLocation.getPath();
             if (targetPath == null) {
@@ -228,7 +218,7 @@ public class WbsTreeTransferHandler extends TransferHandler {
 
             host.clearDropHighlight();
             return true;
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             host.clearDropHighlight();
             ErrorDialogUtil.showBackgroundError(
                     host.dialogParent(),

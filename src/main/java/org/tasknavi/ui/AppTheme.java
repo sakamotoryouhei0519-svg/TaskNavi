@@ -1,5 +1,7 @@
 package org.tasknavi.ui;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tasknavi.model.Priority;
 import org.tasknavi.model.TaskStatus;
 
@@ -13,6 +15,8 @@ import java.util.prefs.Preferences;
  * アプリ全体の色・フォント・枠線。ライトとダークの切り替えもここで持つ。
  */
 public class AppTheme {
+
+    private static final Logger logger = LoggerFactory.getLogger(AppTheme.class);
 
     public interface Theme {
         Color primary();
@@ -91,14 +95,19 @@ public class AppTheme {
         try {
             Preferences prefs = Preferences.userNodeForPackage(AppTheme.class);
             return prefs.getBoolean(THEME_PREF_KEY, false) ? DARK_THEME : LIGHT_THEME;
-        } catch (Exception e) { return LIGHT_THEME; }
+        } catch (SecurityException | IllegalStateException e) {
+            logger.warn("前回のテーマを読めないため、ライトで始めます", e);
+            return LIGHT_THEME;
+        }
     }
 
     private static void saveThemePreference() {
         try {
             Preferences prefs = Preferences.userNodeForPackage(AppTheme.class);
             prefs.putBoolean(THEME_PREF_KEY, isDarkMode());
-        } catch (Exception ignored) {}
+        } catch (SecurityException | IllegalStateException e) {
+            logger.warn("テーマを保存できませんでした（次の起動では前のテーマになります）", e);
+        }
     }
 
     private static void refreshThemeColors() {

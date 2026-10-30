@@ -90,7 +90,6 @@ public final class WbsEntryCreator {
                     } catch (Exception ex) {
                         ErrorDialogUtil.showBackgroundError(parent, ex,
                                 AppMessages.get("wbs.error.register", "タスクの登録に失敗しました。"));
-                        logger.error("タスク登録時の予期せぬエラー", ex);
                     }
                 }
             };

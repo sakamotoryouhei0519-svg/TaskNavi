@@ -240,7 +240,7 @@ public class IconManager {
             if (url != null) {
                 return new ImageIcon(url);
             }
-        } catch (Exception e) {
+        } catch (SecurityException e) {
             logger.warn("アイコンの読み込みに失敗しました: " + type, e);
         }
         

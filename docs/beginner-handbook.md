@@ -209,6 +209,16 @@
 
 失敗の文面は `AppException` が持ちます。裏側の処理（`SwingWorker`）が包んでも、`ErrorDialogUtil.findAppException` が取り出して画面に出します。
 
+### 例外の受け方
+
+配った後に「何が起きたか」をログで追えるように、次の決まりで受けます。
+
+- **操作の入口では何でも受けて、必ずログに残す。** 保存や削除の結果を受け取る所（`SwingWorker.done`）や共有フォルダの読み書き（`TeamSession.runInBackground`）は、どんな失敗でも画面に出して止めずに続けます。画面に出すのは `ErrorDialogUtil.showBackgroundError` で、ここがログも書きます。入力の誤りなどの `AppException` は info に、想定外の失敗はスタックトレースごと error に残します。呼ぶ側では書きません（2回書かないため）
+- **起こりうる失敗が決まっている所では、その種類だけ受ける。** 日付の読み取りは `DateTimeParseException`、フォルダ名は `InvalidPathException`、テーマの保存は `SecurityException | IllegalStateException`、ドラッグしたタスクの ID は `TaskDragData.taskId` が読み取りの失敗だけを受けます。前はカンバンのドロップで状態の変更まで `catch (Exception)` で囲んでいて、変更に失敗しても何も出ず、ログにも残りませんでした
+- **どこでも受けなかった例外は `Main.handleUncaught` が受ける。** 必ずログに残します。起動の途中なら続けられないので知らせて終わり、メイン画面が出た後はお知らせ帯で知らせて使い続けられるようにします（保存は操作ごとに済んでいるため）。描画の中の失敗は続けて起きるので、お知らせは 30 秒に 1 回までです
+- **5 秒ごとの確認の失敗は、変わり目だけ残す。** 共有フォルダを読めなくなったときに warn、また読めたときに info を 1 回ずつ書きます（`TeamSession.logPollResult`）。毎回書くとログがそれで埋まるためです
+- **データベースの列は Flyway でそろっているので、列が無い場合に備えた `catch` は置かない。** 置くと、本当の SQL の失敗まで隠れます（`TaskRowMapper`）
+
 ## 12. 最初の2週間
 
 平日だけ、1日に1個。全部で10日です。ファイルは全部読まない。  

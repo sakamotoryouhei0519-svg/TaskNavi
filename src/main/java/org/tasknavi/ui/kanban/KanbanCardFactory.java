@@ -5,6 +5,7 @@ import org.tasknavi.AppMessages;
 import org.tasknavi.model.Task;
 import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.CommentCount;
+import org.tasknavi.ui.TaskDragData;
 import org.tasknavi.util.TaskStatusCycle;
 
 import javax.swing.BorderFactory;
@@ -30,6 +31,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.DragSource;
 import java.awt.event.MouseEvent;
+import java.util.OptionalInt;
 
 /**
  * カンバンカード UI の生成。
@@ -91,13 +93,12 @@ public final class KanbanCardFactory {
                 if (!canImport(support)) {
                     return false;
                 }
-                try {
-                    String text = (String) support.getTransferable().getTransferData(DataFlavor.stringFlavor);
-                    actions.onDrop(Integer.parseInt(text.trim()), support.getComponent());
-                    return true;
-                } catch (Exception ex) {
+                OptionalInt taskId = TaskDragData.taskId(support);
+                if (taskId.isEmpty()) {
                     return false;
                 }
+                actions.onDrop(taskId.getAsInt(), support.getComponent());
+                return true;
             }
         });
 

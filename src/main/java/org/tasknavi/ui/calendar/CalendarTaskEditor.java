@@ -1,7 +1,5 @@
 package org.tasknavi.ui.calendar;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.tasknavi.AppException;
 import org.tasknavi.AppMessages;
 import org.tasknavi.model.Task;
@@ -18,13 +16,12 @@ import javax.swing.SwingWorker;
 import java.awt.Component;
 import java.awt.Frame;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 /**
  * カレンダーからのタスク追加・編集・ステータス更新。
  */
 public final class CalendarTaskEditor {
-
-    private static final Logger logger = LoggerFactory.getLogger(CalendarTaskEditor.class);
 
     private CalendarTaskEditor() {
     }
@@ -69,12 +66,11 @@ public final class CalendarTaskEditor {
                     } catch (Exception ex) {
                         ErrorDialogUtil.showBackgroundError(parent, ex,
                                 AppMessages.get("mainframe.error.task.add", "タスク追加中にエラーが発生しました。"));
-                        logger.error("カレンダーからのタスク追加エラー", ex);
                     }
                 }
             };
             worker.execute();
-        } catch (Exception ex) {
+        } catch (DateTimeParseException ex) {
             ErrorDialogUtil.showError(parent,
                     AppMessages.get("calendar.error.date.format", "日付の形式が正しくありません。"));
         }

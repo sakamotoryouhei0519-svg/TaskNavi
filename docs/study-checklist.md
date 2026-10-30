@@ -36,7 +36,7 @@
 
 ```
 main()
-  → 未処理例外ハンドラ設定
+  → 未処理例外ハンドラ設定（Main.handleUncaught: ログに残す。起動中なら終了、画面が出た後はお知らせ帯）
   → Database.prepareOnStartup() (古い DB の引き継ぎと1日1回のバックアップ)
   → SwingUtilities.invokeLater (EDT上で実行)
     → UIManager.setLookAndFeel (Look & Feel設定)
@@ -815,6 +815,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | 絞り込み結果のエクスポート | `TaskDataIoHelper`（全件かフィルタ結果かを確認） |
 | Excel 向け CSV の書き出し・取り込み | `TaskCsv` / `CsvCodec` / `TaskImportDao` |
 | 保存の失敗を画面に出す | `ErrorDialogUtil.findAppException` |
+| 失敗を画面に出してログに残す | `ErrorDialogUtil.showBackgroundError`（`AppException` は info、それ以外は error）/ どこでも受けなかったもの: `Main.handleUncaught` |
 | 編集の保存は成功したあとだけ知らせる | `WbsPanel.openEditDialog` → `TaskService.updateTask` → `updateTasks` |
 | 削除と並べ替えを途中で残さない | `TaskCrudDao.deleteIds` / `updateOrderIndexes` |
 | ログインをやめても前のタスクを全部残す | `V6__drop_login.sql` / `DatabaseTest.upgradingFromLoginVersionKeepsEveryAccountsTasks` |

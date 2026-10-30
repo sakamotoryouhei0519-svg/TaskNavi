@@ -4,6 +4,7 @@ import org.tasknavi.AppMessages;
 import org.tasknavi.model.EntryType;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 /**
  * TaskDialog 保存前の入力検証。
@@ -37,7 +38,7 @@ public final class TaskDialogSaveValidator {
         try {
             LocalDate.parse(startDate == null ? "" : startDate.trim());
             LocalDate.parse(endDate == null ? "" : endDate.trim());
-        } catch (Exception ignored) {
+        } catch (DateTimeParseException e) {
             return Result.error(AppMessages.get(
                     "dialog.error.date.format",
                     "日付は YYYY-MM-DD 形式で入力してください。"));

@@ -18,6 +18,7 @@ import javax.swing.event.DocumentListener;
 import java.awt.Component;
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
 /**
@@ -133,7 +134,7 @@ final class TeamDialogs {
         }
         try {
             return Path.of(location.trim()).resolve(TeamProject.folderNameFor(name));
-        } catch (RuntimeException e) {
+        } catch (InvalidPathException e) {
             return null;
         }
     }

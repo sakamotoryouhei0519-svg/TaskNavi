@@ -11,8 +11,6 @@ import java.awt.Component;
  */
 public final class TaskStatusChanger {
 
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TaskStatusChanger.class);
-
     private TaskStatusChanger() {
     }
 
@@ -37,7 +35,6 @@ public final class TaskStatusChanger {
                 } catch (Exception e) {
                     ErrorDialogUtil.showBackgroundError(parent, e,
                             AppMessages.get("kanban.status.update.error", "ステータス更新中に予期せぬエラーが発生しました。"));
-                    logger.error("ステータス更新エラー", e);
                 }
             }
         };

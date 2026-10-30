@@ -14,8 +14,6 @@ import java.util.List;
  */
 public final class TaskDeleteHelper {
 
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TaskDeleteHelper.class);
-
     private TaskDeleteHelper() {
     }
 
@@ -63,7 +61,6 @@ public final class TaskDeleteHelper {
                     }
                 } catch (Exception e) {
                     ErrorDialogUtil.showBackgroundError(parent, e, AppMessages.get("mainframe.error.delete"));
-                    logger.error("タスク削除エラー", e);
                 }
             }
         };
@@ -86,7 +83,6 @@ public final class TaskDeleteHelper {
                             "message.restored.named", "「{0}」を元に戻しました。", name));
                 } catch (Exception e) {
                     ErrorDialogUtil.showBackgroundError(parent, e, AppMessages.get("mainframe.error.restore"));
-                    logger.error("削除の取り消しエラー", e);
                 }
             }
         };

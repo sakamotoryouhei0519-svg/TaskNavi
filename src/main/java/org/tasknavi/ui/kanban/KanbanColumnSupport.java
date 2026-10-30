@@ -1,12 +1,14 @@
 package org.tasknavi.ui.kanban;
 
 import org.tasknavi.model.Task;
+import org.tasknavi.ui.TaskDragData;
 
 import javax.swing.JComponent;
 import javax.swing.TransferHandler;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.datatransfer.DataFlavor;
+import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 
 /**
@@ -66,13 +68,12 @@ public final class KanbanColumnSupport {
                 if (!canImport(support)) {
                     return false;
                 }
-                try {
-                    String text = (String) support.getTransferable().getTransferData(DataFlavor.stringFlavor);
-                    onDrop.accept(Integer.parseInt(text.trim()), support.getComponent());
-                    return true;
-                } catch (Exception ex) {
+                OptionalInt taskId = TaskDragData.taskId(support);
+                if (taskId.isEmpty()) {
                     return false;
                 }
+                onDrop.accept(taskId.getAsInt(), support.getComponent());
+                return true;
             }
         };
     }

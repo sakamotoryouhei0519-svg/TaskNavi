@@ -1,7 +1,5 @@
 package org.tasknavi.ui.main;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.tasknavi.AppMessages;
 import org.tasknavi.model.Task;
 import org.tasknavi.service.TaskService;
@@ -17,8 +15,6 @@ import javax.swing.SwingWorker;
  * MainFrame からのタスク追加フロー。
  */
 public final class MainTaskAddHelper {
-
-    private static final Logger logger = LoggerFactory.getLogger(MainTaskAddHelper.class);
 
     private MainTaskAddHelper() {
     }
@@ -54,7 +50,6 @@ public final class MainTaskAddHelper {
                     NoticeBar.info(parent, AppMessages.get("notice.saved", "保存しました"));
                 } catch (Exception e) {
                     ErrorDialogUtil.showBackgroundError(parent, e, AppMessages.get("mainframe.error.task.add"));
-                    logger.error("タスク追加エラー", e);
                 }
             }
         };

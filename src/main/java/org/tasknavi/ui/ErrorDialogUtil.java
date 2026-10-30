@@ -1,5 +1,7 @@
 package org.tasknavi.ui;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tasknavi.AppException;
 import org.tasknavi.AppMessages;
 
@@ -10,6 +12,8 @@ import java.awt.*;
  * エラーを画面に出す。メイン画面ではお知らせ帯（{@link NoticeBar}）、それ以外では窓で出す。
  */
 public final class ErrorDialogUtil {
+    private static final Logger logger = LoggerFactory.getLogger(ErrorDialogUtil.class);
+
     private ErrorDialogUtil() {
     }
 
@@ -41,14 +45,17 @@ public final class ErrorDialogUtil {
     }
 
     /**
-     * バックグラウンド処理の失敗を表示する。業務エラーは利用者向け文面、それ以外は fallback を使う。
+     * 操作の失敗を表示し、ログに残す。業務エラー（入力の誤りなど）は利用者向け文面を出して info に、
+     * それ以外（想定外の失敗）は fallback を出して、調べられるようにスタックトレースごと error に残す。
      */
     public static void showBackgroundError(Component parent, Throwable throwable, String fallbackMessage) {
         AppException appException = findAppException(throwable);
         if (appException != null) {
+            logger.info("操作を受け付けませんでした: {}", appException.getUserMessage());
             showError(parent, appException.getUserMessage());
             return;
         }
+        logger.error(fallbackMessage, throwable);
         showError(parent, fallbackMessage);
     }
 }

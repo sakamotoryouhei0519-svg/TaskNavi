@@ -11,6 +11,7 @@ import org.tasknavi.ui.AppTheme;
 import org.tasknavi.ui.ErrorDialogUtil;
 import org.tasknavi.ui.ProjectFilterDialog;
 import org.tasknavi.ui.SearchablePanel;
+import org.tasknavi.ui.TaskDragData;
 import org.tasknavi.ui.TaskStatusChanger;
 import org.tasknavi.ui.WidthTrackingPanel;
 import org.tasknavi.ui.taskdialog.TaskDialog;
@@ -26,6 +27,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.prefs.Preferences;
 
@@ -437,14 +439,12 @@ public class KanbanPanel extends JPanel implements SearchablePanel {
                     return false;
                 }
 
-                try {
-                    String taskIdText = (String) support.getTransferable().getTransferData(DataFlavor.stringFlavor);
-                    int taskId = Integer.parseInt(taskIdText);
-                    changeTaskStatus(taskId, status);
-                    return true;
-                } catch (Exception e) {
+                OptionalInt taskId = TaskDragData.taskId(support);
+                if (taskId.isEmpty()) {
                     return false;
                 }
+                changeTaskStatus(taskId.getAsInt(), status);
+                return true;
             }
         };
     }

@@ -1,85 +1,48 @@
 package org.tasknavi.persistence;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tasknavi.model.Task;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 /**
- * ResultSet から Task へのマッピング（列名互換付き）。
+ * ResultSet から Task へのマッピング。列は Flyway の V1〜V7 でそろっている前提。
  */
 public final class TaskRowMapper {
+
+    private static final Logger logger = LoggerFactory.getLogger(TaskRowMapper.class);
 
     private TaskRowMapper() {
     }
 
     public static Task fromResultSet(ResultSet rs) throws SQLException {
-        int taskId = getColumnInt(rs, "id", "task_id");
+        int taskId = rs.getInt("id");
         Integer parentId = rs.getObject("parent_id") != null ? rs.getInt("parent_id") : null;
-        int level = getColumnIntOrDefault(rs, "level", 1);
-        int orderIndex = getColumnIntOrDefault(rs, "order_index", 0);
-        String name = getColumnString(rs, "name", "title");
-        String assignee = rs.getString("assignee");
-        LocalDate startDate = parseSafeDate(rs, "start_date");
-        LocalDate endDate = parseSafeDate(rs, "end_date");
-        String status = rs.getString("status");
-        int progress = rs.getInt("progress");
-
-        Task task = new Task(taskId, name, parentId, level, orderIndex, progress, status, startDate, endDate);
-        task.setAssignee(assignee);
-        try {
-            task.setPriority(rs.getString("priority"));
-        } catch (SQLException ignored) {
-            // 旧スキーマ互換
-        }
-        try {
-            task.setMemo(rs.getString("memo"));
-        } catch (SQLException ignored) {
-            // 旧スキーマ互換
-        }
+        Task task = new Task(taskId, rs.getString("name"), parentId, rs.getInt("level"), rs.getInt("order_index"),
+                rs.getInt("progress"), rs.getString("status"),
+                parseDate(rs.getString("start_date"), taskId), parseDate(rs.getString("end_date"), taskId));
+        task.setAssignee(rs.getString("assignee"));
+        task.setPriority(rs.getString("priority"));
+        task.setMemo(rs.getString("memo"));
         return task;
     }
 
-    public static LocalDate parseSafeDate(ResultSet rs, String columnName) {
-        try {
-            String dateStr = rs.getString(columnName);
-            if (dateStr == null || dateStr.trim().isEmpty()) {
-                return null;
-            }
-            if (dateStr.contains("T")) {
-                dateStr = dateStr.split("T")[0];
-            }
-            return LocalDate.parse(dateStr.trim());
-        } catch (Exception e) {
+    /** 「2026-10-24」と、前の版が書いた「2026-10-24T00:00」を読む。読めない日付は空にしてログに残す。 */
+    static LocalDate parseDate(String text, int taskId) {
+        if (text == null || text.isBlank()) {
             return null;
         }
-    }
-
-    public static int getColumnInt(ResultSet rs, String col1, String col2) throws SQLException {
+        String date = text.trim();
+        int time = date.indexOf('T');
         try {
-            return rs.getInt(col1);
-        } catch (SQLException e) {
-            return rs.getInt(col2);
+            return LocalDate.parse(time >= 0 ? date.substring(0, time) : date);
+        } catch (DateTimeParseException e) {
+            logger.warn("タスク {} の日付「{}」を読めないため、空として扱います", taskId, text);
+            return null;
         }
-    }
-
-    public static int getColumnIntOrDefault(ResultSet rs, String col, int defaultValue) {
-        try {
-            return rs.getInt(col);
-        } catch (SQLException e) {
-            return defaultValue;
-        }
-    }
-
-    public static String getColumnString(ResultSet rs, String col1, String col2) throws SQLException {
-        try {
-            String val = rs.getString(col1);
-            if (val != null) {
-                return val;
-            }
-        } catch (SQLException ignored) {
-        }
-        return rs.getString(col2);
     }
 }
