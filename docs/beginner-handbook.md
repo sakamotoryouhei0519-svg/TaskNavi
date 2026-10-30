@@ -201,7 +201,7 @@
 - 消したあと10秒間、画面下の帯に「元に戻す」が出ます。押すと、子タスクも含めて元の ID のまま戻ります（`TaskService.restoreDeleted`）。その間に親が消されていたら、戻しません
 - 並べ替えも1回で保存します
 - 自分だけのタスクは、その PC の Windows ユーザーのものです。データベースには持ち主の欄がありません
-- 自分だけのタスクが 1 件もないときは、起動時にサンプルのプロジェクトを入れます（`SampleDataUtil.insertSampleTasksIfEmpty`）。名前に番号は付けません（番号はツリーが付ける）。前の版で入った「1. 企画・要件定義フェーズ」などの番号は、データベースの更新 `V7__unnumber_sample_stages.sql` が外します
+- データベースを初めて作った起動のときだけ、サンプルのプロジェクトを入れます（`SampleDataUtil.insertSampleTasksIfEmpty`。初めてかどうかは `Database.takeCreatedNow` が、Flyway がまだ何も当てていなかったかで決めます）。前は「タスクが 1 件もなければ」入れていたので、本番を始めるときに見本を全部消すと、次の起動で見本が戻っていました。名前に番号は付けません（番号はツリーが付ける）。前の版で入った「1. 企画・要件定義フェーズ」などの番号は、データベースの更新 `V7__unnumber_sample_stages.sql` が外します
 - データベースは `%APPDATA%\TaskNavi\tasknavi.db` に置きます。どのフォルダから起動しても同じです（`AppDataLocation`）
 - 起動するたびに、その日の分がまだなければ `backups` フォルダにコピーを取ります。7日分残します（`DatabaseBackup`）。戻すときは、アプリを閉じてから、そのコピーを `tasknavi.db` という名前で上書きします
 - ログは `%APPDATA%\TaskNavi\logs` に残します。今日の分は `tasknavi.log`、前の日の分は日付付きのファイルで、14日分だけ残します（`logback.xml` と `LogDirectoryDefiner`）。困ったことが起きたら、まずここを見ます。テストのときはファイルに書きません（`src/test/resources/logback-test.xml`）

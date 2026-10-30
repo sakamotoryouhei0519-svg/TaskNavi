@@ -9,13 +9,16 @@ import java.sql.*;
 import java.time.LocalDate;
 
 /**
- * 自分だけのタスクが 1 件もないときだけ、サンプルのプロジェクトを入れる。
+ * データベースを初めて作ったときに、自分だけのタスクが 1 件もなければ、サンプルのプロジェクトを入れる。
  */
 public class SampleDataUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(SampleDataUtil.class);
 
     public static void insertSampleTasksIfEmpty() {
+        if (!Database.takeCreatedNow()) {
+            return;
+        }
         String countSql = "SELECT COUNT(*) FROM tasks";
 
         try (Connection conn = Database.connect()) {

@@ -28,7 +28,7 @@
 |------|----------|
 | 必読 | `Main.java` |
 | 必読 | `persistence/Database.java`（Flyway で表を用意） |
-| 関連 | `persistence/SampleDataUtil.java`（タスクが 1 件もなければサンプル投入） |
+| 関連 | `persistence/SampleDataUtil.java`（DB を初めて作ったときだけサンプル投入。`Database.takeCreatedNow`） |
 | 関連 | `db/migration/V6__drop_login.sql`（前の版のログイン用の表を外す） |
 | 関連 | `db/migration/V7__unnumber_sample_stages.sql`（サンプルの段階名の「1. 」などを外す） |
 
@@ -45,7 +45,7 @@ main()
     → splash.setVisible(true) (表示)
     → Timer(1000ms) で1秒待機
       → splash.dispose() (スプラッシュ消去)
-      → SampleDataUtil.insertSampleTasksIfEmpty() (空のときだけサンプル)
+      → SampleDataUtil.insertSampleTasksIfEmpty() (DB を初めて作ったときだけサンプル)
       → openMainFrame()
         → TaskService.createDefault() (サービス作成)
         → new MainFrame() (メイン画面作成)

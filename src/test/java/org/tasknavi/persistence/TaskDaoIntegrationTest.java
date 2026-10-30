@@ -242,6 +242,7 @@ class TaskDaoIntegrationTest {
 
     @Test
     void sampleTasksAreInsertedOnlyIntoAnEmptyLedger() {
+        DatabaseTestConfig.useIsolatedDatabase();
         SampleDataUtil.insertSampleTasksIfEmpty();
         int sampleCount = taskDao.getAllTasks().size();
         assertTrue(sampleCount > 0);
@@ -253,6 +254,21 @@ class TaskDaoIntegrationTest {
         taskDao.addTask(importRow(0, null, 1, 0, "自分のプロジェクト"));
         SampleDataUtil.insertSampleTasksIfEmpty();
         assertEquals(List.of("自分のプロジェクト"), taskDao.getAllTasks().stream().map(Task::getName).toList());
+    }
+
+    @Test
+    void samplesDoNotComeBackAfterTheUserDeletesAllOfThem() {
+        DatabaseTestConfig.useIsolatedDatabase();
+        SampleDataUtil.insertSampleTasksIfEmpty();
+        assertTrue(taskDao.getAllTasks().size() > 0);
+
+        DatabaseTestConfig.clearTasksTable();
+        SampleDataUtil.insertSampleTasksIfEmpty();
+        assertTrue(taskDao.getAllTasks().isEmpty(), "見本を消して空にしたら、次に起動しても見本は戻らない");
+
+        Database.setJdbcUrl(Database.getJdbcUrl());
+        SampleDataUtil.insertSampleTasksIfEmpty();
+        assertTrue(taskDao.getAllTasks().isEmpty(), "作ってある DB を開き直しても戻らない");
     }
 
     private static Task importRow(int id, Integer parentId, int level, int order, String name) {

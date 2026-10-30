@@ -25,6 +25,7 @@ public class Database {
 
     private static volatile String dbUrl = DEFAULT_DB_URL;
     private static volatile boolean migrated = false;
+    private static volatile boolean createdNow = false;
 
     private Database() {
     }
@@ -143,7 +144,21 @@ public class Database {
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
                 .load();
+        createdNow = flyway.info().applied().length == 0;
         flyway.migrate();
+    }
+
+    /**
+     * 今回の起動でデータベースを新しく作ったなら、1回だけ true を返す。
+     * 見本を入れるのを「初めて使うとき」だけにするため。見本を全部消した人が次に起動しても、また入らない。
+     */
+    public static boolean takeCreatedNow() {
+        ensureMigrated();
+        synchronized (MIGRATION_LOCK) {
+            boolean result = createdNow;
+            createdNow = false;
+            return result;
+        }
     }
 
     public static void initialize() {
