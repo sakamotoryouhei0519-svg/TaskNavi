@@ -53,7 +53,7 @@ jobs:
 
       - name: Upload coverage report
         if: always() && hashFiles('target/site/jacoco/index.html') != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: target/site/jacoco/
