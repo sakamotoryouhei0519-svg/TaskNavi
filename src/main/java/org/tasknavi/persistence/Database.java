@@ -101,13 +101,9 @@ public class Database {
      * 失敗しても起動は止めない。
      */
     public static void prepareOnStartup() {
-        Path legacyFile = Path.of(AppDataLocation.DB_FILE_NAME).toAbsolutePath();
-        try {
-            if (DatabaseBackup.copyLegacyDatabaseIfNeeded(legacyFile, DEFAULT_DB_FILE)) {
-                logger.info("以前の DB を引き継ぎました: {} -> {}", legacyFile, DEFAULT_DB_FILE);
-            }
-        } catch (IOException e) {
-            logger.warn("以前の DB を引き継げませんでした: {}", legacyFile, e);
+        // 試す用などでフォルダを指定したときは、起動したフォルダの古い DB を持ち込まない
+        if (!AppDataLocation.isOverridden()) {
+            copyLegacyDatabase();
         }
         try {
             DatabaseBackup.backupDaily(DEFAULT_DB_FILE, AppDataLocation.backupDirectory(),
@@ -117,6 +113,18 @@ public class Database {
             logger.warn("DB のバックアップに失敗しました", e);
         }
         logger.info("DB の場所: {}", DEFAULT_DB_FILE);
+    }
+
+    /** 前の版は起動したフォルダに DB を置いていた。いつもの場所にまだ DB が無ければ、それを写す。 */
+    private static void copyLegacyDatabase() {
+        Path legacyFile = Path.of(AppDataLocation.DB_FILE_NAME).toAbsolutePath();
+        try {
+            if (DatabaseBackup.copyLegacyDatabaseIfNeeded(legacyFile, DEFAULT_DB_FILE)) {
+                logger.info("以前の DB を引き継ぎました: {} -> {}", legacyFile, DEFAULT_DB_FILE);
+            }
+        } catch (IOException e) {
+            logger.warn("以前の DB を引き継げませんでした: {}", legacyFile, e);
+        }
     }
 
     private static void ensureDefaultDirectoryExists() {

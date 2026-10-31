@@ -276,11 +276,16 @@ public class AppTheme {
         return isDarkMode() ? new Color(96, 165, 250) : new Color(37, 99, 235);
     }
 
-    public static final Font FONT_MAIN = new Font("SansSerif", Font.PLAIN, 13);
-    public static final Font FONT_SMALL = new Font("SansSerif", Font.PLAIN, 12);
-    public static final Font FONT_BOLD = new Font("SansSerif", Font.BOLD, 13);
-    public static final Font FONT_TITLE = new Font("SansSerif", Font.BOLD, 22);
-    public static final Font FONT_HEADER = new Font("SansSerif", Font.BOLD, 15);
+    public static final Font FONT_MAIN = font(Font.PLAIN, 13);
+    public static final Font FONT_SMALL = font(Font.PLAIN, 12);
+    public static final Font FONT_BOLD = font(Font.BOLD, 13);
+    public static final Font FONT_TITLE = font(Font.BOLD, 22);
+    public static final Font FONT_HEADER = font(Font.BOLD, 15);
+
+    /** 画面の文字の書体。英語などで起動しても、日本語をゴシック体で描く（{@link AppFonts}）。 */
+    public static Font font(int style, int size) {
+        return AppFonts.font(style, size);
+    }
 
     static {
         applySwingDefaults();
@@ -288,6 +293,7 @@ public class AppTheme {
 
     /** 新しく開くダイアログも、現在のテーマで十分なコントラストを持たせます。 */
     public static void applySwingDefaults() {
+        AppFonts.applyToDefaults();
         Color buttonFace = controlBackground();
         UIManager.put("Panel.background", PANEL_BG);
         UIManager.put("Label.foreground", TEXT_PRIMARY);

@@ -23,6 +23,11 @@ public final class AppDataLocation {
                 System.getProperty("user.home"));
     }
 
+    /** `-Dtasknavi.dataDir` か TASKNAVI_DATA_DIR で、いつもと違うフォルダを指定しているか。 */
+    public static boolean isOverridden() {
+        return !isBlank(System.getProperty("tasknavi.dataDir")) || !isBlank(System.getenv("TASKNAVI_DATA_DIR"));
+    }
+
     public static Path databaseFile() {
         return dataDirectory().resolve(DB_FILE_NAME);
     }

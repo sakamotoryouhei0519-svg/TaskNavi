@@ -64,7 +64,7 @@ public final class GanttPainter {
 
         DateTimeFormatter monthFormat = DateTimeFormatter.ofPattern(
                 AppMessages.get("gantt.date.format.yearmonth", "yyyy年 M月"));
-        g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+        g2.setFont(AppTheme.font(Font.BOLD, 12));
         FontMetrics monthMetrics = g2.getFontMetrics();
         int monthStart = 0;
         while (monthStart < totalDays) {
@@ -86,8 +86,8 @@ public final class GanttPainter {
             monthStart = monthEnd;
         }
 
-        Font dayFont = new Font("SansSerif", Font.BOLD, dayWidth >= 26 ? 12 : 10);
-        Font weekdayFont = new Font("SansSerif", Font.PLAIN, dayWidth >= 28 ? 10 : 9);
+        Font dayFont = AppTheme.font(Font.BOLD, dayWidth >= 26 ? 12 : 10);
+        Font weekdayFont = AppTheme.font(Font.PLAIN, dayWidth >= 28 ? 10 : 9);
         int[] days = dayRange(g2, totalDays, dayWidth);
         for (int i = days[0]; i < days[1]; i++) {
             int x = i * dayWidth;
@@ -306,7 +306,7 @@ public final class GanttPainter {
         g2.drawRoundRect(barX, barY, barWidth, barHeight, 8, 8);
         g2.setStroke(new BasicStroke(1.0f));
 
-        g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+        g2.setFont(AppTheme.font(Font.BOLD, 12));
         String progressText = progress + "%";
         FontMetrics fm = g2.getFontMetrics();
         int textWidth = fm.stringWidth(progressText);

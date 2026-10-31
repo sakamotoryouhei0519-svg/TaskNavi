@@ -37,7 +37,7 @@
 ```
 main()
   → 未処理例外ハンドラ設定（Main.handleUncaught: ログに残す。起動中なら終了、画面が出た後はお知らせ帯）
-  → Database.prepareOnStartup() (古い DB の引き継ぎと1日1回のバックアップ)
+  → Database.prepareOnStartup() (古い DB の引き継ぎと1日1回のバックアップ。引き継ぎは、データのフォルダを指定していないときだけ)
   → SwingUtilities.invokeLater (EDT上で実行)
     → UIManager.setLookAndFeel (Look & Feel設定)
     → applyGlobalUiDefaults() (テーマ適用)
@@ -898,7 +898,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 3. 追った操作は「追加」（操作D）です。道は MainFrame → Helper → Dialog → Service → Bus です
 4. 保存の失敗は画面に出ます。削除と並べ替えは、途中だけ残りません
 5. 状態変更のルールは `TaskService.changeStatus` の1か所にあります。全件の読み込みは1回の変更で1回だけで、5つの画面で使い回します
-6. テストは 266 件で、CI で毎回動きます。通った行の割合は全体 65%、画面以外 87%、共有の記録の読み書き 94% で、`team` が 90% を下回ると CI が止まります
+6. テストは 269 件で、CI で毎回動きます。通った行の割合は全体 65%、画面以外 87%、共有の記録の読み書き 94% で、`team` が 90% を下回ると CI が止まります
 7. アプリにログインはありません。データは PC の中なので、守りは Windows のログインに任せています
 8. （社内で使い始めたら）使ってみてどうなったかを、`docs/results-log.md` の数字で話します。会社名や人の名前は出しません
 

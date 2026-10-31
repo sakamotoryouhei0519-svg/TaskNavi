@@ -47,7 +47,7 @@ public class DatePickerDialog extends JDialog {
         AppTheme.styleDialogSecondaryButton(btnPrev);
 
         JLabel lblYearMonth = new JLabel("", SwingConstants.CENTER);
-        lblYearMonth.setFont(new Font("SansSerif", Font.BOLD, 14));
+        lblYearMonth.setFont(AppTheme.font(Font.BOLD, 14));
         lblYearMonth.setForeground(AppTheme.TEXT_PRIMARY);
 
         JButton btnNext = new JButton(AppMessages.get("calendar.button.next", "＞"));
@@ -68,7 +68,7 @@ public class DatePickerDialog extends JDialog {
             String[] days = UiLabels.weekdaysSundayFirst();
             for (int i = 0; i < 7; i++) {
                 JLabel lblDay = new JLabel(days[i], SwingConstants.CENTER);
-                lblDay.setFont(new Font("SansSerif", Font.BOLD, 12));
+                lblDay.setFont(AppTheme.font(Font.BOLD, 12));
                 if (i == 0) {
                     lblDay.setForeground(AppTheme.sundayText());
                 } else if (i == 6) {
