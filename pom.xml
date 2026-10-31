@@ -167,6 +167,20 @@
                                         </limit>
                                     </limits>
                                 </rule>
+                                <!-- 共有の画面側。残りは人が押すダイアログで、配る前のチェック表で確かめる。下がらないことだけ見る -->
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <includes>
+                                        <include>org.tasknavi.ui.team</include>
+                                    </includes>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.25</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
                             </rules>
                         </configuration>
                     </execution>
