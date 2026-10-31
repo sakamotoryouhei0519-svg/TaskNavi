@@ -137,7 +137,7 @@ UI（ui/today・wbs・kanban・gantt・calendar ほか）
   | 3,000 | 46 ms | 13 ms |
   | 10,000 | 146 ms | 15 ms |
 - 画面の文言とエラー文は `messages*.properties` から取る。日本語と英語でキーがそろっているか、コードで使うキーが全部あるかはテスト（`AppMessagesTest`）で確かめる。テストは日本語に固定して動かし、英語はテストの中で切り替えて確かめる
-- テスト 263 件（JUnit 6）。共有の同期の遅れ・オフラインでの同時編集・同じ PC での2重起動も再現して確かめている。本物のメイン画面を両方のテーマで開き、読みにくい文字がないかも確かめている
+- テスト 266 件（JUnit 6）。共有の同期の遅れ・オフラインでの同時編集・同じ PC での2重起動も再現して確かめている。本物のメイン画面を両方のテーマで開き、読みにくい文字がないかも確かめている
 - テストが通った行の割合（JaCoCo）は次のとおり。共有の記録はチーム全員のデータに響くので、`team` が 90%、全体が 60%、共有の画面（`ui/team`）が 25% を下回ると CI が止まる。パッケージごとの表は CI の実行結果の Summary に出る
 
   | 範囲 | 行 | 分岐 |
@@ -211,6 +211,13 @@ java -cp "target/classes;target/test-classes;$(Get-Content target/cp.txt)" org.t
 
 ```powershell
 java -cp "target/classes;target/test-classes;$(Get-Content target/cp.txt)" org.tasknavi.tools.GanttBenchmark 1000 3000 10000
+```
+
+- 試す専用のデータを新しく作る（期限切れ・今日・明日、長い名前、`=1+1`、日付なし、同じ日に重なるタスク、空のプロジェクトなど 42 件。日付は作った日を今日として決める）。同じフォルダに、取り込みを試す `test-data.csv` と、わざと間違えた `test-data-bad.csv`（10 行が理由つきで止まる）もできる。最後の数を付けると、重さを試すタスクをその数だけ足す。いつものデータと、もうデータがあるフォルダには書かない:
+
+```powershell
+java -cp "target/classes;target/test-classes;$(Get-Content target/cp.txt)" org.tasknavi.tools.TestDataTool C:\TaskNaviTest
+$env:TASKNAVI_DATA_DIR = "C:\TaskNaviTest"; & "C:\TaskNavi\TaskNavi\TaskNavi.exe"
 ```
 
 - パッケージ／Maven `groupId` はともに `org.tasknavi`

@@ -849,6 +849,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | 1台で2人目として起動する | `Main` → `TeamSettings.applyLaunchArguments`（`--team-profile=名前`）→ `TeamSettings.userDefault` |
 | 同じ PC で2つ起動しても記録が壊れない | `TeamChangeLog.append`（PC 内のファイルでロック）/ `TeamChangeLogConcurrencyTest` |
 | README の画面の写真を撮る | `tools/ScreenshotTool`（`tasknavi.dataDir` と `--team-profile` と同じ仕組みで、見本のデータと別の設定を使う → `TeamProject.create` で3人分の共有プロジェクトを作る → タブを選んで `printAll` で PNG に） |
+| 試す専用のデータを作る | `tools/TestDataTool`（もうデータがあるフォルダには書かない → 行を CSV の形で作る → `TaskCsv.parse` → `TaskService.importTasks`。日付は今日からの日数で決める）/ `TestDataToolTest` |
 | テスト | `TaskOverdueTest` / `MainGlobalSearchBarDescribeTest` / `TaskDaoIntegrationTest` / `TeamProjectTest` / `TeamTaskRulesTest` / `TeamOtherProjectsTest` / `TeamChangeLogTest` / `TeamSettingsTest` / `TeamTaskStoreTest` / `DueTasksTest` / `DueReminderTest` / `TaskSourceTest` |
 
 ---
@@ -897,7 +898,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 3. 追った操作は「追加」（操作D）です。道は MainFrame → Helper → Dialog → Service → Bus です
 4. 保存の失敗は画面に出ます。削除と並べ替えは、途中だけ残りません
 5. 状態変更のルールは `TaskService.changeStatus` の1か所にあります。全件の読み込みは1回の変更で1回だけで、5つの画面で使い回します
-6. テストは 263 件で、CI で毎回動きます。通った行の割合は全体 65%、画面以外 87%、共有の記録の読み書き 94% で、`team` が 90% を下回ると CI が止まります
+6. テストは 266 件で、CI で毎回動きます。通った行の割合は全体 65%、画面以外 87%、共有の記録の読み書き 94% で、`team` が 90% を下回ると CI が止まります
 7. アプリにログインはありません。データは PC の中なので、守りは Windows のログインに任せています
 8. （社内で使い始めたら）使ってみてどうなったかを、`docs/results-log.md` の数字で話します。会社名や人の名前は出しません
 

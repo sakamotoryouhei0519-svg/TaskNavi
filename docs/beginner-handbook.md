@@ -350,7 +350,7 @@ WBS でタスクを選ぶ。右側は読めるだけで、その場では名前�
 2. 画面は表示と入力だけです。保存は `TaskService`、データベースは `TaskDao`、画面の更新は `TaskEventBus` です
 3. 自分が直したところは、保存の失敗が画面下の帯に出ること、選択が残ること、保存は成功したあとだけ他の画面に知らせること、削除と並べ替えを途中で残さないことです
 4. 状態を変えるルールは、カンバンとカレンダーの3か所にあったものを、`TaskService.changeStatus` の1か所に集めました。全件の読み込みも、1回の変更につき1回にしました
-5. テストは 263 件で、GitHub Actions で毎回動きます。テストが通った行の割合も測っていて、全体で 65%、画面以外で 87%、共有の記録の読み書きは 94% です。共有はチーム全員のデータに響くので、ここが 90% を下回ると CI が止まるようにしています
+5. テストは 266 件で、GitHub Actions で毎回動きます。テストが通った行の割合も測っていて、全体で 65%、画面以外で 87%、共有の記録の読み書きは 94% です。共有はチーム全員のデータに響くので、ここが 90% を下回ると CI が止まるようにしています
 6. アプリにログインはありません。データは PC の中にあるので、守りは Windows のログインに任せ、パスワードを忘れて開けなくなることをなくしました
 
 社内で使い始めたら、7番として「使ってみてどうなったか」を足します。数字は `docs/results-log.md` に書きためたものから話します（状況 → やったこと → 結果 → 直したこと の順。`results-log.md` の7章に例があります）。会社名や人の名前は出しません。
@@ -386,6 +386,7 @@ WBS でタスクを選ぶ。右側は読めるだけで、その場では名前�
 | 文言 | `messages_ja.properties`（英語は `messages_en.properties`。キーは3つのファイルでそろえる） |
 | 壊していないか | `mvn verify`（テストと、通った行の割合） |
 | README の画面の写真 | `src/test/java/org/tasknavi/tools/ScreenshotTool`（見本のデータだけで本物の画面を開いて撮る。動かし方は README の「開発メモ」）。画面を変えたら撮り直す |
+| 試す専用のデータ | `src/test/java/org/tasknavi/tools/TestDataTool`（新しいフォルダに、期限切れ・今日・長い名前・日付なしなどのタスクと、取り込みを試す CSV を作る。動かし方は README の「開発メモ」）。作る行は `TaskCsv` で読んで `TaskService.importTasks` で入れるので、アプリの取り込みと同じチェックを通る |
 | ガントが重い | `src/test/java/org/tasknavi/tools/GanttBenchmark`（何千件のときの描き直しの時間を測る）。描くのは `ui/gantt/GanttPanel.paintComponent` |
 | 配布用の `TaskNavi.exe` と zip を作る | `mvn -Pdist -DskipTests verify`（`pom.xml` の `dist`）。アイコンは `ui/AppIcon` と `src/main/packaging/TaskNavi.ico`。exe には作ったときの JDK の Java が入るので、JDK 25 以外だと `require-jdk-25` で止まります |
 
