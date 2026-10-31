@@ -5,10 +5,6 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
-    ignore:
-      # 11.5 以降は Java 21 向けにビルドされていて、Java 17 では読めない
-      - dependency-name: com.miglayout:miglayout-swing
-        versions: [">= 11.5"]
     groups:
       minor-and-patch:
         update-types:

@@ -6,9 +6,10 @@
 ## 1. 配る zip を作る
 
 1. `pom.xml` の `app.version` を上げる（例: `1.2.0` → `1.3.0`）。チームは全員同じ版にそろえるので、配るたびに上げます
-2. テストと配布物を作る
+2. テストと配布物を作る。JDK 25 で作ります（exe にはこの Java が入ります。ほかの版だと止まります）
 
 ```powershell
+$env:JAVA_HOME = "$env:USERPROFILE\.jdks\jdk-25.0.5+8"   # JDK 25 を入れた場所
 mvn verify
 mvn -Pdist -DskipTests verify
 ```

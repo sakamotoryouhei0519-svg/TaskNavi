@@ -363,6 +363,7 @@ WBS でタスクを選ぶ。右側は読めるだけで、その場では名前�
 - **なぜ Swing ですか**: Java に最初から入っていて、他に何も入れずに画面を作れるからです。1台のパソコンで動くアプリなので、Web にする必要がありませんでした。保存中に画面が固まらないよう、裏側で動かす（`SwingWorker`）ことも入れています
 - **なぜ SQLite ですか**: データベースが1つのファイルで済み、サーバーを立てなくてよいからです。表の形を変えるときは Flyway を使い、`V1` から `V7` まで順番に当てています
 - **どうやって配っていますか**: `jpackage` で、必要な分だけの Java を入れた `TaskNavi.exe` のフォルダを作り、zip にしています。使う人は Java を入れなくてよく、データは `%APPDATA%\TaskNavi` に置くので、アプリを入れ替えても消えません
+- **Java の版はなぜ 25 ですか**: exe に Java ごと入れて配るので、入れた Java の修正が止まると、アプリごと古くなります。配る前に、修正が長く出る LTS の最新（25）に上げました。部品の更新は Dependabot が毎週知らせ、CI が通るものだけを取り込みます
 - **管理者と一般で使えるボタンを分けないのはなぜですか**: チームで人を分けるのは Google ドライブの共有で行い、アプリでボタンを隠しても記録ファイルは直接書き換えられるからです。前の版にあった役割（`UserRole`）は、ログインと一緒に消しました。理由は15章の「やらないと決めたこと」に書いています
 
 ## 14. 直すときに最初に開くファイル
@@ -380,7 +381,7 @@ WBS でタスクを選ぶ。右側は読めるだけで、その場では名前�
 | 文言 | `messages_ja.properties` |
 | 壊していないか | `mvn verify`（テストと、通った行の割合） |
 | README の画面の写真 | `src/test/java/org/tasknavi/tools/ScreenshotTool`（見本のデータだけで本物の画面を開いて撮る。動かし方は README の「開発メモ」）。画面を変えたら撮り直す |
-| 配布用の `TaskNavi.exe` と zip を作る | `mvn -Pdist -DskipTests verify`（`pom.xml` の `dist`）。アイコンは `ui/AppIcon` と `src/main/packaging/TaskNavi.ico` |
+| 配布用の `TaskNavi.exe` と zip を作る | `mvn -Pdist -DskipTests verify`（`pom.xml` の `dist`）。アイコンは `ui/AppIcon` と `src/main/packaging/TaskNavi.ico`。exe には作ったときの JDK の Java が入るので、JDK 25 以外だと `require-jdk-25` で止まります |
 
 ルールは1つです。画面から `TaskDao` を直接呼ばない。
 

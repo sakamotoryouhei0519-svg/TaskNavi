@@ -1,6 +1,6 @@
 # TaskNavi
 
-**プロジェクト／タスク管理デスクトップアプリ**（Java 17 + Swing）。  
+**プロジェクト／タスク管理デスクトップアプリ**（Java 25 + Swing）。  
 WBS・カンバン・ガント・カレンダーを一つのウィンドウで切り替えます。自分だけのタスクは SQLite に保存し、チームのプロジェクトは Google ドライブの共有フォルダを通して、サーバーなしで数人で共有します。
 
 ## 解決したいこと
@@ -92,10 +92,10 @@ flowchart LR
 
 | 領域 | 技術 |
 |------|------|
-| 言語 | Java 17 |
+| 言語 | Java 25（長く修正が出る LTS の版） |
 | UI | Swing + MigLayout |
 | DB | SQLite + Flyway |
-| ビルド／テスト | Maven, JUnit 5 |
+| ビルド／テスト | Maven, JUnit 6 |
 | CI | GitHub Actions（Xvfb 上で `mvn verify`。失敗したテストは注釈で表示）、Qodana、Dependabot（使っている部品の更新と既知の弱点を毎週確認） |
 | テストの網羅率 | JaCoCo（割合が決めた値を下回ると CI が止まる） |
 | 配布 | jpackage（Java 入りの `TaskNavi.exe`） |
@@ -115,7 +115,7 @@ UI（ui/today・wbs・kanban・gantt・calendar ほか）
 - チーム共有（`team` パッケージ）: サーバーなしで共有フォルダを使う。各 PC は自分の変更記録ファイルに追記するだけなので、同期で「競合したコピー」ができない。全員の記録を決まった順に組み立てて一覧にし、互いを知らずに同じ項目を変えた場合は検出して残す
 - パッケージは役割ごと（`model` / `service` / `persistence` / `team` / `io` / `util` / `event` / `ui`）。画面は `ui` の中でタブごとに分ける
 - 共有フォルダのファイルは信用しない。丸ごと書き直す JSON は一時ファイルに書き切ってから付け替え（落ちても壊れたファイルが残らない）、読むときは大きさに上限を設ける（`TeamFiles`）
-- テスト 238 件（JUnit 5）。共有の同期の遅れ・オフラインでの同時編集・同じ PC での2重起動も再現して確かめている。本物のメイン画面を両方のテーマで開き、読みにくい文字がないかも確かめている
+- テスト 238 件（JUnit 6）。共有の同期の遅れ・オフラインでの同時編集・同じ PC での2重起動も再現して確かめている。本物のメイン画面を両方のテーマで開き、読みにくい文字がないかも確かめている
 - テストが通った行の割合（JaCoCo）は次のとおり。共有の記録はチーム全員のデータに響くので、`team` が 90%、全体が 60% を下回ると CI が止まる。パッケージごとの表は CI の実行結果の Summary に出る
 
   | 範囲 | 行 | 分岐 |
@@ -134,6 +134,8 @@ UI（ui/today・wbs・kanban・gantt・calendar ほか）
 
 ## 起動方法
 
+JDK 25 が要ります（JAVA_HOME を JDK 25 に向ける）。
+
 ```bash
 mvn -B verify          # テストと、通った行の割合の確認（表は target/site/jacoco/index.html）
 mvn -B -DskipTests package
@@ -147,6 +149,7 @@ mvn -Pdist -DskipTests verify
 ```
 
 - `target/jpackage/dist/TaskNavi/TaskNavi.exe` … ダブルクリックで起動。Java ごと入っているので、使うパソコンに Java は要りません
+- exe には、作ったときの JDK の Java が入ります。修正が長く出る版にそろえるため、JDK 25 以外で作ろうとすると止まります（`pom.xml` の `require-jdk-25`）
 - `target/TaskNavi-1.2.0-windows.zip` … 上のフォルダをまとめたもの。展開して `TaskNavi.exe` を起動します。名前の数字はアプリの版（`pom.xml` の `app.version`）なので、配った zip がどの版かが名前で分かります
 - 版は `pom.xml` の `app.version`。新しい版を配るときは上げてから作る（チームは全員同じ版にそろえる）
 - `TaskNavi.exe --team-profile=test2` … 共有プロジェクトを別の人として使う（1台で2人分の共有を試すとき。手順は教科書16章）
