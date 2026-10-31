@@ -15,6 +15,8 @@
         <app.version>1.2.0</app.version>
         <!-- -DskipTests で上書きされる。テストを飛ばしたときは割合の確認も飛ばす -->
         <skipTests>false</skipTests>
+        <!-- mvn exec:java で動かすクラス。-Dexec.mainClass で別のクラス（tools の道具など）に変えられる -->
+        <exec.mainClass>org.tasknavi.Main</exec.mainClass>
     </properties>
 
     <dependencies>
@@ -188,14 +190,11 @@
                 </executions>
             </plugin>
 
-            <!-- IDE / CLI: mvn exec:java （mainClass はここに寄せる） -->
+            <!-- IDE / CLI: mvn exec:java （動かすクラスは上の exec.mainClass） -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.6.4</version>
-                <configuration>
-                    <mainClass>org.tasknavi.Main</mainClass>
-                </configuration>
             </plugin>
         </plugins>
     </build>

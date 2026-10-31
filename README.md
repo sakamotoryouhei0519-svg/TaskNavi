@@ -220,6 +220,13 @@ java -cp "target/classes;target/test-classes;$(Get-Content target/cp.txt)" org.t
 $env:TASKNAVI_DATA_DIR = "C:\TaskNaviTest"; & "C:\TaskNavi\TaskNavi\TaskNavi.exe"
 ```
 
+  Maven だけで同じことをするなら（IntelliJ の Maven の実行構成にもそのまま書ける）。データのフォルダを指定しないと、いつものデータ（`%APPDATA%\TaskNavi`）が開く:
+
+```powershell
+mvn "-Dexec.mainClass=org.tasknavi.tools.TestDataTool" "-Dexec.classpathScope=test" "-Dexec.args=C:\TaskNaviTest" test-compile exec:java
+mvn "-Dtasknavi.dataDir=C:\TaskNaviTest" compile exec:java
+```
+
 - パッケージ／Maven `groupId` はともに `org.tasknavi`
 
 ## ライセンス
