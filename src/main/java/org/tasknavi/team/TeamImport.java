@@ -1,5 +1,7 @@
 package org.tasknavi.team;
 
+import org.tasknavi.AppMessages;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -39,18 +41,18 @@ final class TeamImport {
             TeamProject.ImportDraft draft = drafts.get(i);
             Map<TeamField, String> fields = new EnumMap<>(TeamField.class);
             fields.putAll(draft.values());
-            String row = (i + 1) + " 件目: ";
+            String row = String.valueOf(i + 1);
             int parentIndex = draft.parentIndex();
             int level;
             try {
                 TeamTaskRules.requireName(fields.get(TeamField.NAME));
                 if (parentIndex >= i) {
-                    throw new IllegalArgumentException("親タスクは先に並べてください");
+                    throw new IllegalArgumentException(AppMessages.get("team.error.import.parent.order", "親タスクは先に並べてください"));
                 }
                 level = TeamTaskRules.requireLevel(parentIndex >= 0 ? levels.get(parentIndex) + 1 : 1);
                 TeamTaskRules.requireDateOrder(fields.get(TeamField.START), fields.get(TeamField.END));
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException(row + e.getMessage(), e);
+                throw new IllegalArgumentException(AppMessages.format("team.error.import.row", "{0} 件目: {1}", row, e.getMessage()), e);
             }
             String parentId = parentIndex >= 0 ? ids.get(parentIndex) : null;
             fields.put(TeamField.PARENT, parentId);

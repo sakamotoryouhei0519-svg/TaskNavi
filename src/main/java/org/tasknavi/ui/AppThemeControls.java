@@ -136,8 +136,8 @@ final class AppThemeControls {
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
-        button.setBorder(null);
-        button.setMargin(new Insets(5, 14, 5, 14));
+        // 枠を null にすると setMargin が効かず、文字が詰まる。余白は枠で持たせる
+        button.setBorder(new EmptyBorder(5, 14, 5, 14));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.putClientProperty("dialog.fill", selected);
         if (selected) {

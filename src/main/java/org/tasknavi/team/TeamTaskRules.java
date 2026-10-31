@@ -1,5 +1,7 @@
 package org.tasknavi.team;
 
+import org.tasknavi.AppMessages;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -19,7 +21,7 @@ final class TeamTaskRules {
 
     static void requireName(String name) {
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("タスク名を入力してください");
+            throw new IllegalArgumentException(AppMessages.get("team.error.task.name.empty", "タスク名を入力してください"));
         }
     }
 
@@ -29,13 +31,13 @@ final class TeamTaskRules {
             return 1;
         }
         TeamTask parent = state.find(parentId)
-                .orElseThrow(() -> new IllegalArgumentException("親タスクが見つかりません"));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.get("team.error.parent.missing", "親タスクが見つかりません")));
         return requireLevel(parent.level() + 1);
     }
 
     static int requireLevel(int level) {
         if (level > MAX_LEVEL) {
-            throw new IllegalArgumentException("階層は " + MAX_LEVEL + " までです");
+            throw new IllegalArgumentException(AppMessages.format("team.error.level.max", "階層は {0} までです", String.valueOf(MAX_LEVEL)));
         }
         return level;
     }
@@ -46,10 +48,10 @@ final class TeamTaskRules {
         }
         try {
             if (LocalDate.parse(end.trim()).isBefore(LocalDate.parse(start.trim()))) {
-                throw new IllegalArgumentException("終了日は開始日以降の日付にしてください");
+                throw new IllegalArgumentException(AppMessages.get("team.error.dates.order", "終了日は開始日以降の日付にしてください"));
             }
         } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("日付は YYYY-MM-DD 形式で入力してください");
+            throw new IllegalArgumentException(AppMessages.get("team.error.date.format", "日付は YYYY-MM-DD 形式で入力してください"));
         }
     }
 
@@ -57,10 +59,10 @@ final class TeamTaskRules {
     static String requireCommentText(String text) {
         String body = text == null ? "" : text.strip();
         if (body.isEmpty()) {
-            throw new IllegalArgumentException("コメントを入力してください");
+            throw new IllegalArgumentException(AppMessages.get("team.error.comment.empty", "コメントを入力してください"));
         }
         if (body.length() > MAX_COMMENT_LENGTH) {
-            throw new IllegalArgumentException("コメントは " + MAX_COMMENT_LENGTH + " 文字までです");
+            throw new IllegalArgumentException(AppMessages.format("team.error.comment.length", "コメントは {0} 文字までです", String.valueOf(MAX_COMMENT_LENGTH)));
         }
         return body;
     }
@@ -75,10 +77,10 @@ final class TeamTaskRules {
         int parentLevel = 0;
         if (newParentId != null) {
             if (subtree.contains(newParentId)) {
-                throw new IllegalArgumentException("自分の下には移動できません");
+                throw new IllegalArgumentException(AppMessages.get("team.error.move.self", "自分の下には移動できません"));
             }
             parentLevel = state.find(newParentId)
-                    .orElseThrow(() -> new IllegalArgumentException("移動先の親タスクが見つかりません"))
+                    .orElseThrow(() -> new IllegalArgumentException(AppMessages.get("team.error.move.parent.missing", "移動先の親タスクが見つかりません")))
                     .level();
         }
         int deepest = subtree.stream()

@@ -679,7 +679,7 @@ paintComponent()
 | 必読 | `io/TaskCsv.java`（タスク ⇔ CSV、行ごとの検証） |
 | 必読 | `persistence/TaskImportDao.java`（ID の振り直し） |
 | 関連 | `io/CsvCodec.java`（引用符・改行・文字コード） / `io/TaskJson.java` |
-| テスト | `TaskCsvTest` / `CsvCodecTest` / `TaskJsonTest` / `TaskDataIoHelperTest` / `TaskDaoIntegrationTest`（import〜） |
+| テスト | `TaskCsvTest` / `CsvCodecTest` / `TaskJsonTest` / `TaskDataIoHelperTest` / `TaskDaoIntegrationTest`（import〜） / `AppMessagesTest`（英語のエラー文） |
 
 **コードの流れ（エクスポート）:**
 
@@ -719,6 +719,7 @@ paintComponent()
 - [ ] Excel で保存した CSV（Shift_JIS・`2026/10/24` 形式の日付）も読める理由を `CsvCodec.decode` と `TaskCsv.parseDate` で説明できる
 - [ ] 取り込み時に ID を振り直す理由と、親を先に入れる理由を言える
 - [ ] `TaskImportDao.importTasks()` が replaceExisting で全置換か追加を切り替えていると言える
+- [ ] 駄目な行の理由が英語を選ぶと英語で出る理由（`csv.error.*` のキー）と、CSV の見出しは日本語のままにする理由（データの形なので変えない。英語の見出しも読める）を言える
 
 ### 操作O2: 期限超過の見え方を確認する
 
@@ -896,7 +897,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 3. 追った操作は「追加」（操作D）です。道は MainFrame → Helper → Dialog → Service → Bus です
 4. 保存の失敗は画面に出ます。削除と並べ替えは、途中だけ残りません
 5. 状態変更のルールは `TaskService.changeStatus` の1か所にあります。全件の読み込みは1回の変更で1回だけで、5つの画面で使い回します
-6. テストは 258 件で、CI で毎回動きます。通った行の割合は全体 65%、画面以外 88%、共有の記録の読み書き 94% で、`team` が 90% を下回ると CI が止まります
+6. テストは 263 件で、CI で毎回動きます。通った行の割合は全体 65%、画面以外 87%、共有の記録の読み書き 94% で、`team` が 90% を下回ると CI が止まります
 7. アプリにログインはありません。データは PC の中なので、守りは Windows のログインに任せています
 8. （社内で使い始めたら）使ってみてどうなったかを、`docs/results-log.md` の数字で話します。会社名や人の名前は出しません
 

@@ -70,7 +70,7 @@ public class AppException extends RuntimeException {
     }
 
     public static AppException requiredField(String fieldName) {
-        String message = fieldName + (AppMessages.getLocale().getLanguage().equals("ja") ? "は必須項目です" : " is required.");
+        String message = AppMessages.format("error.required.named", "{0}は必須項目です", fieldName);
         return new AppException(ErrorCode.REQUIRED_FIELD_MISSING, message, message, null);
     }
 
@@ -83,8 +83,13 @@ public class AppException extends RuntimeException {
     }
 
     public static AppException notFound(String resourceName) {
-        String message = resourceName + (AppMessages.getLocale().getLanguage().equals("ja") ? "が見つかりません" : " was not found.");
+        String message = AppMessages.format("error.notfound.named", "{0}が見つかりません", resourceName);
         return new AppException(ErrorCode.RESOURCE_NOT_FOUND, message, message, null);
+    }
+
+    /** ID で探したタスクが無い。 */
+    public static AppException taskNotFound(int taskId) {
+        return notFound(AppMessages.format("error.task.id", "タスクID: {0}", String.valueOf(taskId)));
     }
 
     @Override

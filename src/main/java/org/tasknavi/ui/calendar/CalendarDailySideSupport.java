@@ -16,7 +16,6 @@ import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Graphics;
-import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -47,6 +46,8 @@ public final class CalendarDailySideSupport {
         JLabel lblDailyHeader = new JLabel("");
         lblDailyHeader.setFont(AppTheme.FONT_HEADER.deriveFont(Font.BOLD, 13f));
         lblDailyHeader.setForeground(AppTheme.TEXT_PRIMARY);
+        // 拡大表示では文字が測った幅より少し広く描かれ、末尾が欠けるので余白を持たせる
+        lblDailyHeader.setBorder(new EmptyBorder(0, 0, 0, 6));
 
         JLabel lblDailyCountBadge = new CountBadge(AppMessages.format("calendar.count.format", "{0}件", 0));
         lblDailyCountBadge.setFont(AppTheme.FONT_SMALL.deriveFont(Font.BOLD, 11f));
@@ -64,8 +65,9 @@ public final class CalendarDailySideSupport {
         btnAddTaskForDay.setForeground(Color.WHITE);
         btnAddTaskForDay.setFocusPainted(false);
         btnAddTaskForDay.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnAddTaskForDay.setBorder(AppTheme.createRoundedBorder(AppTheme.PRIMARY_DARK, 8, 1, 1, 1, 1));
-        btnAddTaskForDay.setMargin(new Insets(4, 10, 4, 10));
+        btnAddTaskForDay.setBorder(BorderFactory.createCompoundBorder(
+                AppTheme.createRoundedBorder(AppTheme.PRIMARY_DARK, 8, 1, 1, 1, 1),
+                new EmptyBorder(3, 8, 3, 8)));
         btnAddTaskForDay.addActionListener(e -> onAddTask.run());
 
         panel.add(titlePanel, "left, wmin 0");
@@ -86,7 +88,7 @@ public final class CalendarDailySideSupport {
         }
 
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern(
-                AppMessages.get("calendar.date.format.daily", "yyyy年MM月dd日 (E)"),
+                AppMessages.get("calendar.date.format.daily", "M月d日 (E)"),
                 AppMessages.getLocale());
         titleLabel.setText(selectedDate.format(dtf));
 

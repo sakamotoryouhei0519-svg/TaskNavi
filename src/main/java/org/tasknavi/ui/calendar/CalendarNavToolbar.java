@@ -8,10 +8,10 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Font;
-import java.awt.Insets;
 
 /**
  * カレンダー上部ナビ（前／今日／次・期間タイトル・月／週切替）。
@@ -109,8 +109,7 @@ public final class CalendarNavToolbar {
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setBackground(AppTheme.cardBackground());
         btn.setForeground(AppTheme.TEXT_PRIMARY);
-        btn.setBorder(null);
-        btn.setMargin(new Insets(4, 10, 4, 10));
+        btn.setBorder(new EmptyBorder(4, 10, 4, 10));
         return btn;
     }
 
@@ -119,7 +118,6 @@ public final class CalendarNavToolbar {
         btn.setFont(AppTheme.FONT_MAIN.deriveFont(Font.BOLD, 12f));
         btn.setFocusPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setMargin(new Insets(5, 14, 5, 14));
         applyViewSwitchStyle(btn, active);
         return btn;
     }

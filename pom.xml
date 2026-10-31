@@ -106,8 +106,9 @@
                 <version>3.6.1</version>
                 <configuration>
                     <useModulePath>false</useModulePath>
-                    <!-- @{argLine} は JaCoCo の計測用。sqlite-jdbc が DLL を読み込むときの警告を出さない -->
-                    <argLine>@{argLine} --enable-native-access=ALL-UNNAMED</argLine>
+                    <!-- @{argLine} は JaCoCo の計測用。sqlite-jdbc が DLL を読み込むときの警告を出さない。
+                         文言は OS の言語で変わるので、テストは日本語に固定する（英語は setLocale で確かめる） -->
+                    <argLine>@{argLine} --enable-native-access=ALL-UNNAMED -Duser.language=ja -Duser.country=JP</argLine>
                     <systemPropertyVariables>
                         <!-- テストが %APPDATA% の本物の DB に触れないようにする -->
                         <tasknavi.dataDir>${project.build.directory}/test-data</tasknavi.dataDir>

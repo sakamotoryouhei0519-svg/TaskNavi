@@ -3,6 +3,7 @@ package org.tasknavi.persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tasknavi.AppException;
+import org.tasknavi.AppMessages;
 import org.tasknavi.model.Task;
 
 import java.sql.Connection;
@@ -83,7 +84,8 @@ public final class TaskImportDao {
                     if (newParentId == null) {
                         throw AppException.businessRule(
                                 "取り込み対象に親がありません: parentId=" + importParentId,
-                                "「" + source.getName() + "」の親タスクが取り込むデータの中にありません。");
+                                AppMessages.format("error.import.parent.missing",
+                                        "「{0}」の親タスクが取り込むデータの中にありません。", source.getName()));
                     }
                     row.setParentId(newParentId);
                 }

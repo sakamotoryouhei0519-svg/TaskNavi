@@ -1,5 +1,7 @@
 package org.tasknavi.team;
 
+import org.tasknavi.AppMessages;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -21,7 +23,8 @@ final class TeamFiles {
     /** 上限より大きくて読まなかった。 */
     static final class TooLargeException extends IOException {
         TooLargeException(Path file, long maxBytes) {
-            super("ファイルが大きすぎるので読みません（上限 " + maxBytes / 1024 + " KB）: " + file.getFileName());
+            super(AppMessages.format("team.error.file.too.large", "ファイルが大きすぎるので読みません（上限 {0} KB）: {1}",
+                    String.valueOf(maxBytes / 1024), file.getFileName()));
         }
     }
 

@@ -141,7 +141,7 @@ public final class TaskCrudDao {
             TaskStatementBinder.bindUpdate(pstmt, task);
             int updated = pstmt.executeUpdate();
             if (updated == 0) {
-                throw AppException.notFound("タスクID: " + task.getId());
+                throw AppException.taskNotFound(task.getId());
             }
             logger.info("タスクID: {} を更新しました。", task.getId());
         }
@@ -154,7 +154,7 @@ public final class TaskCrudDao {
             pstmt.setInt(3, task.getId());
             int updated = pstmt.executeUpdate();
             if (updated == 0) {
-                throw AppException.notFound("タスクID: " + task.getId());
+                throw AppException.taskNotFound(task.getId());
             }
         }
     }
@@ -211,7 +211,7 @@ public final class TaskCrudDao {
             pstmt.setInt(3, task.getId());
             int updated = pstmt.executeUpdate();
             if (updated == 0) {
-                throw AppException.notFound("タスクID: " + task.getId());
+                throw AppException.taskNotFound(task.getId());
             }
         } catch (SQLException e) {
             logger.error("親タスク自動更新エラー", e);
@@ -236,7 +236,7 @@ public final class TaskCrudDao {
                         pstmt.setInt(2, entry.getKey());
                         int updated = pstmt.executeUpdate();
                         if (updated == 0) {
-                            throw AppException.notFound("タスクID: " + entry.getKey());
+                            throw AppException.taskNotFound(entry.getKey());
                         }
                     }
                 }

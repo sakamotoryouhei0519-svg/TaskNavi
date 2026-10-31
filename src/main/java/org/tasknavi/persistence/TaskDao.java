@@ -3,6 +3,7 @@ package org.tasknavi.persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tasknavi.AppException;
+import org.tasknavi.AppMessages;
 import org.tasknavi.model.Task;
 
 import java.util.ArrayList;
@@ -57,13 +58,14 @@ public class TaskDao implements TaskStore {
     /** @return 消したタスク（子を含む）。{@link #restoreTasks} に渡せば元に戻せる */
     public List<Task> deleteTask(int taskId) {
         if (taskId <= 0) {
-            throw AppException.validation("削除対象のIDが不正です: " + taskId, "削除対象を特定できませんでした。");
+            throw AppException.validation("削除対象のIDが不正です: " + taskId,
+                    AppMessages.get("error.delete.target", "削除対象を特定できませんでした。"));
         }
 
         List<Task> allTasks = getAllTasks();
         boolean exists = allTasks.stream().anyMatch(t -> t.getId() == taskId);
         if (!exists) {
-            throw AppException.notFound("タスクID: " + taskId);
+            throw AppException.taskNotFound(taskId);
         }
 
         Integer parentId = null;
@@ -114,7 +116,7 @@ public class TaskDao implements TaskStore {
             if (getTaskById(parentId) == null) {
                 throw AppException.businessRule(
                         "復元先の親タスクがありません: " + parentId,
-                        "親のタスクが削除されているため、元に戻せません。");
+                        AppMessages.get("error.restore.parent.missing", "親のタスクが削除されているため、元に戻せません。"));
             }
         }
 
@@ -142,7 +144,8 @@ public class TaskDao implements TaskStore {
             if (byImportId.putIfAbsent(task.getId(), task) != null) {
                 throw AppException.businessRule(
                         "取り込みデータの ID が重複しています: " + task.getId(),
-                        "取り込むデータに同じ ID のタスクが複数あります（ID: " + task.getId() + "）。");
+                        AppMessages.format("error.import.duplicate.id",
+                                "取り込むデータに同じ ID のタスクが複数あります（ID: {0}）。", String.valueOf(task.getId())));
             }
             valid.add(task);
         }
@@ -152,7 +155,7 @@ public class TaskDao implements TaskStore {
             } catch (AppException e) {
                 throw AppException.businessRule(
                         "インポートデータに不正な値があります: " + task.getName(),
-                        "「" + task.getName() + "」: " + e.getUserMessage());
+                        AppMessages.format("error.import.invalid.task", "「{0}」: {1}", task.getName(), e.getUserMessage()));
             }
         }
         if (valid.isEmpty()) {

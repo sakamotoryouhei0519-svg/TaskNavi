@@ -1,5 +1,6 @@
 package org.tasknavi.team;
 
+import org.tasknavi.AppMessages;
 import org.tasknavi.AppVersion;
 import org.tasknavi.model.Assignees;
 
@@ -112,7 +113,7 @@ public final class TeamProject {
     /** 自分の表示名を変える。これから書く記録に使い、過去の記録の名前は変えない。 */
     public synchronized void rename(String newAuthor) throws IOException {
         if (newAuthor == null || newAuthor.isBlank()) {
-            throw new IllegalArgumentException("表示名を入力してください");
+            throw new IllegalArgumentException(AppMessages.get("team.error.displayname.empty", "表示名を入力してください"));
         }
         author = newAuthor.trim();
         registerSelf();
@@ -291,7 +292,7 @@ public final class TeamProject {
      */
     public synchronized int reassign(String from, String to) throws IOException {
         if (to == null || to.isBlank()) {
-            throw new IllegalArgumentException("担当者の名前を入力してください");
+            throw new IllegalArgumentException(AppMessages.get("team.error.assignee.empty", "担当者の名前を入力してください"));
         }
         long clockValue = state.maxClock();
         Instant now = Instant.now(clock);
@@ -390,7 +391,7 @@ public final class TeamProject {
      */
     public synchronized int restoreTask(String taskId) throws IOException {
         if (!state.versions().containsKey(taskId)) {
-            throw new IllegalArgumentException("タスクが見つかりません");
+            throw new IllegalArgumentException(AppMessages.get("team.error.task.missing", "タスクが見つかりません"));
         }
         int restored = 0;
         for (String id : TeamTaskRules.restoreTargets(state.versions(), taskId)) {
@@ -438,11 +439,11 @@ public final class TeamProject {
         TeamComment comment = state.comments(taskId).stream()
                 .filter(each -> each.eventId().equals(commentId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("コメントが見つかりません"));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.get("team.error.comment.missing", "コメントが見つかりません")));
         if (!canChange(comment)) {
             throw new IllegalArgumentException(comment.deleted()
-                    ? "このコメントはもう削除されています"
-                    : "編集・削除できるのは、この PC で書いた自分のコメントだけです");
+                    ? AppMessages.get("team.error.comment.deleted", "このコメントはもう削除されています")
+                    : AppMessages.get("team.error.comment.notmine", "編集・削除できるのは、この PC で書いた自分のコメントだけです"));
         }
         return comment;
     }
@@ -452,7 +453,7 @@ public final class TeamProject {
     private void requireLive(String taskId) {
         TeamState.Version version = state.versions().get(taskId);
         if (version == null || version.deleted() || state.find(taskId).isEmpty()) {
-            throw new IllegalArgumentException("タスクが見つかりません（削除された可能性があります）");
+            throw new IllegalArgumentException(AppMessages.get("team.error.task.deleted", "タスクが見つかりません（削除された可能性があります）"));
         }
     }
 

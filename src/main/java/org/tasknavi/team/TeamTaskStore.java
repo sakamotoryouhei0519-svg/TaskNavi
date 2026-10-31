@@ -1,6 +1,7 @@
 package org.tasknavi.team;
 
 import org.tasknavi.AppException;
+import org.tasknavi.AppMessages;
 import org.tasknavi.model.Task;
 import org.tasknavi.persistence.TaskStore;
 
@@ -95,7 +96,7 @@ public final class TeamTaskStore implements TaskStore {
         }
         for (Task task : tasks) {
             if (task.getName() == null || task.getName().isBlank()) {
-                throw AppException.validation("タスク名が空です", "タスク名を入力してください。");
+                throw AppException.validation("タスク名が空です", AppMessages.get("team.error.task.name.empty", "タスク名を入力してください"));
             }
         }
         for (Task task : tasks) {
@@ -237,7 +238,7 @@ public final class TeamTaskStore implements TaskStore {
     private String requireUuid(int taskId) {
         String uuid = uuidOf(taskId);
         if (uuid == null) {
-            throw AppException.notFound("タスク");
+            throw AppException.notFound(AppMessages.get("dialog.type.task", "タスク"));
         }
         return uuid;
     }
@@ -291,7 +292,7 @@ public final class TeamTaskStore implements TaskStore {
             throw AppException.validation(e.getMessage(), e.getMessage());
         } catch (IOException e) {
             throw AppException.businessRule("共有フォルダの読み書きに失敗しました: " + e.getMessage(),
-                    "共有フォルダに保存できませんでした。Google ドライブがつながっているか確認してください。");
+                    AppMessages.get("team.error.save.failed", "共有フォルダに保存できませんでした。Google ドライブがつながっているか確認してください。"));
         }
     }
 }

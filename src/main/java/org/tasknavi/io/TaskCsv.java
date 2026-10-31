@@ -1,5 +1,6 @@
 package org.tasknavi.io;
 
+import org.tasknavi.AppMessages;
 import org.tasknavi.model.Priority;
 import org.tasknavi.model.Task;
 import org.tasknavi.model.TaskStatus;
@@ -157,12 +158,12 @@ public final class TaskCsv {
     public static ReadResult parse(String text) {
         List<CsvCodec.Row> rows = CsvCodec.parse(text, CsvCodec.detectDelimiter(text));
         if (rows.isEmpty()) {
-            return new ReadResult(List.of(), List.of(new RowError(1, "ファイルにデータがありません。")));
+            return new ReadResult(List.of(), List.of(new RowError(1, AppMessages.get("csv.error.empty", "ファイルにデータがありません。"))));
         }
         Map<Column, Integer> columns = mapHeader(rows.get(0).fields());
         if (!columns.containsKey(Column.NAME)) {
             return new ReadResult(List.of(), List.of(new RowError(rows.get(0).lineNumber(),
-                    "1 行目に「タスク名」の列がありません。TaskNavi で書き出した CSV の見出し行を使ってください。")));
+                    AppMessages.get("csv.error.no.name.column", "1 行目に「タスク名」の列がありません。TaskNavi で書き出した CSV の見出し行を使ってください。"))));
         }
 
         List<ParsedRow> parsed = new ArrayList<>();
@@ -172,7 +173,8 @@ public final class TaskCsv {
             if (parsedRow.key != null) {
                 ParsedRow first = byKey.putIfAbsent(parsedRow.key, parsedRow);
                 if (first != null) {
-                    parsedRow.problems.add("ID「" + parsedRow.key + "」が " + first.lineNumber + " 行目と重複しています");
+                    parsedRow.problems.add(AppMessages.format("csv.error.duplicate.id", "ID「{0}」が {1} 行目と重複しています",
+                            parsedRow.key, String.valueOf(first.lineNumber)));
                 }
             }
             parsed.add(parsedRow);
@@ -209,12 +211,12 @@ public final class TaskCsv {
 
         String name = unprotect(field(row, columns, Column.NAME));
         if (name.isEmpty()) {
-            parsed.problems.add("タスク名が空です");
+            parsed.problems.add(AppMessages.get("csv.error.name.empty", "タスク名が空です"));
         }
-        LocalDate start = parseDate(field(row, columns, Column.START), "開始日", parsed.problems);
-        LocalDate end = parseDate(field(row, columns, Column.END), "終了日", parsed.problems);
+        LocalDate start = parseDate(field(row, columns, Column.START), AppMessages.get("csv.label.start", "開始日"), parsed.problems);
+        LocalDate end = parseDate(field(row, columns, Column.END), AppMessages.get("csv.label.end", "終了日"), parsed.problems);
         if (start != null && end != null && start.isAfter(end)) {
-            parsed.problems.add("開始日が終了日より後になっています");
+            parsed.problems.add(AppMessages.get("csv.error.dates.order", "開始日が終了日より後になっています"));
         }
 
         Task task = new Task(0, name, null, 1, 0, 0,
@@ -247,7 +249,7 @@ public final class TaskCsv {
         } catch (NumberFormatException ignored) {
             // 下でまとめて伝える
         }
-        problems.add("階層「" + text + "」は 1〜" + MAX_LEVEL + " の数字にしてください");
+        problems.add(AppMessages.format("csv.error.level", "階層「{0}」は 1〜{1} の数字にしてください", text, String.valueOf(MAX_LEVEL)));
         return null;
     }
 
@@ -262,7 +264,7 @@ public final class TaskCsv {
         try {
             return LocalDate.parse(normalized, DATE_INPUT);
         } catch (DateTimeParseException e) {
-            problems.add(label + "「" + text + "」を日付として読めません（例: 2026/10/24）");
+            problems.add(AppMessages.format("csv.error.date", "{0}「{1}」を日付として読めません（例: 2026/10/24）", label, text));
             return null;
         }
     }
@@ -276,7 +278,7 @@ public final class TaskCsv {
                 return status;
             }
         }
-        problems.add("状態「" + text + "」は 未着手・進行中・完了 のどれかにしてください");
+        problems.add(AppMessages.format("csv.error.status", "状態「{0}」は 未着手・進行中・完了 のどれかにしてください", text));
         return TaskStatus.NOT_STARTED;
     }
 
@@ -289,7 +291,7 @@ public final class TaskCsv {
                 return priority;
             }
         }
-        problems.add("優先度「" + text + "」は 高・中・低 のどれかにしてください");
+        problems.add(AppMessages.format("csv.error.priority", "優先度「{0}」は 高・中・低 のどれかにしてください", text));
         return Priority.MEDIUM;
     }
 
@@ -305,7 +307,7 @@ public final class TaskCsv {
         } catch (NumberFormatException ignored) {
             // 下でまとめて伝える
         }
-        problems.add("進捗「" + text + "」は 0〜100 の数字にしてください");
+        problems.add(AppMessages.format("csv.error.progress", "進捗「{0}」は 0〜100 の数字にしてください", text));
         return 0;
     }
 
@@ -314,7 +316,7 @@ public final class TaskCsv {
             return;
         }
         if (!visiting.add(row)) {
-            row.problems.add("親子関係が循環しています");
+            row.problems.add(AppMessages.get("csv.error.cycle", "親子関係が循環しています"));
             row.resolved = true;
             return;
         }
@@ -322,13 +324,15 @@ public final class TaskCsv {
         if (row.parentKey != null) {
             ParsedRow parent = byKey.get(row.parentKey);
             if (parent == null || parent == row) {
-                row.problems.add("親ID「" + row.parentKey + "」の行が見つかりません");
+                row.problems.add(AppMessages.format("csv.error.parent.missing", "親ID「{0}」の行が見つかりません", row.parentKey));
             } else {
                 resolveHierarchy(parent, byKey, visiting);
                 if (!parent.problems.isEmpty()) {
-                    row.problems.add("親の行（" + parent.lineNumber + " 行目）を取り込めないため、この行も取り込めません");
+                    row.problems.add(AppMessages.format("csv.error.parent.invalid",
+                            "親の行（{0} 行目）を取り込めないため、この行も取り込めません", String.valueOf(parent.lineNumber)));
                 } else if (parent.level >= MAX_LEVEL) {
-                    row.problems.add("階層 " + MAX_LEVEL + " のタスクの下には追加できません");
+                    row.problems.add(AppMessages.format("csv.error.too.deep", "階層 {0} のタスクの下には追加できません",
+                            String.valueOf(MAX_LEVEL)));
                 } else {
                     level = parent.level + 1;
                     row.parent = parent;
@@ -337,8 +341,9 @@ public final class TaskCsv {
         }
         if (row.declaredLevel != null && row.problems.isEmpty() && row.declaredLevel != level) {
             row.problems.add(row.parent == null
-                    ? "親ID が空の行は階層 1（プロジェクト）です"
-                    : "階層は " + level + " にしてください（親が階層 " + (level - 1) + " のため）");
+                    ? AppMessages.get("csv.error.root.level", "親ID が空の行は階層 1（プロジェクト）です")
+                    : AppMessages.format("csv.error.level.expected", "階層は {0} にしてください（親が階層 {1} のため）",
+                            String.valueOf(level), String.valueOf(level - 1)));
         }
         row.level = level;
         row.resolved = true;
@@ -358,7 +363,8 @@ public final class TaskCsv {
         }
         for (ParsedRow row : parsed) {
             if (!row.problems.isEmpty()) {
-                errors.add(new RowError(row.lineNumber, String.join("。", row.problems) + "。"));
+                errors.add(new RowError(row.lineNumber, String.join(AppMessages.get("csv.error.separator", "。"), row.problems)
+                        + AppMessages.get("csv.error.end", "。")));
                 continue;
             }
             Task task = row.task;
