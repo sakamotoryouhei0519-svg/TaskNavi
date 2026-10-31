@@ -27,10 +27,8 @@ import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * ガントタブ。左に WBS の階層、右に日付と進捗のバーを描き、バーのドラッグで期間を変える。
@@ -55,7 +53,7 @@ public class GanttPanel extends JPanel implements SearchablePanel {
     private String currentSearchKeyword = null;
     private String currentStatusFilter = null;
     private Integer currentProjectFilterId = null;
-    private final Map<Integer, Set<Integer>> projectMemberCache = new HashMap<>();
+    private final GanttRows rows = new GanttRows();
 
     private Task hoveredTask = null;
     private Integer selectedTaskId = null;
@@ -71,8 +69,8 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         }
 
         @Override
-        public List<Task> cachedTasks() {
-            return cachedTasks;
+        public Map<Integer, List<Task>> childrenMap() {
+            return getChildrenMap();
         }
 
         @Override
@@ -318,7 +316,6 @@ public class GanttPanel extends JPanel implements SearchablePanel {
 
     public void setTasks(List<Task> tasks) {
         cachedTasks = tasks != null ? new ArrayList<>(tasks) : new ArrayList<>();
-        projectMemberCache.clear();
         manualVisibleWindow = false;
         notifyLayoutChanged();
     }
@@ -345,10 +342,8 @@ public class GanttPanel extends JPanel implements SearchablePanel {
 
     private void syncPreferredSize() {
         List<Task> tasks = getVisibleTasks();
-        List<Task> allSortedTasks = TaskHierarchyUtil.sortDepthFirst(cachedTasks);
-        Map<Integer, List<Task>> childMap = TaskHierarchyUtil.buildChildrenMap(allSortedTasks);
         LocalDate[] visibleWindow = GanttDisplayDates.calculateVisibleDateWindow(
-                tasks, childMap, manualVisibleWindow, visibleStartDate, visibleEndDate);
+                tasks, getChildrenMap(), manualVisibleWindow, visibleStartDate, visibleEndDate);
         int days = Math.max(GanttMetrics.MIN_VISIBLE_DAYS,
                 (int) ChronoUnit.DAYS.between(visibleWindow[0], visibleWindow[1]) + 1);
         totalDays = days;
@@ -401,9 +396,8 @@ public class GanttPanel extends JPanel implements SearchablePanel {
             return;
         }
 
-        List<Task> allSortedTasks = TaskHierarchyUtil.sortDepthFirst(cachedTasks);
         List<Task> tasks = getVisibleTasks();
-        Map<Integer, List<Task>> childMap = TaskHierarchyUtil.buildChildrenMap(allSortedTasks);
+        Map<Integer, List<Task>> childMap = getChildrenMap();
 
         LocalDate[] visibleWindow = GanttDisplayDates.calculateVisibleDateWindow(
                 tasks, childMap, manualVisibleWindow, visibleStartDate, visibleEndDate);
@@ -416,9 +410,14 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         g2.setColor(AppTheme.PANEL_BG);
         g2.fillRect(0, 0, getWidth(), getHeight());
         int rowsHeight = tasks.size() * GanttMetrics.ROW_HEIGHT;
-        GanttPainter.drawRowStripes(g2, tasks.size(), GanttMetrics.ROW_HEIGHT, getWidth());
+        Rectangle clip = g2.getClipBounds();
+        if (clip == null) {
+            clip = new Rectangle(0, 0, getWidth(), getHeight());
+        }
+        int[] shown = GanttBarGeometry.cellRange(clip.y, clip.y + clip.height, GanttMetrics.ROW_HEIGHT, tasks.size());
+        GanttPainter.drawRowStripes(g2, shown[0], shown[1], GanttMetrics.ROW_HEIGHT, getWidth());
         Integer hoverId = hoveredTask == null ? null : hoveredTask.getId();
-        for (int row = 0; row < tasks.size(); row++) {
+        for (int row = shown[0]; row < shown[1]; row++) {
             Integer id = tasks.get(row).getId();
             boolean selected = selectedTaskId != null && selectedTaskId.equals(id);
             boolean hovered = hoverId != null && hoverId.equals(id);
@@ -430,8 +429,8 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         GanttPainter.overlayDayColumns(g2, minDate, rowsHeight, totalDays, dayWidth);
 
         Rectangle visible = getVisibleRect();
-        int currentY = 0;
-        for (Task task : tasks) {
+        for (int row = shown[0]; row < shown[1]; row++) {
+            Task task = tasks.get(row);
             boolean dragging = dragSession.isDragging(task);
             LocalDate dragStart = null;
             LocalDate dragEnd = null;
@@ -443,16 +442,15 @@ public class GanttPanel extends JPanel implements SearchablePanel {
                 }
             }
             GanttPainter.drawBar(
-                    g2, task, minDate, currentY, childMap, dayWidth,
+                    g2, task, minDate, row * GanttMetrics.ROW_HEIGHT, childMap, dayWidth,
                     GanttMetrics.ROW_HEIGHT, GanttMetrics.BAR_HEIGHT,
                     dragging,
                     selectedTaskId != null && selectedTaskId.equals(task.getId()),
                     dragStart, dragEnd,
                     visible.x, visible.x + visible.width);
-            currentY += GanttMetrics.ROW_HEIGHT;
         }
 
-        GanttPainter.drawTodayLine(g2, minDate, currentY, 0, totalDays, dayWidth);
+        GanttPainter.drawTodayLine(g2, minDate, rowsHeight, 0, totalDays, dayWidth);
         g2.dispose();
     }
 
@@ -460,9 +458,13 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         if (cachedTasks.isEmpty()) {
             refreshTaskCache();
         }
-        return GanttTaskFilter.visibleTasks(
-                cachedTasks, currentSearchKeyword, currentStatusFilter,
-                currentProjectFilterId, projectMemberCache);
+        rows.update(cachedTasks, currentSearchKeyword, currentStatusFilter, currentProjectFilterId);
+        return rows.rows();
+    }
+
+    private Map<Integer, List<Task>> getChildrenMap() {
+        getVisibleTasks();
+        return rows.children();
     }
 
     private GanttBarHit hitTest(MouseEvent e) {
@@ -472,9 +474,8 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         if (cachedTasks.isEmpty()) {
             return null;
         }
-        List<Task> allSorted = TaskHierarchyUtil.sortDepthFirst(cachedTasks);
         List<Task> tasks = getVisibleTasks();
-        Map<Integer, List<Task>> childrenMap = TaskHierarchyUtil.buildChildrenMap(allSorted);
+        Map<Integer, List<Task>> childrenMap = getChildrenMap();
         LocalDate[] visibleWindow = GanttDisplayDates.calculateVisibleDateWindow(
                 tasks, childrenMap, manualVisibleWindow, visibleStartDate, visibleEndDate);
         return GanttBarHit.find(
@@ -486,7 +487,7 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         if (task == null || task.getLevel() <= 1) {
             return null;
         }
-        return TaskHierarchyUtil.findRootProject(task, taskService.getAllTasks());
+        return TaskHierarchyUtil.findRootProject(task, cachedTasks);
     }
 
     @Override
@@ -513,7 +514,6 @@ public class GanttPanel extends JPanel implements SearchablePanel {
         currentSearchKeyword = null;
         currentStatusFilter = null;
         currentProjectFilterId = null;
-        projectMemberCache.clear();
         notifyLayoutChanged();
     }
 
@@ -529,7 +529,6 @@ public class GanttPanel extends JPanel implements SearchablePanel {
             return;
         }
         currentProjectFilterId = result.projectId();
-        projectMemberCache.clear();
         notifyLayoutChanged();
     }
 

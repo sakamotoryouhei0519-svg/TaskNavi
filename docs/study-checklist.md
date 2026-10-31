@@ -630,9 +630,10 @@ CalendarPanel コンストラクタ
 | 区分 | ファイル |
 |------|----------|
 | 必読 | `ui/gantt/GanttPanel.java`（全体構造だけ） |
-| 関連 | `GanttPainter` / `GanttTaskFilter` / `GanttSideViews` |
+| 関連 | `GanttPainter` / `GanttRows`（絞り込んだ行と親子の表を、変わったときだけ作り直す） / `GanttTaskFilter` / `GanttSideViews` |
 | 後回し | `GanttMouseController` / `GanttBarDragMath`（複雑） |
-| テスト | `GanttTaskFilterTest` / `GanttBarDragMathTest` / `GanttTodayCenteringTest` |
+| テスト | `GanttTaskFilterTest` / `GanttRowsTest` / `GanttBarGeometryTest` / `GanttBarDragMathTest` / `GanttTodayCenteringTest` |
+| 速さを測る | `src/test/java/org/tasknavi/tools/GanttBenchmark`（何千件のときの描き直しの時間。動かし方は README の「開発メモ」） |
 
 **コードの流れ（ガントチャート表示）:**
 
@@ -646,13 +647,14 @@ GanttPanel コンストラクタ
   → TaskEventBus.getInstance().register(taskEventListener) (イベントリスナー登録)
   → refreshTaskCache() (初期表示用にタスクを読む)
     → taskService.getAllTasks() で全タスク取得
-    → GanttTaskFilter でフィルタリング
+    → GanttRows が GanttTaskFilter で絞り込み、親子の表も作る（一覧か絞り込みが変わるまで使い回す）
 MainFrame
   → createTaskNameColumn() / createDateHeader() / createCorner() で左の列・上の日付・左上の角を付ける
 paintComponent()
   → GanttDisplayDates.calculateVisibleDateWindow() で表示する期間を決める（今日の前後30日は必ず入る）
+  → GanttBarGeometry.cellRange() で、見えている行と日だけを選ぶ（何千行あっても画面1枚分しか描かない）
   → GanttPainter.drawRowStripes() / overlayDayColumns() で地を塗る
-  → GanttPainter.drawBar() で各タスクのバーを描画
+  → GanttPainter.drawBar() で各タスクのバーを描画（横にも見えていなければ描かない）
     → 開始日・終了日に基づいてバーの位置と長さを計算
     → 進捗率の分だけ状態の色で塗り、数字は見えている部分に置く（GanttBarGeometry.progressLabel）
   → GanttPainter.drawTodayLine() で今日の線
@@ -663,6 +665,7 @@ paintComponent()
 - [ ] `GanttPainter.drawBar()` がタスクの開始日・終了日に基づいてバーを描画していると言える
 - [ ] `GanttSideViews` がタスク名列と日付ヘッダーを作成していると言える
 - [ ] ガントを開いたとき今日が真ん中に来る理由を、`centerOnToday()` と `GanttViewportSupport.centeredScrollX()` で言える
+- [ ] タスクが1万件でもガントが重くならない理由を、`cellRange()`（見えている分だけ描く）と `GanttRows`（並べ直しを使い回す）で言える
 
 ---
 
@@ -893,7 +896,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 3. 追った操作は「追加」（操作D）です。道は MainFrame → Helper → Dialog → Service → Bus です
 4. 保存の失敗は画面に出ます。削除と並べ替えは、途中だけ残りません
 5. 状態変更のルールは `TaskService.changeStatus` の1か所にあります。全件の読み込みは1回の変更で1回だけで、5つの画面で使い回します
-6. テストは 253 件で、CI で毎回動きます。通った行の割合は全体 65%、画面以外 88%、共有の記録の読み書き 94% で、`team` が 90% を下回ると CI が止まります
+6. テストは 258 件で、CI で毎回動きます。通った行の割合は全体 65%、画面以外 88%、共有の記録の読み書き 94% で、`team` が 90% を下回ると CI が止まります
 7. アプリにログインはありません。データは PC の中なので、守りは Windows のログインに任せています
 8. （社内で使い始めたら）使ってみてどうなったかを、`docs/results-log.md` の数字で話します。会社名や人の名前は出しません
 

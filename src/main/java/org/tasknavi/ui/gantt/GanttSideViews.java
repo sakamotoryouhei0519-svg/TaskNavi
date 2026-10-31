@@ -1,7 +1,6 @@
 package org.tasknavi.ui.gantt;
 
 import org.tasknavi.model.Task;
-import org.tasknavi.model.TaskHierarchyUtil;
 import org.tasknavi.ui.AppTheme;
 
 import javax.swing.JComponent;
@@ -26,7 +25,7 @@ public final class GanttSideViews {
     public interface Host {
         List<Task> visibleTasks();
 
-        List<Task> cachedTasks();
+        Map<Integer, List<Task>> childrenMap();
 
         Integer selectedTaskId();
 
@@ -67,7 +66,12 @@ public final class GanttSideViews {
                     if (tasks.isEmpty()) {
                         return;
                     }
-                    for (int row = 0; row < tasks.size(); row++) {
+                    java.awt.Rectangle clip = g2.getClipBounds();
+                    int[] rows = clip == null
+                            ? new int[]{0, tasks.size()}
+                            : GanttBarGeometry.cellRange(clip.y, clip.y + clip.height,
+                            GanttMetrics.ROW_HEIGHT, tasks.size());
+                    for (int row = rows[0]; row < rows[1]; row++) {
                         GanttPainter.drawTaskNameCell(
                                 g2, tasks.get(row), row * GanttMetrics.ROW_HEIGHT, row,
                                 host.selectedTaskId(), host.hoveredTaskId(),
@@ -145,10 +149,8 @@ public final class GanttSideViews {
                         return;
                     }
 
-                    List<Task> allSorted = TaskHierarchyUtil.sortDepthFirst(host.cachedTasks());
-                    Map<Integer, List<Task>> childMap = TaskHierarchyUtil.buildChildrenMap(allSorted);
                     LocalDate[] visibleWindow = GanttDisplayDates.calculateVisibleDateWindow(
-                            tasks, childMap, host.manualVisibleWindow(),
+                            tasks, host.childrenMap(), host.manualVisibleWindow(),
                             host.visibleStartDate(), host.visibleEndDate());
                     LocalDate minDate = visibleWindow[0];
                     LocalDate maxDate = visibleWindow[1];
@@ -172,10 +174,8 @@ public final class GanttSideViews {
                 if (tasks.isEmpty()) {
                     days = host.totalDays();
                 } else {
-                    Map<Integer, List<Task>> childMap = TaskHierarchyUtil.buildChildrenMap(
-                            TaskHierarchyUtil.sortDepthFirst(host.cachedTasks()));
                     LocalDate[] visibleWindow = GanttDisplayDates.calculateVisibleDateWindow(
-                            tasks, childMap, host.manualVisibleWindow(),
+                            tasks, host.childrenMap(), host.manualVisibleWindow(),
                             host.visibleStartDate(), host.visibleEndDate());
                     days = (int) ChronoUnit.DAYS.between(visibleWindow[0], visibleWindow[1]) + 1;
                     days = Math.max(GanttMetrics.MIN_VISIBLE_DAYS, days);

@@ -8,6 +8,9 @@ import java.time.temporal.ChronoUnit;
  */
 public final class GanttBarGeometry {
 
+    /** バーの右の外に出る「100%」の数字が入る幅。 */
+    private static final int OUTSIDE_LABEL_ROOM = 60;
+
     public record Rect(int x, int y, int width, int height) {
     }
 
@@ -35,6 +38,21 @@ public final class GanttBarGeometry {
         int width = (int) (duration * dayWidth);
         int y = rowIndex * rowHeight + (rowHeight - barHeight) / 2;
         return new Rect(x, y, width, barHeight);
+    }
+
+    /**
+     * 大きさ {@code size} の升目（行や日の列）が {@code count} 個並ぶとき、{@code from}〜{@code to} にかかる升目。
+     * {@code [最初, 最後の次)}。何千行あっても、見えている分だけ描くのに使う。
+     */
+    public static int[] cellRange(int from, int to, int size, int count) {
+        int first = Math.clamp(Math.floorDiv(from, size), 0, count);
+        int end = Math.clamp(Math.floorDiv(to + size - 1, size), first, count);
+        return new int[]{first, end};
+    }
+
+    /** バーも、その右に出る進捗の数字も、見えている横幅にかからない。 */
+    public static boolean outsideView(int barX, int barWidth, int visibleLeft, int visibleRight) {
+        return barX > visibleRight || barX + barWidth + OUTSIDE_LABEL_ROOM < visibleLeft;
     }
 
     /**

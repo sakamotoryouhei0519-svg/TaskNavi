@@ -4,9 +4,12 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GanttBarGeometryTest {
 
@@ -58,5 +61,22 @@ class GanttBarGeometryTest {
 
         GanttBarGeometry.ProgressLabel nearFillEnd = GanttBarGeometry.progressLabel(0, 5000, 2250, 28, 2000, 3000);
         assertEquals(2256, nearFillEnd.x());
+    }
+
+    @Test
+    void cellRangeCoversOnlyTheRowsInView() {
+        assertArrayEquals(new int[]{3, 6}, GanttBarGeometry.cellRange(100, 160, 30, 1000));
+        assertArrayEquals(new int[]{0, 2}, GanttBarGeometry.cellRange(-50, 60, 30, 1000));
+        assertArrayEquals(new int[]{8, 10}, GanttBarGeometry.cellRange(250, 900, 30, 10));
+        assertArrayEquals(new int[]{10, 10}, GanttBarGeometry.cellRange(400, 500, 30, 10));
+        assertArrayEquals(new int[]{0, 0}, GanttBarGeometry.cellRange(0, 500, 30, 0));
+    }
+
+    @Test
+    void barsAndTheirOutsideLabelOffScreenAreSkipped() {
+        assertTrue(GanttBarGeometry.outsideView(2000, 100, 0, 1000));
+        assertTrue(GanttBarGeometry.outsideView(0, 100, 1000, 2000));
+        assertFalse(GanttBarGeometry.outsideView(950, 100, 1000, 2000));
+        assertFalse(GanttBarGeometry.outsideView(500, 3000, 1000, 2000));
     }
 }

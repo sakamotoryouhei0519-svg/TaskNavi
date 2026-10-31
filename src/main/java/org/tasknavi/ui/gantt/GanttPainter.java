@@ -31,6 +31,15 @@ public final class GanttPainter {
     private GanttPainter() {
     }
 
+    /** 描く範囲（clip）にかかる日の列。 */
+    private static int[] dayRange(Graphics2D g2, int totalDays, int dayWidth) {
+        java.awt.Rectangle clip = g2.getClipBounds();
+        if (clip == null) {
+            return new int[]{0, totalDays};
+        }
+        return GanttBarGeometry.cellRange(clip.x, clip.x + clip.width, dayWidth, totalDays);
+    }
+
     private static boolean isWeekend(LocalDate date) {
         DayOfWeek dow = date.getDayOfWeek();
         return dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY;
@@ -77,7 +86,10 @@ public final class GanttPainter {
             monthStart = monthEnd;
         }
 
-        for (int i = 0; i < totalDays; i++) {
+        Font dayFont = new Font("SansSerif", Font.BOLD, dayWidth >= 26 ? 12 : 10);
+        Font weekdayFont = new Font("SansSerif", Font.PLAIN, dayWidth >= 28 ? 10 : 9);
+        int[] days = dayRange(g2, totalDays, dayWidth);
+        for (int i = days[0]; i < days[1]; i++) {
             int x = i * dayWidth;
             LocalDate date = minDate.plusDays(i);
             if (isWeekend(date)) {
@@ -98,7 +110,7 @@ public final class GanttPainter {
             g2.clipRect(x, dayRowY, dayWidth, dayRowHeight);
 
             String dayText = String.valueOf(date.getDayOfMonth());
-            g2.setFont(new Font("SansSerif", Font.BOLD, dayWidth >= 26 ? 12 : 10));
+            g2.setFont(dayFont);
             FontMetrics dayMetrics = g2.getFontMetrics();
             int dayTextX = x + (dayWidth - dayMetrics.stringWidth(dayText)) / 2;
             int dayBaseline = dayRowY + 16;
@@ -115,7 +127,7 @@ public final class GanttPainter {
             g2.drawString(dayText, dayTextX, dayBaseline);
 
             String dayOfWeekStr = UiLabels.weekdaysMondayFirst()[dow.getValue() - 1];
-            g2.setFont(new Font("SansSerif", Font.PLAIN, dayWidth >= 28 ? 10 : 9));
+            g2.setFont(weekdayFont);
             FontMetrics weekMetrics = g2.getFontMetrics();
             g2.setColor(isToday ? AppTheme.PRIMARY : AppTheme.TEXT_MUTED);
             g2.drawString(dayOfWeekStr, x + (dayWidth - weekMetrics.stringWidth(dayOfWeekStr)) / 2, dayRowY + 32);
@@ -143,9 +155,10 @@ public final class GanttPainter {
         }
     }
 
-    public static void drawRowStripes(Graphics2D g2, int rowCount, int rowHeight, int width) {
+    /** {@code firstRow}〜{@code endRow} の手前までの行のうち、奇数の行に地の色を敷く。 */
+    public static void drawRowStripes(Graphics2D g2, int firstRow, int endRow, int rowHeight, int width) {
         g2.setColor(AppTheme.ganttStripe());
-        for (int row = 1; row < rowCount; row += 2) {
+        for (int row = firstRow | 1; row < endRow; row += 2) {
             g2.fillRect(0, row * rowHeight, width, rowHeight);
         }
     }
@@ -158,7 +171,8 @@ public final class GanttPainter {
             int dayWidth
     ) {
         LocalDate today = LocalDate.now();
-        for (int i = 0; i < totalDays; i++) {
+        int[] days = dayRange(g2, totalDays, dayWidth);
+        for (int i = days[0]; i < days[1]; i++) {
             int x = i * dayWidth;
             LocalDate date = minDate.plusDays(i);
             if (date.equals(today)) {
@@ -253,6 +267,9 @@ public final class GanttPainter {
 
         int barX = (int) (startOffset * dayWidth);
         int barWidth = (int) (duration * dayWidth);
+        if (GanttBarGeometry.outsideView(barX, barWidth, visibleLeft, visibleRight)) {
+            return;
+        }
         int barY = y + (rowHeight - barHeight) / 2;
 
         Composite originalComposite = g2.getComposite();
@@ -271,11 +288,9 @@ public final class GanttPainter {
 
         int progressWidth = (int) Math.round(barWidth * (progress / 100.0));
         if (progress > 0) {
-            Shape oldClip = g2.getClip();
-            g2.clip(barShape);
+            // 角の丸い形で切り抜く（clip）と、本数が多いときに重い。同じ左端・同じ丸みで塗ればバーの中に収まる
             g2.setColor(mainColor);
             g2.fillRoundRect(barX, barY, Math.max(progressWidth, 1), barHeight, 8, 8);
-            g2.setClip(oldClip);
         }
 
         if (isDragging) {
