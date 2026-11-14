@@ -148,6 +148,7 @@ UI（ui/today・wbs・kanban・gantt・calendar ほか）
   | 取り込み・書き出し（`io`） | 97% | 85% |
 
   画面（`ui`）は低め（50〜70%、共有の画面 `ui/team` は 28%）。共有の画面は、ダイアログを出さない部分（開く・閉じる・読み直し・ヘッダーの表示）をテストしている。画面の操作は、メイン画面を開くテストと、配る前のチェック表（[`docs/home-test-checklist.md`](docs/home-test-checklist.md)）で確かめている
+- 設計と技術の早見表（技術の版・層・パッケージとクラス・データの形・CI）: [`docs/architecture.md`](docs/architecture.md)
 - 学習用の読み方: [`docs/beginner-handbook.md`](docs/beginner-handbook.md) / [`docs/study-checklist.md`](docs/study-checklist.md)
 - 使う人向けの説明（ダウンロードと使い方）: [`docs/user-guide.md`](docs/user-guide.md)
 - 配る前に共有・バックアップ・インポートを試す表: [`docs/home-test-checklist.md`](docs/home-test-checklist.md)

@@ -1,7 +1,8 @@
 # TaskNavi 初学者向け教科書
 
 勉強を始める人は、先に **「12. 最初の2週間」** だけを上からやる。  
-1〜11章と [study-checklist.md](./study-checklist.md) は辞書です。最初から最後まで読まない。
+1〜11章と [study-checklist.md](./study-checklist.md) は辞書です。最初から最後まで読まない。  
+全体を1枚で見たいとき（技術の版、パッケージとクラス、表の列）は [architecture.md](./architecture.md) を見る。
 
 ## 1. このプロジェクトで最初に押さえること
 - 画面は Swing で作っています。Java に最初から入っている画面の部品です
