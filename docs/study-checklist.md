@@ -806,7 +806,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 | 課題 | まず開くべき場所 |
 |------|------------------|
 | 検索プレースホルダの文言を変える | `messages.properties` / `messages_ja.properties` |
-| デフォルトタブを変える | `MainFrame` のタブ記憶ロジック |
+| 起動時に開くタブを変える | `MainFrame` の `setSelectedIndex(tabKeys.indexOf(TAB_TODAY))` |
 | 「完了を隠す」フィルタ | `TaskViewFilter` + 既存テストに1ケース |
 | 期限超過の色や文言を変える | `Task.isOverdue()` → `CalendarTaskCardFactory` / `KanbanCardFactory` |
 | エクスポート確認ダイアログの文言を変える | `TaskDataIoHelper` + `messages*.properties` |
@@ -899,7 +899,7 @@ AI に丸投げせず、**先に直すファイルを自分で書いてから**�
 3. 追った操作は「追加」（操作D）です。道は MainFrame → Helper → Dialog → Service → Bus です
 4. 保存の失敗は画面に出ます。削除と並べ替えは、途中だけ残りません
 5. 状態変更のルールは `TaskService.changeStatus` の1か所にあります。全件の読み込みは1回の変更で1回だけで、5つの画面で使い回します
-6. テストは 269 件で、CI で毎回動きます。通った行の割合は全体 65%、画面以外 87%、共有の記録の読み書き 94% で、`team` が 90% を下回ると CI が止まります
+6. テストは約 270 件で、CI で毎回動きます。通った行の割合は全体 65%、画面以外 87%、共有の記録の読み書き 94% で、`team` が 90% を下回ると CI が止まります
 7. アプリにログインはありません。データは PC の中なので、守りは Windows のログインに任せています
 8. （社内で使い始めたら）使ってみてどうなったかを、`docs/results-log.md` の数字で話します。会社名や人の名前は出しません
 
