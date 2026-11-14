@@ -148,8 +148,7 @@ public class Database {
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
                 .load();
-        createdNow = flyway.info().applied().length == 0;
-        flyway.migrate();
+        createdNow = flyway.migrate().initialSchemaVersion == null;
     }
 
     /**

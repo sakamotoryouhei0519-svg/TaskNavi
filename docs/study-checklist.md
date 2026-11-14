@@ -43,19 +43,20 @@ main()
     → applyGlobalUiDefaults() (テーマ適用)
     → createSplashWindow() (スプラッシュ作成)
     → splash.setVisible(true) (表示)
-    → Timer(1000ms) で1秒待機
-      → splash.dispose() (スプラッシュ消去)
-      → SampleDataUtil.insertSampleTasksIfEmpty() (DB を初めて作ったときだけサンプル)
-      → openMainFrame()
-        → TaskService.createDefault() (サービス作成)
-        → new MainFrame() (メイン画面作成)
-        → mainFrame.setVisible(true)
+  → Database.ensureMigrated() (スプラッシュを出している間に、main のスレッドで Flyway を当てる)
+  → SampleDataUtil.insertSampleTasksIfEmpty() (DB を初めて作ったときだけサンプル)
+  → SwingUtilities.invokeLater (EDT上で実行。待ち時間は決めていない。DB ができたらすぐ)
+    → splash.dispose() (スプラッシュ消去)
+    → openMainFrame()
+      → TaskService.createDefault() (サービス作成)
+      → new MainFrame() (メイン画面作成)
+      → mainFrame.setVisible(true)
 ```
 
 できたチェック:
 
 - [ ] `main` が何をしているか、3行で言える
-- [ ] 「DB準備 → スプラッシュ → メイン」の順が言える
+- [ ] 「スプラッシュを出す → その間に DB 準備 → メイン」の順が言える
 - [ ] ログインがない理由（データは PC の中にあり、守りは Windows のログインに任せる）を言える。詳しくは handbook の「ログイン画面を消した理由」の5つ
 
 ### 操作B: メイン画面を開く

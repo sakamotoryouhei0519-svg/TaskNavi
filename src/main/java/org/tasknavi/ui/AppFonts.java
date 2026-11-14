@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * 画面の文字の書体。
@@ -22,15 +23,17 @@ final class AppFonts {
 
     private static final List<String> JAPANESE_GOTHIC = List.of("Meiryo UI", "Yu Gothic UI", "MS UI Gothic");
 
-    static final String FAMILY = chooseFamily(Locale.getDefault(), availableFamilies());
+    static final String FAMILY = chooseFamily(Locale.getDefault(), AppFonts::availableFamilies);
 
     private AppFonts() {
     }
 
-    static String chooseFamily(Locale locale, Set<String> available) {
+    /** 書体の一覧を取るのは Windows で 0.3 秒以上かかるので、日本語のときは取らない。 */
+    static String chooseFamily(Locale locale, Supplier<Set<String>> availableFamilies) {
         if ("ja".equals(locale.getLanguage())) {
             return Font.SANS_SERIF;
         }
+        Set<String> available = availableFamilies.get();
         for (String family : JAPANESE_GOTHIC) {
             if (available.contains(family)) {
                 return family;

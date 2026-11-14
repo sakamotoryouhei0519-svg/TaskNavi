@@ -17,7 +17,6 @@ import javax.swing.JPanel;
 import javax.swing.JWindow;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.EmptyBorder;
@@ -25,14 +24,15 @@ import java.awt.BorderLayout;
 
 /**
  * アプリケーション起動入口。
- * DB／サンプル準備のあと、スプラッシュを表示してメイン画面へ進む。ログインはない（PC は Windows のログインで守る）。
+ * スプラッシュを出している間に DB／サンプルを準備し、できたらすぐメイン画面へ進む。ログインはない（PC は Windows のログインで守る）。
  */
 public class Main {
 
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
-    private static final int SPLASH_DELAY_MS = 1000;
     /** 描画の中の失敗などは続けて起きるので、お知らせはこの間隔に 1 回まで。 */
     private static final long UNEXPECTED_NOTICE_INTERVAL_MS = 30_000;
+    /** 画面のスレッドでだけ触る。 */
+    private static JWindow splash;
     /** 開くまでは null（起動の途中）。 */
     private static volatile MainFrame mainFrame;
     private static long lastUnexpectedNoticeAt;
@@ -54,16 +54,17 @@ public class Main {
 
             applyGlobalUiDefaults();
 
-            JWindow splash = createSplashWindow();
+            splash = createSplashWindow();
             splash.setVisible(true);
+        });
 
-            Timer timer = new Timer(SPLASH_DELAY_MS, e -> {
-                splash.dispose();
-                SampleDataUtil.insertSampleTasksIfEmpty();
-                openMainFrame();
-            });
-            timer.setRepeats(false);
-            timer.start();
+        // スプラッシュを出している間に、こちらのスレッドで DB を開いておく
+        Database.ensureMigrated();
+        SampleDataUtil.insertSampleTasksIfEmpty();
+
+        SwingUtilities.invokeLater(() -> {
+            splash.dispose();
+            openMainFrame();
         });
     }
 
