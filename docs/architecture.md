@@ -25,7 +25,7 @@
 | 配布 | jpackage + maven-assembly-plugin | JDK 25 | `TaskNavi.exe` と zip |
 | CI | GitHub Actions / Qodana / Dependabot | — | `.github/` の下 |
 
-アプリの版は `pom.xml` の `app.version`（今は 1.2.0）です。Maven の `version`（`1.0-SNAPSHOT`）とは別です。
+アプリの版は `pom.xml` の `app.version`（今は 1.2.1）です。Maven の `version`（`1.0-SNAPSHOT`）とは別です。
 
 ## 2. 全体の形
 

@@ -12,7 +12,7 @@
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- 配布用 exe に付ける版（jpackage は数字と . だけ受け付ける） -->
-        <app.version>1.2.0</app.version>
+        <app.version>1.2.1</app.version>
         <!-- -DskipTests で上書きされる。テストを飛ばしたときは割合の確認も飛ばす -->
         <skipTests>false</skipTests>
         <!-- mvn exec:java で動かすクラス。-Dexec.mainClass で別のクラス（tools の道具など）に変えられる -->
@@ -249,6 +249,8 @@
                                 </goals>
                                 <configuration>
                                     <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                                    <!-- jpackage は exe を読み取り専用で作るので、無いと2回目から消せない -->
+                                    <force>true</force>
                                     <filesets>
                                         <fileset>
                                             <directory>${jpackage.dir}</directory>
